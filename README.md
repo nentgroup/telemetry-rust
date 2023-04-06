@@ -8,7 +8,7 @@ use telemetry_rust::{init_tracing, opentelemetry_tracing_layer};
 
 #[tokio::main]
 async fn main() {
-    init_tracing(INFO);
+    init_tracing!(INFO);
 
     // ...
 

@@ -12,10 +12,14 @@ pub use axum_tracing_opentelemetry::opentelemetry_tracing_layer;
 
 pub mod propagation;
 
-pub fn init_tracing(log_level: tracing::Level) {
+pub fn init_tracing_with_fallbacks(
+    log_level: tracing::Level,
+    service_name_fallback: &'static str,
+    service_version_fallback: &'static str,
+) {
     let otel_rsrc = DetectResource::default()
-        .with_fallback_service_name(env!("CARGO_PKG_NAME"))
-        .with_fallback_service_version(env!("CARGO_PKG_VERSION"))
+        .with_fallback_service_name(service_name_fallback)
+        .with_fallback_service_version(service_version_fallback)
         .build();
     let otel_tracer =
         otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
@@ -36,6 +40,17 @@ pub fn init_tracing(log_level: tracing::Level) {
         .with(LevelFilter::INFO)
         .with(otel_layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();
+}
+
+#[macro_export]
+macro_rules! init_tracing {
+    ($log_level:expr) => {
+        $crate::init_tracing_with_fallbacks(
+            $log_level,
+            env!("CARGO_PKG_NAME"),
+            env!("CARGO_PKG_VERSION"),
+        );
+    };
 }
 
 pub fn inject_context(headers: &mut HeaderMap) {

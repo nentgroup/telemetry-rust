@@ -14,12 +14,12 @@ pub mod propagation;
 
 pub fn init_tracing_with_fallbacks(
     log_level: tracing::Level,
-    service_name_fallback: &'static str,
-    service_version_fallback: &'static str,
+    fallback_service_name: &'static str,
+    fallback_service_version: &'static str,
 ) {
     let otel_rsrc = DetectResource::default()
-        .with_fallback_service_name(service_name_fallback)
-        .with_fallback_service_version(service_version_fallback)
+        .with_fallback_service_name(fallback_service_name)
+        .with_fallback_service_version(fallback_service_version)
         .build();
     let otel_tracer =
         otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");

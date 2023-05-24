@@ -67,4 +67,3 @@ pub fn inject_context(headers: &mut HeaderMap) {
 pub fn shutdown_signal() {
     opentelemetry::global::shutdown_tracer_provider();
 }
-

@@ -4,7 +4,7 @@ use opentelemetry_api::trace::{SpanId, TraceId};
 use rand::Rng;
 
 pub trait Response {
-	fn text(&self) -> String;
+    fn text(&self) -> String;
 }
 
 pub struct TracedResponse<T> {
@@ -13,8 +13,10 @@ pub struct TracedResponse<T> {
     pub span_id: SpanId,
 }
 
-impl<T> TracedResponse<T> 
-where T: Response {
+impl<T> TracedResponse<T>
+where
+    T: Response,
+{
     pub fn new(response: T, trace_id: TraceId, span_id: SpanId) -> Self {
         Self {
             response,

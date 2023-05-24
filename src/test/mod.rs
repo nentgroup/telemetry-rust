@@ -25,7 +25,6 @@ where
         }
     }
 
-    #[allow(dead_code)]
     pub fn text(self) -> String {
         self.response.text()
     }

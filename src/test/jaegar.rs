@@ -74,6 +74,14 @@ pub struct TraceData {
     pub warnings: Option<Vec<String>>,
 }
 
+impl TraceData {
+    pub fn find_span(&self, operation_name: &str) -> Option<&Span> {
+        self.spans
+            .iter()
+            .find(|&span| span.operation_name == operation_name)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Span {
@@ -99,6 +107,18 @@ pub struct Span {
     pub process_id: String,
     #[serde(default)]
     pub warnings: Option<Vec<String>>,
+}
+
+impl Span {
+    pub fn find_reference(&self, ref_type: &str) -> Option<&Reference> {
+        self.references
+            .iter()
+            .find(|&refer| refer.ref_type == ref_type)
+    }
+
+    pub fn get_parent_reference(&self) -> Option<&Reference> {
+        self.find_reference("CHILD_OF")
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

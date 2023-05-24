@@ -24,7 +24,7 @@ opentelemetry_api = { version = "0.19.0", features = ["testing"], optional = tru
 rand = { version = "0.8.5", optional = true }
 
 [features]
-full = ["integration_test"]
+full = []
 default = ["integration_test"]
 integration_test = ["serde", "serde_json", "opentelemetry_api", "rand"]
 

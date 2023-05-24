@@ -9,8 +9,10 @@ use tracing_subscriber::{
 };
 
 pub use axum_tracing_opentelemetry::opentelemetry_tracing_layer;
-
 pub mod propagation;
+
+#[cfg(feature = "integration_test")]
+pub mod test;
 
 pub fn init_tracing_with_fallbacks(
     log_level: tracing::Level,

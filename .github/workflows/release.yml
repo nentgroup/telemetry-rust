@@ -33,4 +33,4 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: cargo test --release
-      - run: cargo publish
+      - run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}

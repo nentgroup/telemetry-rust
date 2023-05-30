@@ -47,3 +47,23 @@ pub fn generate_traceparent() -> (String, TraceId, SpanId) {
 
     (traceparent, trace_id, span_id)
 }
+
+pub enum TracingHeaderKind {
+    Traceparent,
+    B3Single,
+    B3Multi,
+}
+
+pub struct Traceparent {
+    pub trace_id: TraceId,
+    pub span_id: SpanId,
+}
+
+impl Traceparent {
+    pub fn generate() -> Self {
+        let mut rng = rand::thread_rng();
+        let trace_id = TraceId::from_u128(rng.gen());
+        let span_id = SpanId::from_u64(rng.gen());
+        Self { trace_id, span_id }
+    }
+}

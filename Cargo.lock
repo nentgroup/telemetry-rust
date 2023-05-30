@@ -1318,10 +1318,11 @@ checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
 
 [[package]]
 name = "telemetry-rust"
-version = "0.2.2"
+version = "0.2.4"
 dependencies = [
  "axum-tracing-opentelemetry",
  "http",
+ "hyper",
  "opentelemetry",
  "opentelemetry-http",
  "opentelemetry-zipkin",

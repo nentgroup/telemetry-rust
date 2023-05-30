@@ -1,6 +1,6 @@
 [package]
 name = "telemetry-rust"
-version = "0.2.2"
+version = "0.2.4"
 edition = "2021"
 license = "MIT"
 description = "Open Telemetry fox Axum and Tracing"
@@ -22,11 +22,12 @@ serde = { version = "1.0.163", optional = true }
 serde_json = { version = "1.0.96", optional = true }
 opentelemetry_api = { version = "0.19.0", features = ["testing"], optional = true }
 rand = { version = "0.8.5", optional = true }
+hyper = { version = "0.14.24", features = ["full"], optional = true }
 
 [features]
 full = ["integration_test"]
 default = []
-integration_test = ["serde", "serde_json", "opentelemetry_api", "rand"]
+integration_test = ["serde", "serde_json", "opentelemetry_api", "rand", "hyper"]
 
 [profile.dev]
 lto = false

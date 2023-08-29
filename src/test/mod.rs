@@ -1,7 +1,7 @@
 pub mod jaegar;
 
-pub use opentelemetry_api::trace::{SpanId, TraceId};
 use hyper::{body::Bytes, header::HeaderValue, Body, Error, HeaderMap, Response};
+pub use opentelemetry_api::trace::{SpanId, TraceId};
 use rand::Rng;
 
 #[derive(Debug)]

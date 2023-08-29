@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 use axum_tracing_opentelemetry::{otlp, resource::DetectResource};
 use http::header::HeaderMap;
 use opentelemetry_http::HeaderInjector;
@@ -37,9 +39,10 @@ pub fn init_tracing_with_fallbacks(
         .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
         .with_writer(std::io::stdout.with_max_level(log_level));
 
+    let level_filter: LevelFilter = max(log_level, tracing::Level::INFO).into();
     let subscriber = tracing_subscriber::registry()
         .with(fmt_layer)
-        .with(LevelFilter::INFO)
+        .with(level_filter)
         .with(otel_layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();
 }

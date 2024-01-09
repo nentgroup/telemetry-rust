@@ -2,8 +2,10 @@ use opentelemetry::{
     propagation::{
         text_map_propagator::FieldIter, Extractor, Injector, TextMapPropagator,
     },
-    sdk::propagation::{TextMapCompositePropagator, TraceContextPropagator},
-    Context,
+    Context
+};
+use opentelemetry_sdk::propagation::{
+    TextMapCompositePropagator, TraceContextPropagator,
 };
 use opentelemetry_zipkin::{B3Encoding, Propagator as B3Propagator};
 use std::collections::BTreeSet;

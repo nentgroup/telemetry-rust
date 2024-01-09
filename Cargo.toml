@@ -1,46 +1,62 @@
 [package]
 name = "telemetry-rust"
-version = "0.3.0"
+version = "1.0.0"
 edition = "2021"
 license = "MIT"
 description = "Open Telemetry fox Axum and Tracing"
 
 [dependencies]
-http = "0.2.9"
-axum-tracing-opentelemetry = { version = "0.9.0", features = ["otlp", "zipkin"] }
-opentelemetry = { version = "0.18", features = ["rt-tokio"] }
-tracing-opentelemetry = "0.18"
-opentelemetry-http = "0.7.0"
-opentelemetry-zipkin = "0.16"
-tracing = { version = "0.1.37", default-features = false }
-tracing-subscriber = { version = "0.3", default-features = false, features = [
+http = "1.0.0"
+opentelemetry = { version = "0.21.0" }
+tracing-opentelemetry = "0.22"
+opentelemetry-http = "0.10.0"
+opentelemetry-otlp = { version = "0.14", optional = true, features = ["http-proto"] }
+opentelemetry-zipkin = "0.19.0"
+opentelemetry_sdk = { version = "0.21", default-features = false, features = [
+  "rt-tokio",
+] }
+opentelemetry-jaeger = { version = "0.20", features = [
+  "rt-tokio",
+], optional = true }
+opentelemetry-semantic-conventions = { version = "0.13", optional = true }
+tracing-opentelemetry-instrumentation-sdk = "0.16.0"
+tracing = { version = "0.1.40", default-features = false }
+tracing-subscriber = { version = "0.3.18", default-features = false, features = [
   "env-filter",
   "fmt",
   "json",
 ] }
-serde = { version = "1.0.163", features = ["derive"], optional = true }
-serde_json = { version = "1.0.81", optional = true }
-opentelemetry_api = { version = "0.19.0", features = ["testing"], optional = true }
+serde = { version = "1.0.195", features = ["derive"], optional = true }
+serde_json = { version = "1.0.111", optional = true }
+opentelemetry_api = { version = "0.20.0", features = ["testing"], optional = true }
 rand = { version = "0.8.5", optional = true }
 hyper = { version = "0.14.24", features = ["full"], optional = true }
+tower = { version = "0.4", optional = true }
+axum = { version = "0.7.3", optional = true }
+pin-project-lite = { version = "0.2", optional = true }
+
+[dev-dependencies]
+assert2 = "0.3"
+rstest = "0.18"
 
 [features]
 full = ["integration_test"]
-default = []
-integration_test = ["serde", "serde_json", "opentelemetry_api", "rand", "hyper"]
+default = ["otlp", "jaeger"]
+jaeger = ["dep:opentelemetry-jaeger", "tracer"]
+otlp = ["opentelemetry-otlp/http-proto", "tracer"]
+tracer = ["dep:opentelemetry-semantic-conventions"]
+integration_test = ["dep:serde", "dep:serde_json", "dep:opentelemetry_api", "dep:rand", "dep:hyper"]
+axum = ["dep:axum", "dep:tower"]
 
 [profile.dev]
 lto = false
-# https://jakedeichert.com/blog/reducing-rust-incremental-compilation-times-on-macos-by-70-percent/
 split-debuginfo = "unpacked"
-# Use slightly better optimizations
 opt-level = 0
-# Disable integer overflow checks
 overflow-checks = false
 
 [profile.release]
 opt-level = 's'
-incremental = true
+incremental = false
 lto = true
 # The Rust compiler splits your crate into multiple codegen units to parallelize (and thus speed up) compilation. However, this might cause it to miss some potential optimizations.
 codegen-units = 1

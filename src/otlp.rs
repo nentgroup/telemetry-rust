@@ -1,4 +1,6 @@
-// Retired from https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/init-tracing-opentelemetry/src/otlp.rs#L75
+// Originally retired from davidB/tracing-opentelemetry-instrumentation-sdk
+// which is licensed under CC0 1.0 Universal
+// https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
 use std::{collections::HashMap, str::FromStr};
 
@@ -104,9 +106,9 @@ fn read_sampler_from_env() -> Sampler {
         "traceidratio" => Sampler::TraceIdRatioBased(read_sampler_arg_from_env(1f64)),
         "parentbased_always_on" => Sampler::ParentBased(Box::new(Sampler::AlwaysOn)),
         "parentbased_always_off" => Sampler::ParentBased(Box::new(Sampler::AlwaysOff)),
-        "parentbased_traceidratio" => Sampler::ParentBased(Box::new(Sampler::TraceIdRatioBased(
-            read_sampler_arg_from_env(1f64),
-        ))),
+        "parentbased_traceidratio" => Sampler::ParentBased(Box::new(
+            Sampler::TraceIdRatioBased(read_sampler_arg_from_env(1f64)),
+        )),
         "jaeger_remote" => todo!("unsupported: OTEL_TRACES_SAMPLER='jaeger_remote'"),
         "xray" => todo!("unsupported: OTEL_TRACES_SAMPLER='xray'"),
         _ => {
@@ -166,7 +168,8 @@ mod tests {
     #[case(None, None, "http/protobuf", "http://localhost:4318")] //Devskim: ignore DS137138
     #[case(Some("http/protobuf"), None, "http/protobuf", "http://localhost:4318")] //Devskim: ignore DS137138
     #[case(Some("grpc"), None, "grpc", "http://localhost:4317")] //Devskim: ignore DS137138
-    #[case(None, Some("http://localhost:4317"), "grpc", "http://localhost:4317")] //Devskim: ignore DS137138
+    #[case(None, Some("http://localhost:4317"), "grpc", "http://localhost:4317")]
+    //Devskim: ignore DS137138
     // #[cfg_attr(
     //     feature = "tls",
     //     case(

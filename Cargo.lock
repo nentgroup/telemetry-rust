@@ -1543,6 +1543,7 @@ version = "1.0.0"
 dependencies = [
  "assert2",
  "axum 0.7.3",
+ "futures-util",
  "http 1.0.0",
  "hyper 0.14.25",
  "opentelemetry",
@@ -1847,6 +1848,7 @@ version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9920abb6a3ee3a2af7d30c9ff02900f8481935d36723c3da95cf807468218e8c"
 dependencies = [
+ "http 1.0.0",
  "opentelemetry",
  "tracing",
  "tracing-opentelemetry",

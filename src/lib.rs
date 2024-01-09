@@ -5,19 +5,19 @@
 use std::cmp::max;
 
 use opentelemetry_sdk::{
-    resource::{OsResourceDetector, ResourceDetector},
     propagation::{
         BaggagePropagator, TextMapCompositePropagator, TraceContextPropagator,
     },
+    resource::{OsResourceDetector, ResourceDetector},
     Resource,
 };
 
+use opentelemetry::{propagation::TextMapPropagator, trace::TraceError};
 use tracing_subscriber::{
     filter::LevelFilter,
     fmt::{format::FmtSpan, writer::MakeWriterExt},
     layer::SubscriberExt,
 };
-use opentelemetry::{propagation::TextMapPropagator, trace::TraceError};
 
 pub mod middleware;
 pub mod propagation;
@@ -47,7 +47,10 @@ impl DetectResource {
     /// `service.name` is first extracted from environment variables
     /// (in this order) `SERVICE_VERSION`, `APP_VERSION`.
     /// But a default value can be provided with this method.
-    pub fn new(fallback_service_name: &'static str, fallback_service_version: &'static str) -> Self {
+    pub fn new(
+        fallback_service_name: &'static str,
+        fallback_service_version: &'static str,
+    ) -> Self {
         DetectResource {
             fallback_service_name,
             fallback_service_version,
@@ -90,17 +93,17 @@ impl ResourceDetector for ServiceInfoDetector {
             .or_else(|_| std::env::var("SERVICE_NAME"))
             .or_else(|_| std::env::var("APP_NAME"))
             .ok()
-            .or_else(|| {
-                Some(self.fallback_service_name.to_string())
-            })
-            .map(|v| opentelemetry_semantic_conventions::resource::SERVICE_NAME.string(v));
+            .or_else(|| Some(self.fallback_service_name.to_string()))
+            .map(|v| {
+                opentelemetry_semantic_conventions::resource::SERVICE_NAME.string(v)
+            });
         let service_version = std::env::var("SERVICE_VERSION")
             .or_else(|_| std::env::var("APP_VERSION"))
             .ok()
-            .or_else(|| {
-                Some(self.fallback_service_version.to_string())
-            })
-            .map(|v| opentelemetry_semantic_conventions::resource::SERVICE_VERSION.string(v));
+            .or_else(|| Some(self.fallback_service_version.to_string()))
+            .map(|v| {
+                opentelemetry_semantic_conventions::resource::SERVICE_VERSION.string(v)
+            });
         Resource::new(vec![service_name, service_version].into_iter().flatten())
     }
 }
@@ -110,12 +113,14 @@ pub fn init_tracing_with_fallbacks(
     fallback_service_name: &'static str,
     fallback_service_version: &'static str,
 ) {
-    let otel_rsrc = DetectResource::new(fallback_service_name, fallback_service_version)
-        .build();
+    let otel_rsrc =
+        DetectResource::new(fallback_service_name, fallback_service_version).build();
     let otel_tracer =
         otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
     init_propagator().expect("setup of propagator");
-    let otel_layer = tracing_opentelemetry::layer().with_error_records_to_exceptions(true).with_tracer(otel_tracer);
+    let otel_layer = tracing_opentelemetry::layer()
+        .with_error_records_to_exceptions(true)
+        .with_tracer(otel_tracer);
 
     opentelemetry::global::set_text_map_propagator(
         propagation::TextMapSplitPropagator::default(),
@@ -170,18 +175,19 @@ pub fn shutdown_signal() {
 ///
 /// Will return `TraceError` if issue in reading or instanciate propagator.
 pub fn init_propagator() -> Result<(), TraceError> {
-    let value_from_env =
-        std::env::var("OTEL_PROPAGATORS").unwrap_or_else(|_| "tracecontext,baggage".to_string());
-    let propagators: Vec<(Box<dyn TextMapPropagator + Send + Sync>, String)> = value_from_env
-        .split(',')
-        .map(|s| {
-            let name = s.trim().to_lowercase();
-            propagator_from_string(&name).map(|o| o.map(|b| (b, name)))
-        })
-        .collect::<Result<Vec<_>, _>>()?
-        .into_iter()
-        .flatten()
-        .collect();
+    let value_from_env = std::env::var("OTEL_PROPAGATORS")
+        .unwrap_or_else(|_| "tracecontext,baggage".to_string());
+    let propagators: Vec<(Box<dyn TextMapPropagator + Send + Sync>, String)> =
+        value_from_env
+            .split(',')
+            .map(|s| {
+                let name = s.trim().to_lowercase();
+                propagator_from_string(&name).map(|o| o.map(|b| (b, name)))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .flatten()
+            .collect();
     if !propagators.is_empty() {
         let (propagators_impl, propagators_name): (Vec<_>, Vec<_>) =
             propagators.into_iter().unzip();

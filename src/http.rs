@@ -1,5 +1,9 @@
-use opentelemetry::Context;
+// Originally retired from davidB/tracing-opentelemetry-instrumentation-sdk
+// which is licensed under CC0 1.0 Universal
+// https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
+
 use opentelemetry::propagation::{Extractor, Injector};
+use opentelemetry::Context;
 
 // copy from crate opentelemetry-http (to not be dependants of on 3rd: http, ...)
 pub struct HeaderInjector<'a>(pub &'a mut http::HeaderMap);
@@ -43,5 +47,7 @@ pub fn inject_context(context: &Context, headers: &mut http::HeaderMap) {
 #[must_use]
 pub fn extract_context(headers: &http::HeaderMap) -> Context {
     let extractor = HeaderExtractor(headers);
-    opentelemetry::global::get_text_map_propagator(|propagator| propagator.extract(&extractor))
+    opentelemetry::global::get_text_map_propagator(|propagator| {
+        propagator.extract(&extractor)
+    })
 }

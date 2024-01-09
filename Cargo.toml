@@ -19,7 +19,7 @@ opentelemetry-jaeger = { version = "0.20", features = [
   "rt-tokio",
 ], optional = true }
 opentelemetry-semantic-conventions = { version = "0.13", optional = true }
-tracing-opentelemetry-instrumentation-sdk = "0.16.0"
+tracing-opentelemetry-instrumentation-sdk = { version = "0.16.0", features = ["http"], optional = true }
 tracing = { version = "0.1.40", default-features = false }
 tracing-subscriber = { version = "0.3.18", default-features = false, features = [
   "env-filter",
@@ -34,6 +34,7 @@ hyper = { version = "0.14.24", features = ["full"], optional = true }
 tower = { version = "0.4", optional = true }
 axum = { version = "0.7.3", optional = true }
 pin-project-lite = { version = "0.2", optional = true }
+futures-util = { version = "0.3", default_features = false, features = [], optional = true }
 
 [dev-dependencies]
 assert2 = "0.3"
@@ -41,12 +42,12 @@ rstest = "0.18"
 
 [features]
 full = ["integration_test"]
-default = ["otlp", "jaeger"]
+default = ["otlp", "jaeger", "axum"]
 jaeger = ["dep:opentelemetry-jaeger", "tracer"]
 otlp = ["opentelemetry-otlp/http-proto", "tracer"]
 tracer = ["dep:opentelemetry-semantic-conventions"]
 integration_test = ["dep:serde", "dep:serde_json", "dep:opentelemetry_api", "dep:rand", "dep:hyper"]
-axum = ["dep:axum", "dep:tower"]
+axum = ["dep:axum", "dep:tower", "dep:futures-util", "dep:pin-project-lite", "dep:tracing-opentelemetry-instrumentation-sdk"]
 
 [profile.dev]
 lto = false

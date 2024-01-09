@@ -1545,7 +1545,7 @@ dependencies = [
  "axum 0.7.3",
  "futures-util",
  "http 1.0.0",
- "hyper 0.14.25",
+ "hyper 1.1.0",
  "opentelemetry",
  "opentelemetry-http",
  "opentelemetry-jaeger",

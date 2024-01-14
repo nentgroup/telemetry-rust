@@ -23,7 +23,7 @@ impl TracedResponse {
         }
     }
 
-    pub async fn into_body(self) -> Result<axum::body::Bytes, Error> {
+    pub async fn into_bytes(self) -> Result<axum::body::Bytes, Error> {
         Ok(self.resp.into_body().collect().await?.to_bytes())
     }
 }

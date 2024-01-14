@@ -617,6 +617,7 @@ dependencies = [
  "itoa",
  "pin-project-lite",
  "tokio",
+ "want",
 ]
 
 [[package]]
@@ -1545,6 +1546,7 @@ dependencies = [
  "axum 0.7.3",
  "futures-util",
  "http 1.0.0",
+ "http-body-util",
  "hyper 1.1.0",
  "opentelemetry",
  "opentelemetry-http",

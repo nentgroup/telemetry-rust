@@ -1,11 +1,9 @@
 pub mod jaegar;
 
 use http_body_util::BodyExt;
-use hyper::{body::Bytes, header::HeaderValue, Error, HeaderMap, Response};
+use hyper::{header::HeaderValue, Error, HeaderMap, Response};
 pub use opentelemetry_api::trace::{SpanId, TraceId};
 use rand::Rng;
-
-pub type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 
 #[derive(Debug)]
 pub struct TracedResponse {

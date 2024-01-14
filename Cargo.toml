@@ -31,7 +31,7 @@ serde_json = { version = "1.0.111", optional = true }
 opentelemetry_api = { version = "0.20.0", features = ["testing"], optional = true }
 rand = { version = "0.8.5", optional = true }
 tower = { version = "0.4", optional = true }
-axum = { version = "0.7.3", optional = true }
+axum = { version = "0.7.4", optional = true }
 pin-project-lite = { version = "0.2", optional = true }
 futures-util = { version = "0.3", default_features = false, features = [], optional = true }
 hyper = { version = "1.1.0", default-features = false, features = ["http1", "client"], optional = true }

@@ -9,13 +9,13 @@ pub type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 
 #[derive(Debug)]
 pub struct TracedResponse {
-    resp: Response<BoxBody>,
+    resp: Response<hyper::body::Incoming>,
     pub trace_id: TraceId,
     pub span_id: SpanId,
 }
 
 impl TracedResponse {
-    pub fn new(resp: Response<BoxBody>, traceparent: Traceparent) -> Self {
+    pub fn new(resp: Response<hyper::body::Incoming>, traceparent: Traceparent) -> Self {
         Self {
             resp,
             trace_id: traceparent.trace_id,
@@ -30,7 +30,7 @@ impl TracedResponse {
 }
 
 impl std::ops::Deref for TracedResponse {
-    type Target = Response<BoxBody>;
+    type Target = Response<hyper::body::Incoming>;
 
     fn deref(&self) -> &Self::Target {
         &self.resp

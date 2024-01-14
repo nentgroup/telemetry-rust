@@ -48,7 +48,7 @@ jaeger = ["dep:opentelemetry-jaeger", "tracer", "zipkin"]
 zipkin = []
 otlp = ["opentelemetry-otlp/http-proto", "tracer"]
 tracer = ["dep:opentelemetry-semantic-conventions"]
-integration_test = ["dep:serde", "dep:serde_json", "dep:opentelemetry_api", "dep:rand", "dep:hyper", "dep:http-body-util"]
+integration_test = ["axum", "dep:serde", "dep:serde_json", "dep:opentelemetry_api", "dep:rand", "dep:hyper", "dep:http-body-util"]
 axum = ["dep:axum", "dep:tower", "dep:futures-util", "dep:pin-project-lite", "dep:tracing-opentelemetry-instrumentation-sdk"]
 
 [profile.dev]

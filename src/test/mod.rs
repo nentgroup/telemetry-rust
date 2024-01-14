@@ -1,19 +1,21 @@
 pub mod jaegar;
 
 use http_body_util::BodyExt;
-use hyper::{header::HeaderValue, Error, HeaderMap, Response};
+use hyper::{body::Bytes, header::HeaderValue, Error, HeaderMap, Response};
 pub use opentelemetry_api::trace::{SpanId, TraceId};
 use rand::Rng;
 
+pub type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
+
 #[derive(Debug)]
 pub struct TracedResponse {
-    resp: Response<axum::body::Body>,
+    resp: Response<BoxBody>,
     pub trace_id: TraceId,
     pub span_id: SpanId,
 }
 
 impl TracedResponse {
-    pub fn new(resp: Response<axum::body::Body>, traceparent: Traceparent) -> Self {
+    pub fn new(resp: Response<BoxBody>, traceparent: Traceparent) -> Self {
         Self {
             resp,
             trace_id: traceparent.trace_id,
@@ -21,13 +23,14 @@ impl TracedResponse {
         }
     }
 
-    pub async fn into_bytes(self) -> Result<axum::body::Bytes, Error> {
-        Ok(self.resp.into_body().collect().await.unwrap().to_bytes())
+    #[cfg(feature = "axum")]
+    pub async fn into_axum_bytes(self) -> Result<axum::body::Bytes, Error> {
+        Ok(self.resp.into_body().collect().await?.to_bytes())
     }
 }
 
 impl std::ops::Deref for TracedResponse {
-    type Target = Response<axum::body::Body>;
+    type Target = Response<BoxBody>;
 
     fn deref(&self) -> &Self::Target {
         &self.resp

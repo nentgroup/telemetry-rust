@@ -4,6 +4,7 @@
 
 use opentelemetry::propagation::{Extractor, Injector};
 use opentelemetry::Context;
+use tracing_opentelemetry_instrumentation_sdk as otel;
 
 // copy from crate opentelemetry-http (to not be dependants of on 3rd: http, ...)
 pub struct HeaderInjector<'a>(pub &'a mut http::HeaderMap);
@@ -36,10 +37,17 @@ impl<'a> Extractor for HeaderExtractor<'a> {
     }
 }
 
-pub fn inject_context(context: &Context, headers: &mut http::HeaderMap) {
+pub fn inject_context_on_context(context: &Context, headers: &mut http::HeaderMap) {
     let mut injector = HeaderInjector(headers);
     opentelemetry::global::get_text_map_propagator(|propagator| {
         propagator.inject_context(context, &mut injector);
+    });
+}
+
+pub fn inject_context(headers: &mut http::HeaderMap) {
+    let mut injector = HeaderInjector(headers);
+    opentelemetry::global::get_text_map_propagator(|propagator| {
+        propagator.inject_context(&otel::find_current_context(), &mut injector);
     });
 }
 

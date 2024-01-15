@@ -27,9 +27,6 @@ pub mod http;
 #[cfg(feature = "otlp")]
 pub mod otlp;
 
-#[cfg(feature = "jaeger")]
-pub mod jaeger;
-
 #[cfg(feature = "integration_test")]
 pub mod test;
 
@@ -113,14 +110,13 @@ pub fn init_tracing_with_fallbacks(
     fallback_service_name: &'static str,
     fallback_service_version: &'static str,
 ) {
+    // init_tracing_opentelemetry::tracing_subscriber_ext::init_subscribers()?;
     let otel_rsrc =
         DetectResource::new(fallback_service_name, fallback_service_version).build();
     let otel_tracer =
         otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
     init_propagator().expect("setup of propagator");
-    let otel_layer = tracing_opentelemetry::layer()
-        .with_error_records_to_exceptions(true)
-        .with_tracer(otel_tracer);
+    let otel_layer = tracing_opentelemetry::layer().with_tracer(otel_tracer);
 
     opentelemetry::global::set_text_map_propagator(
         propagation::TextMapSplitPropagator::default(),
@@ -128,15 +124,15 @@ pub fn init_tracing_with_fallbacks(
 
     let fmt_layer = tracing_subscriber::fmt::layer()
         .json()
-        .with_writer(std::io::stdout.with_max_level(log_level))
         .with_timer(tracing_subscriber::fmt::time::uptime())
-        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE);
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+        .with_writer(std::io::stdout.with_max_level(log_level));
 
     let level_filter: LevelFilter = max(log_level, tracing::Level::INFO).into();
     let subscriber = tracing_subscriber::registry()
-        .with(level_filter)
         .with(fmt_layer)
-        .with(otel_layer);
+        .with(otel_layer)
+        .with(level_filter);
     tracing::subscriber::set_global_default(subscriber).unwrap();
 }
 
@@ -166,7 +162,6 @@ pub fn shutdown_signal() {
 /// - "baggage": W3C Baggage
 /// - "b3": B3 Single (require feature "zipkin")
 /// - "b3multi": B3 Multi (require feature "zipkin")
-/// - "jaeger": Jaeger (require feature "jaeger")
 /// - "xray": AWS X-Ray (require feature "xray")
 /// - "ottrace": OT Trace (third party) (not supported)
 /// - "none": No automatically configured propagator.

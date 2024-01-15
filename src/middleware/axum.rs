@@ -64,12 +64,11 @@ where
     type Future = ResponseFuture<S::Future>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx).map_err(Into::into)
+        self.inner.poll_ready(cx)
     }
 
     fn call(&mut self, req: Request<B>) -> Self::Future {
         use tracing_opentelemetry::OpenTelemetrySpanExt;
-        let req = req;
         let span = if self.filter.map_or(true, |f| f(req.uri().path())) {
             let span = otel_http::http_server::make_span_from_request(&req);
             let route = http_route(&req);

@@ -24,6 +24,9 @@ pub mod propagation;
 
 pub mod http;
 
+#[cfg(feature = "axum")]
+pub use tracing_opentelemetry_instrumentation_sdk;
+
 #[cfg(feature = "otlp")]
 pub mod otlp;
 
@@ -94,7 +97,8 @@ impl ResourceDetector for ServiceInfoDetector {
             .map(|v| {
                 opentelemetry_semantic_conventions::resource::SERVICE_NAME.string(v)
             });
-        let service_version = std::env::var("SERVICE_VERSION")
+        let service_version = std::env::var("OTEL_SERVICE_VERSION")
+            .or_else(|_| std::env::var("SERVICE_VERSION"))
             .or_else(|_| std::env::var("APP_VERSION"))
             .ok()
             .or_else(|| Some(self.fallback_service_version.to_string()))
@@ -110,17 +114,12 @@ pub fn init_tracing_with_fallbacks(
     fallback_service_name: &'static str,
     fallback_service_version: &'static str,
 ) {
-    // init_tracing_opentelemetry::tracing_subscriber_ext::init_subscribers()?;
     let otel_rsrc =
         DetectResource::new(fallback_service_name, fallback_service_version).build();
     let otel_tracer =
         otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
     init_propagator().expect("setup of propagator");
     let otel_layer = tracing_opentelemetry::layer().with_tracer(otel_tracer);
-
-    opentelemetry::global::set_text_map_propagator(
-        propagation::TextMapSplitPropagator::default(),
-    );
 
     let fmt_layer = tracing_subscriber::fmt::layer()
         .json()
@@ -220,19 +219,9 @@ fn propagator_from_string(
         "b3multi" => Err(TraceError::from(
             "unsupported propagators form env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'"
         )),
-        #[cfg(feature = "jaeger")]
-        "jaeger" => Ok(Some(Box::new(
-            opentelemetry_jaeger::Propagator::default()
-        ))),
-        #[cfg(not(feature = "jaeger"))]
         "jaeger" => Err(TraceError::from(
             "unsupported propagators form env OTEL_PROPAGATORS: 'jaeger', try to enable compile feature 'jaeger'"
         )),
-        #[cfg(feature = "xray")]
-        "xray" => Ok(Some(Box::new(
-            opentelemetry_aws::trace::XrayPropagator::default(),
-        ))),
-        #[cfg(not(feature = "xray"))]
         "xray" => Err(TraceError::from(
             "unsupported propagators form env OTEL_PROPAGATORS: 'xray', try to enable compile feature 'xray'"
         )),

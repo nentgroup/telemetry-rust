@@ -116,8 +116,9 @@ where
                 .pretty()
                 .with_line_number(true)
                 .with_thread_names(true)
+                .with_timer(tracing_subscriber::fmt::time::uptime())
                 .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
-                .with_timer(tracing_subscriber::fmt::time::uptime()),
+                .with_writer(std::io::stdout.with_max_level(log_level)),
         )
     } else {
         Box::new(
@@ -144,7 +145,7 @@ pub fn init_tracing_with_fallbacks(
         propagation::TextMapSplitPropagator::default(),
     );
 
-    let level_filter: LevelFilter = max(log_level, tracing::Level::INFO).into();
+    let level_filter: LevelFilter = max(log_level, tracing::Level::TRACE).into();
     let subscriber = tracing_subscriber::registry()
         .with(level_filter)
         .with(build_logger_text(log_level));

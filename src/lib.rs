@@ -145,19 +145,13 @@ pub fn init_tracing_with_fallbacks(
         propagation::TextMapSplitPropagator::default(),
     );
 
-    let level_filter: LevelFilter = max(log_level, tracing::Level::TRACE).into();
-    let subscriber = tracing_subscriber::registry()
-        .with(level_filter)
-        .with(build_logger_text(log_level));
-    let _guard = tracing::subscriber::set_default(subscriber);
-    tracing::info!("init logging & tracing");
-
+    let level_filter: LevelFilter = max(log_level, log_level).into();
     let otel_layer = tracing_opentelemetry::layer().with_tracer(otel_tracer);
 
     let subscriber = tracing_subscriber::registry()
-        .with(build_logger_text(log_level))
         .with(otel_layer)
-        .with(level_filter);
+        .with(level_filter)
+        .with(build_logger_text(log_level));
     tracing::subscriber::set_global_default(subscriber).unwrap();
 }
 

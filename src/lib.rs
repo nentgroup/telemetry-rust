@@ -6,12 +6,10 @@ use opentelemetry_sdk::{
     resource::{OsResourceDetector, ResourceDetector},
     Resource,
 };
-use std::cmp::max;
 use tracing::Subscriber;
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::{
-    filter::LevelFilter, fmt::format::FmtSpan, layer::SubscriberExt,
-    registry::LookupSpan, Layer,
+    fmt::format::FmtSpan, layer::SubscriberExt, registry::LookupSpan, Layer,
 };
 
 pub mod middleware;
@@ -27,6 +25,8 @@ pub mod otlp;
 
 #[cfg(feature = "integration_test")]
 pub mod test;
+
+mod filter;
 
 #[derive(Debug, Default)]
 pub struct DetectResource {
@@ -145,21 +145,12 @@ pub fn init_tracing_with_fallbacks(
         propagation::TextMapSplitPropagator::default(),
     );
 
-    // set to debug to log detected resources, configuration read and infered
-    let setup_level_filter: LevelFilter = max(log_level, log_level).into();
+    let otel_layer = tracing_opentelemetry::layer()
+        .with_tracer(otel_tracer)
+        .with_filter(filter::OtelFilter::new(log_level));
     let subscriber = tracing_subscriber::registry()
-        .with(setup_level_filter)
-        .with(build_logger_text(log_level));
-    let _guard = tracing::subscriber::set_default(subscriber);
-    tracing::info!("init logging & tracing");
-
-    // `otel::tracing` should be a level info to emit opentelemetry trace & span
-    let otel_level_filter: LevelFilter = max(log_level, tracing::Level::TRACE).into();
-    let otel_layer = tracing_opentelemetry::layer().with_tracer(otel_tracer);
-    let subscriber = tracing_subscriber::registry()
-        .with(otel_layer)
-        .with(otel_level_filter)
-        .with(build_logger_text(log_level));
+        .with(build_logger_text(log_level))
+        .with(otel_layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();
 }
 

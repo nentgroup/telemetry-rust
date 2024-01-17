@@ -10,6 +10,7 @@ use opentelemetry_sdk::{
     trace::{Sampler, Tracer},
     Resource,
 };
+use tracing::Level;
 
 #[must_use]
 pub fn identity(
@@ -85,6 +86,13 @@ fn read_protocol_and_endpoint_from_env() -> (Option<String>, Option<String>) {
         .or_else(|_| std::env::var("OTEL_EXPORTER_OTLP_PROTOCOL"))
         .ok();
     (maybe_protocol, maybe_endpoint)
+}
+pub fn read_log_level_from_env() -> Level {
+    if let Ok(level_str) = std::env::var("OTEL_LOG_LEVEL") {
+        level_str.parse().unwrap_or(Level::INFO)
+    } else {
+        Level::INFO
+    }
 }
 
 /// see <https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/#general-sdk-configuration>

@@ -6,7 +6,7 @@ use opentelemetry_sdk::{
     resource::{OsResourceDetector, ResourceDetector},
     Resource,
 };
-use tracing::{Subscriber, level_filters::LevelFilter};
+use tracing::{level_filters::LevelFilter, Subscriber};
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::{
     fmt::format::FmtSpan, layer::SubscriberExt, registry::LookupSpan, Layer,
@@ -154,7 +154,7 @@ pub fn init_tracing_with_fallbacks(
 
     let otel_layer = tracing_opentelemetry::layer()
         .with_tracer(otel_tracer)
-        .with_filter(filter::OtelFilter::new(log_level));
+        .with_filter(filter::OtelFilter::default());
     let subscriber = tracing_subscriber::registry()
         .with(build_logger_text(log_level))
         .with(otel_layer);

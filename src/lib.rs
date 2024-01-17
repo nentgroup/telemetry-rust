@@ -6,7 +6,7 @@ use opentelemetry_sdk::{
     resource::{OsResourceDetector, ResourceDetector},
     Resource,
 };
-use tracing::Subscriber;
+use tracing::{Subscriber, level_filters::LevelFilter};
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::{
     fmt::format::FmtSpan, layer::SubscriberExt, registry::LookupSpan, Layer,
@@ -136,6 +136,13 @@ pub fn init_tracing_with_fallbacks(
     fallback_service_name: &'static str,
     fallback_service_version: &'static str,
 ) {
+    // set to debug to log detected resources, configuration read and infered
+    let setup_subscriber = tracing_subscriber::registry()
+        .with(Into::<LevelFilter>::into(log_level))
+        .with(build_logger_text(log_level));
+    let _guard = tracing::subscriber::set_default(setup_subscriber);
+    tracing::info!("init logging & tracing");
+
     let otel_rsrc =
         DetectResource::new(fallback_service_name, fallback_service_version).build();
     let otel_tracer =

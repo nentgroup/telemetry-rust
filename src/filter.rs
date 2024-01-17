@@ -1,3 +1,4 @@
+use crate::otlp::read_otel_log_level_from_env;
 use tracing::{subscriber::Interest, Level, Metadata, Subscriber};
 use tracing_subscriber::layer::{Context, Filter};
 
@@ -18,11 +19,12 @@ impl OtelFilter {
 
 impl Default for OtelFilter {
     fn default() -> Self {
-        Self::new(crate::otlp::read_log_level_from_env())
+        Self::new(read_otel_log_level_from_env())
     }
 }
 
 impl<S: Subscriber> Filter<S> for OtelFilter {
+    #[inline]
     fn enabled(&self, meta: &Metadata<'_>, _: &Context<'_, S>) -> bool {
         self._enabled(meta)
     }

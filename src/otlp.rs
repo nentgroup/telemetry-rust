@@ -87,11 +87,12 @@ fn read_protocol_and_endpoint_from_env() -> (Option<String>, Option<String>) {
         .ok();
     (maybe_protocol, maybe_endpoint)
 }
-pub fn read_log_level_from_env() -> Level {
+pub fn read_otel_log_level_from_env() -> Level {
+    let default_log_level = Level::INFO;
     if let Ok(level_str) = std::env::var("OTEL_LOG_LEVEL") {
-        level_str.parse().unwrap_or(Level::INFO)
+        level_str.parse().unwrap_or(default_log_level)
     } else {
-        Level::INFO
+        default_log_level
     }
 }
 

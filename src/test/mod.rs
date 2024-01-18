@@ -1,7 +1,7 @@
 pub mod jaegar;
 
 use http_body_util::BodyExt;
-use hyper::{header::HeaderValue, Error, HeaderMap, Response};
+use hyper::{header::HeaderValue, HeaderMap, Response};
 pub use opentelemetry_api::trace::{SpanId, TraceId};
 use rand::Rng;
 
@@ -22,7 +22,7 @@ impl TracedResponse {
     }
 
     #[cfg(feature = "axum")]
-    pub async fn into_axum_bytes(self) -> Result<axum::body::Bytes, Error> {
+    pub async fn into_axum_bytes(self) -> hyper::Result<axum::body::Bytes> {
         Ok(self.resp.into_body().collect().await?.to_bytes())
     }
 }

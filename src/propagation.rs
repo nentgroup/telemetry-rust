@@ -51,14 +51,10 @@ impl TextMapPropagator for TextMapSplitPropagator {
 impl Default for TextMapSplitPropagator {
     fn default() -> Self {
         let trace_context_propagator = TraceContextPropagator::new();
-        let b3_single_header_propagator =
-            B3Propagator::with_encoding(B3Encoding::SingleHeader);
-        let b3_multi_header_propagator =
-            B3Propagator::with_encoding(B3Encoding::MultipleHeader);
+        let b3_propagator = B3Propagator::with_encoding(B3Encoding::SingleAndMultiHeader);
         let composite_propagator = TextMapCompositePropagator::new(vec![
             Box::new(trace_context_propagator.clone()),
-            Box::new(b3_single_header_propagator),
-            Box::new(b3_multi_header_propagator),
+            Box::new(b3_propagator),
         ]);
 
         Self::new(

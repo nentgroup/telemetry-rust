@@ -45,8 +45,6 @@ where
             .into(),
     };
 
-    // println!("{:?}", OTEL_EXPORTER_OTLP_TRACES_ENDPOINT);
-
     let mut pipeline = opentelemetry_otlp::new_pipeline()
         .tracing()
         .with_exporter(exporter)

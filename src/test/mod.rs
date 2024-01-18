@@ -69,7 +69,7 @@ impl Traceparent {
                 map.append("traceparent", HeaderValue::from_str(&value).unwrap());
             }
             TracingHeaderKind::B3Single => {
-                let value = format!("{}-{}", self.trace_id, self.span_id);
+                let value = format!("{}-{}-1", self.trace_id, self.span_id);
                 map.append("b3", HeaderValue::from_str(&value).unwrap());
             }
             TracingHeaderKind::B3Multi => {
@@ -81,6 +81,7 @@ impl Traceparent {
                     "X-B3-SpanId",
                     HeaderValue::from_str(&self.span_id.to_string()).unwrap(),
                 );
+                map.append("X-B3-Sampled", HeaderValue::from_str("1").unwrap());
             }
         }
 

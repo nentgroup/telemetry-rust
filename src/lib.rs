@@ -174,5 +174,7 @@ macro_rules! init_tracing {
 
 #[inline]
 pub fn shutdown_signal() {
-    opentelemetry::global::shutdown_tracer_provider();
+    std::thread::spawn(opentelemetry::global::shutdown_tracer_provider)
+        .join()
+        .unwrap();
 }

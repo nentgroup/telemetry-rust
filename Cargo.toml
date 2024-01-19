@@ -43,7 +43,7 @@ rstest = "0.18"
 
 [features]
 full = ["integration_test"]
-default = ["otlp", "zipkin", "axum"]
+default = ["otlp", "zipkin"]
 zipkin = ["dep:opentelemetry-zipkin"]
 otlp = ["opentelemetry-otlp/http-proto", "tracer"]
 tracer = ["dep:opentelemetry-semantic-conventions"]

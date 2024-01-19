@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.1
+
+- Correction on shutdown_signal function.
+
 ## v1.0.0
 
 - Lambda support

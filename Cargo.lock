@@ -1519,7 +1519,7 @@ checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
 
 [[package]]
 name = "telemetry-rust"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "assert2",
  "axum 0.7.4",

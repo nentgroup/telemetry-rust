@@ -1,5 +1,17 @@
+// TODO: Write as macro
+//
+// #[instrument_aws(table_name = "profiles", operation = "CreateProfile", method = "Post")]
+// fn create_profiles_in_database() {
+//      info_span_dynamo();
+// }
+
 #[cfg(any(feature = "aws", feature = "aws_dynamo"))]
-pub fn info_span_dynamo(dynamo_client: aws_sdk_dynamodb::model::DynamoClient, table_name: &str, operation: &str, method: &str) -> tracing::Span {
+pub fn info_span_dynamo(
+    dynamo_client: aws_sdk_dynamodb::Client,
+    table_name: &str,
+    operation: &str,
+    method: &str,
+) {
     {
         // Spans will be sent to the configured OpenTelemetry exporter
         // use telemetry_rust::OpenTelemetrySpanExt;
@@ -26,8 +38,11 @@ pub fn info_span_dynamo(dynamo_client: aws_sdk_dynamodb::model::DynamoClient, ta
             span.record("tableName", &table_name);
             span.record("method", &method);
             span.record("service", "AWS::DynamoDB");
-            span.record("cloud.region", region.as_ref() );
+            span.record("cloud.region", region.as_ref());
         }
+        //  else {
+        //     tracing::Span::none()
+        // }
         // span.record("childSpan",  dynamo_client.config().instrument(span!(tracing::Level::INFO, "aws_dynamo")));
     }
 }

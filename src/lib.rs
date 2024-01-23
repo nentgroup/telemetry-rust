@@ -143,10 +143,8 @@ where
 
 pub fn init_tracing_with_fallbacks(
     log_level: tracing::Level,
-    #[cfg(feature = "otlp")]
-    fallback_service_name: &'static str,
-    #[cfg(feature = "otlp")]
-    fallback_service_version: &'static str,
+    #[cfg(feature = "otlp")] fallback_service_name: &'static str,
+    #[cfg(feature = "otlp")] fallback_service_version: &'static str,
 ) {
     // set to debug to log detected resources, configuration read and infered
     let setup_subscriber = tracing_subscriber::registry()
@@ -165,7 +163,9 @@ pub fn init_tracing_with_fallbacks(
 
     #[cfg(feature = "otlp")]
     let otel_layer = tracing_opentelemetry::layer()
-        .with_tracer(otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer"))
+        .with_tracer(
+            otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer"),
+        )
         .with_filter(filter::OtelFilter::default());
 
     #[cfg(feature = "otlp")]
@@ -174,8 +174,7 @@ pub fn init_tracing_with_fallbacks(
         .with(otel_layer);
 
     #[cfg(not(feature = "otlp"))]
-    let subscriber = tracing_subscriber::registry()
-        .with(build_logger_text(log_level));
+    let subscriber = tracing_subscriber::registry().with(build_logger_text(log_level));
 
     tracing::subscriber::set_global_default(subscriber).unwrap();
 }

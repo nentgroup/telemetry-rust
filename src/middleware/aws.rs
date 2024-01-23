@@ -1,7 +1,7 @@
 // TODO: Write as macro
 //
-// #[instrument_aws(table_name = "profiles", operation = "CreateProfile", method = "Post")]
-// fn create_profiles_in_database() {
+// #[instrument_aws(table_name = "cars", operation = "CreateCar", method = "Post")]
+// fn create_car_in_database() {
 //      info_span_dynamo();
 // }
 

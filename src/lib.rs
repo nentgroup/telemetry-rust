@@ -11,11 +11,11 @@ use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::{
     fmt::format::FmtSpan, layer::SubscriberExt, registry::LookupSpan, Layer,
 };
-pub use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 pub mod middleware;
 pub mod propagation;
 
+#[cfg(feature = "otlp")]
 pub mod http;
 
 #[cfg(feature = "axum")]
@@ -27,6 +27,7 @@ pub mod otlp;
 #[cfg(feature = "integration_test")]
 pub mod test;
 
+#[cfg(feature = "otlp")]
 mod filter;
 
 #[derive(Debug, Default)]
@@ -79,11 +80,19 @@ impl DetectResource {
 
 #[derive(Debug)]
 pub struct ServiceInfoDetector {
+    #[allow(unused)]
     fallback_service_name: &'static str,
+    #[allow(unused)]
     fallback_service_version: &'static str,
 }
 
 impl ResourceDetector for ServiceInfoDetector {
+    #[cfg(not(feature = "otlp"))]
+    fn detect(&self, _timeout: std::time::Duration) -> Resource {
+        Resource::default()
+    }
+
+    #[cfg(feature = "otlp")]
     fn detect(&self, _timeout: std::time::Duration) -> Resource {
         let service_name = std::env::var("OTEL_SERVICE_NAME")
             .or_else(|_| std::env::var("SERVICE_NAME"))
@@ -134,7 +143,9 @@ where
 
 pub fn init_tracing_with_fallbacks(
     log_level: tracing::Level,
+    #[cfg(feature = "otlp")]
     fallback_service_name: &'static str,
+    #[cfg(feature = "otlp")]
     fallback_service_version: &'static str,
 ) {
     // set to debug to log detected resources, configuration read and infered
@@ -144,21 +155,28 @@ pub fn init_tracing_with_fallbacks(
     let _guard = tracing::subscriber::set_default(setup_subscriber);
     tracing::info!("init logging & tracing");
 
+    #[cfg(feature = "otlp")]
     let otel_rsrc =
         DetectResource::new(fallback_service_name, fallback_service_version).build();
-    let otel_tracer =
-        otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
 
     opentelemetry::global::set_text_map_propagator(
         propagation::TextMapSplitPropagator::default(),
     );
 
+    #[cfg(feature = "otlp")]
     let otel_layer = tracing_opentelemetry::layer()
-        .with_tracer(otel_tracer)
+        .with_tracer(otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer"))
         .with_filter(filter::OtelFilter::default());
+
+    #[cfg(feature = "otlp")]
     let subscriber = tracing_subscriber::registry()
         .with(build_logger_text(log_level))
         .with(otel_layer);
+
+    #[cfg(not(feature = "otlp"))]
+    let subscriber = tracing_subscriber::registry()
+        .with(build_logger_text(log_level));
+
     tracing::subscriber::set_global_default(subscriber).unwrap();
 }
 

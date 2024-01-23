@@ -5,13 +5,14 @@
 //      info_span_dynamo();
 // }
 
+// Once this scope is closed, all spans inside are closed as well
 #[cfg(any(feature = "aws", feature = "aws_dynamo"))]
 pub fn info_span_dynamo(
     dynamo_client: aws_sdk_dynamodb::Client,
     table_name: &str,
     operation: &str,
     method: &str,
-) {
+) -> tracing::Span {
     {
         // Spans will be sent to the configured OpenTelemetry exporter
         // use telemetry_rust::OpenTelemetrySpanExt;
@@ -32,17 +33,17 @@ pub fn info_span_dynamo(
                 http_client = tracing::field::Empty,
                 // childSpan = tracing::field::Empty,
             );
-            let _guard = span.enter();
+            let _ = span.enter();
             span.record("dynamoDB", &"true");
             span.record("operation", &operation);
             span.record("tableName", &table_name);
             span.record("method", &method);
             span.record("service", "AWS::DynamoDB");
             span.record("cloud.region", region.as_ref());
+            span
+        } else {
+            tracing::Span::none()
         }
-        //  else {
-        //     tracing::Span::none()
-        // }
         // span.record("childSpan",  dynamo_client.config().instrument(span!(tracing::Level::INFO, "aws_dynamo")));
     }
 }

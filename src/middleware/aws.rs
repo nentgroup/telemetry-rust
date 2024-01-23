@@ -8,7 +8,7 @@
 // Once this scope is closed, all spans inside are closed as well
 #[cfg(any(feature = "aws", feature = "aws_dynamo"))]
 pub fn info_span_dynamo(
-    dynamo_client: aws_sdk_dynamodb::Client,
+    dynamo_client: &aws_sdk_dynamodb::Client,
     table_name: &str,
     operation: &str,
     method: &str,

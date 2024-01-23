@@ -11,6 +11,7 @@ use tracing_subscriber::fmt::writer::MakeWriterExt;
 use tracing_subscriber::{
     fmt::format::FmtSpan, layer::SubscriberExt, registry::LookupSpan, Layer,
 };
+pub use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 pub mod middleware;
 pub mod propagation;

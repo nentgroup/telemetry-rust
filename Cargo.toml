@@ -37,6 +37,8 @@ futures-util = { version = "0.3.30", default_features = false, features = [], op
 hyper = { version = "1.1.0", default-features = false, features = ["http1", "client"], optional = true }
 http-body-util = { version = "0.1.0", optional = true }
 aws-sdk-dynamodb = { version = "1.7.0", optional = true }
+aws-sdk-firehose = { version = "1.7.0", optional = true }
+
 
 [dev-dependencies]
 assert2 = "0.3.11"
@@ -50,8 +52,9 @@ otlp = ["opentelemetry-otlp/http-proto", "tracer", "dep:tracing-opentelemetry-in
 tracer = ["dep:opentelemetry-semantic-conventions"]
 integration_test = ["axum", "dep:serde", "dep:serde_json", "dep:opentelemetry_api", "dep:rand", "dep:hyper", "dep:http-body-util"]
 axum = ["dep:axum", "dep:tower", "dep:futures-util", "dep:pin-project-lite", "dep:tracing-opentelemetry-instrumentation-sdk"]
-aws = ["aws-dynamodb"] 
+aws = ["aws-dynamodb", "aws-firehose"] 
 aws-dynamodb = ["dep:aws-sdk-dynamodb"]
+aws-firehose = ["dep:aws-sdk-firehose"]
 
 [profile.dev]
 lto = false

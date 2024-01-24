@@ -27,7 +27,7 @@ pub fn info_span_dynamo(
                 service = tracing::field::Empty,
                 cloud.region = tracing::field::Empty,
                 http_client = tracing::field::Empty,
-                status = tracing::field::Empty,
+                success = false,
             );
             let _ = span.enter();
             span.record("dynamoDB", &"true");
@@ -35,6 +35,42 @@ pub fn info_span_dynamo(
             span.record("tableName", &table_name);
             span.record("method", &method);
             span.record("service", "AWS::DynamoDB");
+            span.record("cloud.region", region.as_ref());
+            span
+        } else {
+            tracing::Span::none()
+        }
+    }
+}
+
+#[cfg(any(feature = "aws", feature = "aws_firehose"))]
+pub fn info_span_firehose(
+    firehose_client: &aws_sdk_firehose::Client,
+    firehose_stream_name: &str,
+    operation: &str,
+    method: &str,
+) -> tracing::Span {
+    {
+        // Spans will be sent to the configured OpenTelemetry exporter
+        // use telemetry_rust::OpenTelemetrySpanExt;
+        let config = firehose_client.config();
+        if let Some(region) = config.region() {
+            let span = tracing::info_span!(
+                "aws_firehose",
+                firehose = tracing::field::Empty,
+                operation = tracing::field::Empty,
+                firehose_stream_name = tracing::field::Empty,
+                method = tracing::field::Empty,
+                service = tracing::field::Empty,
+                cloud.region = tracing::field::Empty,
+                success = false,
+            );
+            let _ = span.enter();
+            span.record("firehose", &"true");
+            span.record("operation", &operation);
+            span.record("firehose_stream_name", &firehose_stream_name);
+            span.record("method", &method);
+            span.record("service", "AWS::Firehose");
             span.record("cloud.region", region.as_ref());
             span
         } else {

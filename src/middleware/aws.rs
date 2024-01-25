@@ -78,3 +78,36 @@ pub fn info_span_firehose(
         }
     }
 }
+
+#[cfg(any(feature = "aws", feature = "aws_sns"))]
+pub fn info_span_sns(
+    sns_client: &aws_sdk_sns::Client,
+    operation: &str,
+    method: &str,
+) -> tracing::Span {
+    {
+        // Spans will be sent to the configured OpenTelemetry exporter
+        // use telemetry_rust::OpenTelemetrySpanExt;
+        let config = sns_client.config();
+        if let Some(region) = config.region() {
+            let span = tracing::info_span!(
+                "aws_sns",
+                sns = tracing::field::Empty,
+                operation = tracing::field::Empty,
+                method = tracing::field::Empty,
+                service = tracing::field::Empty,
+                cloud.region = tracing::field::Empty,
+                success = false,
+            );
+            let _ = span.enter();
+            span.record("SNS", &"true");
+            span.record("operation", &operation);
+            span.record("method", &method);
+            span.record("service", "AWS::SNS");
+            span.record("cloud.region", region.as_ref());
+            span
+        } else {
+            tracing::Span::none()
+        }
+    }
+}

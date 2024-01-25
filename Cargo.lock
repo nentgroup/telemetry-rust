@@ -169,6 +169,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-sdk-sns"
+version = "1.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f91c40154c5b8cca683b90b5d483af43048b03196c571ac23bcb888d720064c"
+dependencies = [
+ "aws-credential-types",
+ "aws-http",
+ "aws-runtime",
+ "aws-smithy-async",
+ "aws-smithy-http",
+ "aws-smithy-json",
+ "aws-smithy-query",
+ "aws-smithy-runtime",
+ "aws-smithy-runtime-api",
+ "aws-smithy-types",
+ "aws-smithy-xml",
+ "aws-types",
+ "http 0.2.11",
+ "once_cell",
+ "regex-lite",
+ "tracing",
+]
+
+[[package]]
 name = "aws-sigv4"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -232,6 +256,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-smithy-query"
+version = "0.60.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bda4b1dfc9810e35fba8a620e900522cd1bd4f9578c446e82f49d1ce41d2e9f9"
+dependencies = [
+ "aws-smithy-types",
+ "urlencoding",
+]
+
+[[package]]
 name = "aws-smithy-runtime"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -273,9 +307,9 @@ dependencies = [
 
 [[package]]
 name = "aws-smithy-types"
-version = "1.1.3"
+version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d4bb944488536cd2fef43212d829bc7e9a8bfc4afa079d21170441e7be8d2d0"
+checksum = "bb3e134004170d3303718baa2a4eb4ca64ee0a1c0a7041dca31b38be0fb414f3"
 dependencies = [
  "base64-simd",
  "bytes",
@@ -292,6 +326,15 @@ dependencies = [
  "time",
  "tokio",
  "tokio-util",
+]
+
+[[package]]
+name = "aws-smithy-xml"
+version = "0.60.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8604a11b25e9ecaf32f9aa56b9fe253c5e2f606a3477f0071e96d3155a5ed218"
+dependencies = [
+ "xmlparser",
 ]
 
 [[package]]
@@ -1983,6 +2026,7 @@ dependencies = [
  "assert2",
  "aws-sdk-dynamodb",
  "aws-sdk-firehose",
+ "aws-sdk-sns",
  "axum 0.7.4",
  "futures-util",
  "http 1.0.0",
@@ -2700,6 +2744,12 @@ dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
 ]
+
+[[package]]
+name = "xmlparser"
+version = "0.13.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66fee0b777b0f5ac1c69bb06d361268faafa61cd4682ae064a171c16c433e9e4"
 
 [[package]]
 name = "yansi"

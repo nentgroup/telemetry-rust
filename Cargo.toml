@@ -46,7 +46,7 @@ assert2 = "0.3.11"
 rstest = "0.18.2"
 
 [features]
-full = ["integration_test"]
+full = ["aws", "integration_test"]
 default = ["otlp", "zipkin"]
 zipkin = ["dep:opentelemetry-zipkin"]
 otlp = ["opentelemetry-otlp/http-proto", "tracer", "dep:tracing-opentelemetry-instrumentation-sdk"]

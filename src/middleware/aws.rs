@@ -1,3 +1,5 @@
+use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
+
 // TODO: Write as macro
 //
 // #[instrument_aws(table_name = "cars", operation = "CreateCar", method = "Post")]
@@ -19,6 +21,7 @@ pub fn info_span_dynamo(
         let config = dynamo_client.config();
         if let Some(region) = config.region() {
             let span = tracing::info_span!(
+                target: TRACING_TARGET,
                 "aws_dynamo",
                 dynamoDB = tracing::field::Empty,
                 operation = tracing::field::Empty,

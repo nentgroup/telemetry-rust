@@ -1,7 +1,7 @@
 use crate::otlp::read_otel_log_level_from_env;
 use tracing::{subscriber::Interest, Level, Metadata, Subscriber};
-use tracing_subscriber::layer::{Context, Filter};
 use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
+use tracing_subscriber::layer::{Context, Filter};
 
 pub struct OtelFilter {
     log_level: Level,

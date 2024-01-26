@@ -12,6 +12,9 @@ use tracing_subscriber::{
     fmt::format::FmtSpan, layer::SubscriberExt, registry::LookupSpan, Layer,
 };
 
+pub use opentelemetry::Context;
+pub use tracing_opentelemetry::OpenTelemetrySpanExt;
+
 pub mod middleware;
 pub mod propagation;
 

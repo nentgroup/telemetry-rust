@@ -53,32 +53,29 @@ pub fn info_span_firehose(
     operation: &str,
     method: &str,
 ) -> tracing::Span {
-    {
-        // Spans will be sent to the configured OpenTelemetry exporter
-        // use telemetry_rust::OpenTelemetrySpanExt;
-        let config = firehose_client.config();
-        if let Some(region) = config.region() {
-            let span = tracing::info_span!(
-                "aws_firehose",
-                firehose = tracing::field::Empty,
-                operation = tracing::field::Empty,
-                firehose_stream_name = tracing::field::Empty,
-                method = tracing::field::Empty,
-                service = tracing::field::Empty,
-                cloud.region = tracing::field::Empty,
-                success = false,
-            );
-            let _ = span.enter();
-            span.record("firehose", &"true");
-            span.record("operation", &operation);
-            span.record("firehose_stream_name", &firehose_stream_name);
-            span.record("method", &method);
-            span.record("service", "AWS::Firehose");
-            span.record("cloud.region", region.as_ref());
-            span
-        } else {
-            tracing::Span::none()
-        }
+    // Spans will be sent to the configured OpenTelemetry exporter
+    // use telemetry_rust::OpenTelemetrySpanExt;
+    let config = firehose_client.config();
+    if let Some(region) = config.region() {
+        let span = tracing::info_span!(
+            "aws_firehose",
+            firehose = tracing::field::Empty,
+            operation = tracing::field::Empty,
+            firehose_stream_name = tracing::field::Empty,
+            method = tracing::field::Empty,
+            service = tracing::field::Empty,
+            cloud.region = tracing::field::Empty,
+            success = false,
+        );
+        span.record("firehose", &"true");
+        span.record("operation", &operation);
+        span.record("firehose_stream_name", &firehose_stream_name);
+        span.record("method", &method);
+        span.record("service", "AWS::Firehose");
+        span.record("cloud.region", region.as_ref());
+        span
+    } else {
+        tracing::Span::none()
     }
 }
 
@@ -88,29 +85,26 @@ pub fn info_span_sns(
     operation: &str,
     method: &str,
 ) -> tracing::Span {
-    {
-        // Spans will be sent to the configured OpenTelemetry exporter
-        // use telemetry_rust::OpenTelemetrySpanExt;
-        let config = sns_client.config();
-        if let Some(region) = config.region() {
-            let span = tracing::info_span!(
-                "aws_sns",
-                sns = tracing::field::Empty,
-                operation = tracing::field::Empty,
-                method = tracing::field::Empty,
-                service = tracing::field::Empty,
-                cloud.region = tracing::field::Empty,
-                success = false,
-            );
-            let _ = span.enter();
-            span.record("SNS", &"true");
-            span.record("operation", &operation);
-            span.record("method", &method);
-            span.record("service", "AWS::SNS");
-            span.record("cloud.region", region.as_ref());
-            span
-        } else {
-            tracing::Span::none()
-        }
+    // Spans will be sent to the configured OpenTelemetry exporter
+    // use telemetry_rust::OpenTelemetrySpanExt;
+    let config = sns_client.config();
+    if let Some(region) = config.region() {
+        let span = tracing::info_span!(
+            "aws_sns",
+            sns = tracing::field::Empty,
+            operation = tracing::field::Empty,
+            method = tracing::field::Empty,
+            service = tracing::field::Empty,
+            cloud.region = tracing::field::Empty,
+            success = false,
+        );
+        span.record("SNS", &"true");
+        span.record("operation", &operation);
+        span.record("method", &method);
+        span.record("service", "AWS::SNS");
+        span.record("cloud.region", region.as_ref());
+        span
+    } else {
+        tracing::Span::none()
     }
 }

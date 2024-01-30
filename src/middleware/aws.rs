@@ -58,6 +58,7 @@ pub fn info_span_firehose(
     let config = firehose_client.config();
     if let Some(region) = config.region() {
         let span = tracing::info_span!(
+            target: TRACING_TARGET,
             "aws_firehose",
             firehose = tracing::field::Empty,
             operation = tracing::field::Empty,
@@ -90,6 +91,7 @@ pub fn info_span_sns(
     let config = sns_client.config();
     if let Some(region) = config.region() {
         let span = tracing::info_span!(
+            target: TRACING_TARGET,
             "aws_sns",
             sns = tracing::field::Empty,
             operation = tracing::field::Empty,

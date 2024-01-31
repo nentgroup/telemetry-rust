@@ -136,6 +136,16 @@ fn infer_protocol_and_endpoint(
     maybe_protocol: Option<&str>,
     maybe_endpoint: Option<&str>,
 ) -> (String, String) {
+    let maybe_protocol = match maybe_protocol {
+        Some("grpc") => Some("grpc"),
+        Some("http") | Some("http/protobuf") => Some("http/protobuf"),
+        Some(other) => {
+            tracing::warn!(target: "otel::setup", "unsupported protocol {other:?}");
+            None
+        }
+        None => None,
+    };
+
     let protocol = maybe_protocol.unwrap_or_else(|| {
         if maybe_endpoint.map_or(false, |e| e.contains(":4317")) {
             "grpc"
@@ -162,6 +172,7 @@ mod tests {
     #[rstest]
     #[case(None, None, "http/protobuf", "http://localhost:4318")] //Devskim: ignore DS137138
     #[case(Some("http/protobuf"), None, "http/protobuf", "http://localhost:4318")] //Devskim: ignore DS137138
+    #[case(Some("http"), None, "http/protobuf", "http://localhost:4318")] //Devskim: ignore DS137138
     #[case(Some("grpc"), None, "grpc", "http://localhost:4317")] //Devskim: ignore DS137138
     #[case(None, Some("http://localhost:4317"), "grpc", "http://localhost:4317")]
     #[case(

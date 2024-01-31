@@ -4,8 +4,7 @@ use opentelemetry::{
 };
 use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 
-
-pub use opentelemetry::{KeyValue, trace::Span};
+pub use opentelemetry::{trace::Span, KeyValue};
 
 // TODO: Write as macro
 //
@@ -30,7 +29,7 @@ pub fn info_span_dynamo(
     let mut span = tracer
         .span_builder("aws_dynamo")
         .with_kind(SpanKind::Client)
-        .start_with_context(&tracer, &parent_context);   
+        .start_with_context(&tracer, &parent_context);
     span.set_attribute(KeyValue::new("dynamoDB", true));
     span.set_attribute(KeyValue::new("operation", operation.to_string()));
     span.set_attribute(KeyValue::new("tableName", table_name.to_string()));

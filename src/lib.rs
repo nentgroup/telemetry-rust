@@ -14,8 +14,8 @@ use tracing_subscriber::{
 
 pub use opentelemetry::{
     global,
-    Context,
     trace::{SpanBuilder, SpanKind, Tracer},
+    Context,
 };
 pub use tracing_opentelemetry::OpenTelemetrySpanExt;
 

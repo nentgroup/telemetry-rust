@@ -5,11 +5,13 @@
 use std::{collections::HashMap, str::FromStr};
 
 use opentelemetry::trace::TraceError;
+use opentelemetry_http::hyper::HyperClient;
 use opentelemetry_otlp::SpanExporterBuilder;
 use opentelemetry_sdk::{
     trace::{Sampler, Tracer},
     Resource,
 };
+use std::time::Duration;
 use tracing::Level;
 
 #[must_use]
@@ -36,6 +38,10 @@ where
     let exporter: SpanExporterBuilder = match protocol.as_str() {
         "http/protobuf" => opentelemetry_otlp::new_exporter()
             .http()
+            .with_http_client(HyperClient::new_with_timeout(
+                hyper::Client::new(),
+                Duration::from_millis(1500), // TODO: make configurable
+            ))
             .with_endpoint(endpoint)
             .with_headers(read_headers_from_env())
             .into(),

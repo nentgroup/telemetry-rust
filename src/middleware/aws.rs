@@ -32,7 +32,6 @@ pub fn info_span_dynamo(
         .with_kind(SpanKind::Client)
         .start_with_context(&tracer, &parent_context);   
     span.set_attribute(KeyValue::new("dynamoDB", true));
-    span.set_attribute(KeyValue::new("target", TRACING_TARGET));
     span.set_attribute(KeyValue::new("operation", operation.to_string()));
     span.set_attribute(KeyValue::new("tableName", table_name.to_string()));
     span.set_attribute(KeyValue::new("method", method.to_string()));

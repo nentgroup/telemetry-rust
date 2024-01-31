@@ -30,14 +30,14 @@ pub fn info_span_dynamo(
         .span_builder("aws_dynamo")
         .with_kind(SpanKind::Client)
         .start_with_context(&tracer, parent_context);
-    span.set_attribute(KeyValue::new("dynamoDB", true));
-    span.set_attribute(KeyValue::new("operation", operation.to_string()));
-    span.set_attribute(KeyValue::new("tableName", table_name.to_string()));
-    span.set_attribute(KeyValue::new("method", method.to_string()));
-    span.set_attribute(KeyValue::new("service", "AWS::DynamoDB"));
+    span.set_attribute(KeyValue::new("aws_dynamoDB", true));
+    span.set_attribute(KeyValue::new("aws_operation", operation.to_string()));
+    span.set_attribute(KeyValue::new("aws_tableName", table_name.to_string()));
+    span.set_attribute(KeyValue::new("aws_method", method.to_string()));
+    span.set_attribute(KeyValue::new("aws_service", "AWS::DynamoDB"));
 
     if let Some(r) = config.region() {
-        span.set_attribute(KeyValue::new("cloud.region", r.to_string()));
+        span.set_attribute(KeyValue::new("Region_val", r.to_string()));
     }
     span
 }

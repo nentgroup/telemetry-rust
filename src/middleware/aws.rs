@@ -1,4 +1,10 @@
+use opentelemetry::{
+    global,
+    trace::{SpanKind, Tracer},
+};
 use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
+
+pub use opentelemetry::{KeyValue, trace::Span};
 
 // TODO: Write as macro
 //
@@ -14,36 +20,29 @@ pub fn info_span_dynamo(
     table_name: &str,
     operation: &str,
     method: &str,
-) -> tracing::Span {
-    {
-        // Spans will be sent to the configured OpenTelemetry exporter
-        // use telemetry_rust::OpenTelemetrySpanExt;
-        let config = dynamo_client.config();
-        if let Some(region) = config.region() {
-            let span = tracing::info_span!(
-                target: TRACING_TARGET,
-                "aws_dynamo",
-                dynamoDB = tracing::field::Empty,
-                operation = tracing::field::Empty,
-                tableName = tracing::field::Empty,
-                method = tracing::field::Empty,
-                service = tracing::field::Empty,
-                cloud.region = tracing::field::Empty,
-                http_client = tracing::field::Empty,
-                success = false,
-            );
-            let _ = span.enter();
-            span.record("dynamoDB", &"true");
-            span.record("operation", &operation);
-            span.record("tableName", &table_name);
-            span.record("method", &method);
-            span.record("service", "AWS::DynamoDB");
-            span.record("cloud.region", region.as_ref());
-            span
-        } else {
-            tracing::Span::none()
-        }
+) -> opentelemetry::global::BoxedSpan {
+    // Spans will be sent to the configured OpenTelemetry exporter
+    // use telemetry_rust::OpenTelemetrySpanExt;
+    let config = dynamo_client.config();
+
+    let tracer = global::tracer("aws_sdk");
+    let mut span = tracer
+        .span_builder("aws_dynamo")
+        .with_kind(SpanKind::Client)
+        .start(&tracer);
+
+    span.set_attribute(KeyValue::new("dynamoDB", true));
+    span.set_attribute(KeyValue::new("target", TRACING_TARGET));
+    span.set_attribute(KeyValue::new("operation", operation.to_string()));
+    span.set_attribute(KeyValue::new("tableName", table_name.to_string()));
+    span.set_attribute(KeyValue::new("method", method.to_string()));
+    span.set_attribute(KeyValue::new("service", "AWS::DynamoDB"));
+
+    if let Some(r) = config.region() {
+        span.set_attribute(KeyValue::new("cloud.region", r.to_string()));
     }
+    span.set_attribute(KeyValue::new("success", false));
+    span
 }
 
 #[cfg(any(feature = "aws", feature = "aws_firehose"))]
@@ -66,7 +65,7 @@ pub fn info_span_firehose(
             method = tracing::field::Empty,
             service = tracing::field::Empty,
             cloud.region = tracing::field::Empty,
-            success = false,
+            success = tracing::field::Empty,
         );
         span.record("firehose", &"true");
         span.record("operation", &operation);
@@ -98,7 +97,7 @@ pub fn info_span_sns(
             method = tracing::field::Empty,
             service = tracing::field::Empty,
             cloud.region = tracing::field::Empty,
-            success = false,
+            success = tracing::field::Empty,
         );
         span.record("SNS", &"true");
         span.record("operation", &operation);

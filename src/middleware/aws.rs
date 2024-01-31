@@ -29,7 +29,7 @@ pub fn info_span_dynamo(
     let mut span = tracer
         .span_builder("aws_dynamo")
         .with_kind(SpanKind::Client)
-        .start_with_context(&tracer, &parent_context);
+        .start_with_context(&tracer, parent_context);
     span.set_attribute(KeyValue::new("dynamoDB", true));
     span.set_attribute(KeyValue::new("operation", operation.to_string()));
     span.set_attribute(KeyValue::new("tableName", table_name.to_string()));
@@ -64,10 +64,10 @@ pub fn info_span_firehose(
             cloud.region = tracing::field::Empty,
             success = tracing::field::Empty,
         );
-        span.record("firehose", &"true");
-        span.record("operation", &operation);
-        span.record("firehose_stream_name", &firehose_stream_name);
-        span.record("method", &method);
+        span.record("firehose", "true");
+        span.record("operation", operation);
+        span.record("firehose_stream_name", firehose_stream_name);
+        span.record("method", method);
         span.record("service", "AWS::Firehose");
         span.record("cloud.region", region.as_ref());
         span
@@ -96,9 +96,9 @@ pub fn info_span_sns(
             cloud.region = tracing::field::Empty,
             success = tracing::field::Empty,
         );
-        span.record("SNS", &"true");
-        span.record("operation", &operation);
-        span.record("method", &method);
+        span.record("SNS", "true");
+        span.record("operation", operation);
+        span.record("method", method);
         span.record("service", "AWS::SNS");
         span.record("cloud.region", region.as_ref());
         span

@@ -4,6 +4,7 @@ use opentelemetry::{
 };
 use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 
+
 pub use opentelemetry::{KeyValue, trace::Span};
 
 // TODO: Write as macro
@@ -20,17 +21,16 @@ pub fn info_span_dynamo(
     table_name: &str,
     operation: &str,
     method: &str,
+    parent_context: &opentelemetry::Context,
 ) -> opentelemetry::global::BoxedSpan {
     // Spans will be sent to the configured OpenTelemetry exporter
-    // use telemetry_rust::OpenTelemetrySpanExt;
     let config = dynamo_client.config();
 
     let tracer = global::tracer("aws_sdk");
     let mut span = tracer
         .span_builder("aws_dynamo")
         .with_kind(SpanKind::Client)
-        .start(&tracer);
-
+        .start_with_context(&tracer, &parent_context);   
     span.set_attribute(KeyValue::new("dynamoDB", true));
     span.set_attribute(KeyValue::new("target", TRACING_TARGET));
     span.set_attribute(KeyValue::new("operation", operation.to_string()));
@@ -41,7 +41,6 @@ pub fn info_span_dynamo(
     if let Some(r) = config.region() {
         span.set_attribute(KeyValue::new("cloud.region", r.to_string()));
     }
-    span.set_attribute(KeyValue::new("success", false));
     span
 }
 

@@ -44,8 +44,10 @@ where
     use opentelemetry_otlp::WithExportConfig;
 
     let (maybe_protocol, maybe_endpoint) = read_protocol_and_endpoint_from_env();
-    let (protocol, endpoint) =
-        infer_protocol_and_endpoint(maybe_protocol.as_deref(), maybe_endpoint.as_deref());
+    let (protocol, endpoint) = infer_protocol_and_endpoint(
+        maybe_protocol.as_deref(),
+        maybe_endpoint.as_deref(),
+    )?;
     tracing::debug!(target: "otel::setup", OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = endpoint);
     tracing::debug!(target: "otel::setup", OTEL_EXPORTER_OTLP_TRACES_PROTOCOL = protocol.to_string());
     let exporter: SpanExporterBuilder = match protocol {
@@ -154,31 +156,30 @@ where
 fn infer_protocol_and_endpoint(
     maybe_protocol: Option<&str>,
     maybe_endpoint: Option<&str>,
-) -> (Protocol, String) {
+) -> Result<(Protocol, String), TraceError> {
     let protocol = match maybe_protocol {
-        Some("grpc") => Some(Protocol::Grpc),
-        Some("http") | Some("http/protobuf") => Some(Protocol::HttpProtobuf),
+        Some("grpc") => Protocol::Grpc,
+        Some("http") | Some("http/protobuf") => Protocol::HttpProtobuf,
         Some(other) => {
-            tracing::warn!(target: "otel::setup", "unsupported protocol {other:?}");
-            None
+            return Err(TraceError::from(format!(
+                "unsupported protocol {other:?} form env"
+            )))
         }
-        None => None,
+        None => {
+            if maybe_endpoint.map_or(false, |e| e.contains(":4317")) {
+                Protocol::Grpc
+            } else {
+                Protocol::HttpProtobuf
+            }
+        }
     };
-
-    let protocol = protocol.unwrap_or_else(|| {
-        if maybe_endpoint.map_or(false, |e| e.contains(":4317")) {
-            Protocol::Grpc
-        } else {
-            Protocol::HttpProtobuf
-        }
-    });
 
     let endpoint = match protocol {
         Protocol::HttpProtobuf => maybe_endpoint.unwrap_or("http://localhost:4318"), //Devskim: ignore DS137138
         Protocol::Grpc => maybe_endpoint.unwrap_or("http://localhost:4317"), //Devskim: ignore DS137138
     };
 
-    (protocol, endpoint.to_string())
+    Ok((protocol, endpoint.to_owned()))
 }
 
 #[cfg(test)]
@@ -220,7 +221,7 @@ mod tests {
         #[case] expected_endpoint: &str,
     ) {
         assert!(
-            infer_protocol_and_endpoint(traces_protocol, traces_endpoint)
+            infer_protocol_and_endpoint(traces_protocol, traces_endpoint).unwrap()
                 == (expected_protocol, expected_endpoint.to_string())
         );
     }

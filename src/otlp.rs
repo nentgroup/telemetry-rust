@@ -35,8 +35,8 @@ where
         maybe_protocol.as_deref(),
         maybe_endpoint.as_deref(),
     )?;
-    tracing::debug!(target: "otel::setup", OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = endpoint);
-    tracing::debug!(target: "otel::setup", OTEL_EXPORTER_OTLP_TRACES_PROTOCOL = format!("{protocol:?}"));
+    tracing::debug!(target: "otel::setup", exporter_endpoint = endpoint);
+    tracing::debug!(target: "otel::setup", exporter_protocol = format!("{protocol:?}"));
     let exporter: SpanExporterBuilder = match protocol {
         Protocol::HttpBinary => opentelemetry_otlp::new_exporter()
             .http()

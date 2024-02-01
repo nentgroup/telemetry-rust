@@ -6,26 +6,13 @@ use std::{collections::HashMap, str::FromStr};
 
 use opentelemetry::trace::TraceError;
 use opentelemetry_http::hyper::HyperClient;
-use opentelemetry_otlp::SpanExporterBuilder;
+use opentelemetry_otlp::{Protocol, SpanExporterBuilder};
 use opentelemetry_sdk::{
     trace::{Sampler, Tracer},
     Resource,
 };
 use std::time::Duration;
 use tracing::Level;
-
-#[derive(Default, Debug, PartialEq)]
-pub enum Protocol {
-    #[default]
-    Grpc,
-    HttpProtobuf,
-}
-
-impl std::fmt::Display for Protocol {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        std::fmt::Debug::fmt(self, f)
-    }
-}
 
 #[must_use]
 pub fn identity(
@@ -49,9 +36,9 @@ where
         maybe_endpoint.as_deref(),
     )?;
     tracing::debug!(target: "otel::setup", OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = endpoint);
-    tracing::debug!(target: "otel::setup", OTEL_EXPORTER_OTLP_TRACES_PROTOCOL = protocol.to_string());
+    tracing::debug!(target: "otel::setup", OTEL_EXPORTER_OTLP_TRACES_PROTOCOL = format!("{protocol:?}"));
     let exporter: SpanExporterBuilder = match protocol {
-        Protocol::HttpProtobuf => opentelemetry_otlp::new_exporter()
+        Protocol::HttpBinary => opentelemetry_otlp::new_exporter()
             .http()
             .with_http_client(HyperClient::new_with_timeout(
                 hyper::Client::new(),
@@ -159,7 +146,7 @@ fn infer_protocol_and_endpoint(
 ) -> Result<(Protocol, String), TraceError> {
     let protocol = match maybe_protocol {
         Some("grpc") => Protocol::Grpc,
-        Some("http") | Some("http/protobuf") => Protocol::HttpProtobuf,
+        Some("http") | Some("http/protobuf") => Protocol::HttpBinary,
         Some(other) => {
             return Err(TraceError::from(format!(
                 "unsupported protocol {other:?} form env"
@@ -169,13 +156,13 @@ fn infer_protocol_and_endpoint(
             if maybe_endpoint.map_or(false, |e| e.contains(":4317")) {
                 Protocol::Grpc
             } else {
-                Protocol::HttpProtobuf
+                Protocol::HttpBinary
             }
         }
     };
 
     let endpoint = match protocol {
-        Protocol::HttpProtobuf => maybe_endpoint.unwrap_or("http://localhost:4318"), //Devskim: ignore DS137138
+        Protocol::HttpBinary => maybe_endpoint.unwrap_or("http://localhost:4318"), //Devskim: ignore DS137138
         Protocol::Grpc => maybe_endpoint.unwrap_or("http://localhost:4317"), //Devskim: ignore DS137138
     };
 
@@ -191,27 +178,27 @@ mod tests {
     use Protocol::*;
 
     #[rstest]
-    #[case(None, None, HttpProtobuf, "http://localhost:4318")] //Devskim: ignore DS137138
-    #[case(Some("http/protobuf"), None, HttpProtobuf, "http://localhost:4318")] //Devskim: ignore DS137138
-    #[case(Some("http"), None, HttpProtobuf, "http://localhost:4318")] //Devskim: ignore DS137138
+    #[case(None, None, HttpBinary, "http://localhost:4318")] //Devskim: ignore DS137138
+    #[case(Some("http/protobuf"), None, HttpBinary, "http://localhost:4318")] //Devskim: ignore DS137138
+    #[case(Some("http"), None, HttpBinary, "http://localhost:4318")] //Devskim: ignore DS137138
     #[case(Some("grpc"), None, Grpc, "http://localhost:4317")] //Devskim: ignore DS137138
     #[case(None, Some("http://localhost:4317"), Grpc, "http://localhost:4317")]
     #[case(
         Some("http/protobuf"),
         Some("http://localhost:4318"), //Devskim: ignore DS137138
-        HttpProtobuf,
+        HttpBinary,
         "http://localhost:4318" //Devskim: ignore DS137138
     )]
     #[case(
         Some("http/protobuf"),
         Some("https://examples.com:4318"),
-        HttpProtobuf,
+        HttpBinary,
         "https://examples.com:4318"
     )]
     #[case(
         Some("http/protobuf"),
         Some("https://examples.com:4317"),
-        HttpProtobuf,
+        HttpBinary,
         "https://examples.com:4317"
     )]
     fn test_infer_protocol_and_endpoint(

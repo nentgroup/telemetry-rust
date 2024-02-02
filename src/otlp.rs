@@ -5,11 +5,13 @@
 use std::{collections::HashMap, str::FromStr};
 
 use opentelemetry::trace::TraceError;
-use opentelemetry_otlp::SpanExporterBuilder;
+use opentelemetry_http::hyper::HyperClient;
+use opentelemetry_otlp::{ExportConfig, Protocol, SpanExporterBuilder};
 use opentelemetry_sdk::{
     trace::{Sampler, Tracer},
     Resource,
 };
+use std::time::Duration;
 use tracing::Level;
 
 #[must_use]
@@ -28,20 +30,26 @@ where
 {
     use opentelemetry_otlp::WithExportConfig;
 
-    let (maybe_protocol, maybe_endpoint) = read_protocol_and_endpoint_from_env();
-    let (protocol, endpoint) =
-        infer_protocol_and_endpoint(maybe_protocol.as_deref(), maybe_endpoint.as_deref());
-    tracing::debug!(target: "otel::setup", OTEL_EXPORTER_OTLP_TRACES_ENDPOINT = endpoint);
-    tracing::debug!(target: "otel::setup", OTEL_EXPORTER_OTLP_TRACES_PROTOCOL = protocol);
-    let exporter: SpanExporterBuilder = match protocol.as_str() {
-        "http/protobuf" => opentelemetry_otlp::new_exporter()
+    let (maybe_protocol, maybe_endpoint, maybe_timeout) = read_export_config_from_env();
+    let export_config = infer_export_config(
+        maybe_protocol.as_deref(),
+        maybe_endpoint.as_deref(),
+        maybe_timeout.as_deref(),
+    )?;
+    tracing::debug!(target: "otel::setup", export_config = format!("{export_config:?}"));
+    let exporter: SpanExporterBuilder = match export_config.protocol {
+        Protocol::HttpBinary => opentelemetry_otlp::new_exporter()
             .http()
-            .with_endpoint(endpoint)
+            .with_http_client(HyperClient::new_with_timeout(
+                hyper::Client::new(),
+                export_config.timeout,
+            ))
             .with_headers(read_headers_from_env())
+            .with_export_config(export_config)
             .into(),
-        _ => opentelemetry_otlp::new_exporter()
+        Protocol::Grpc => opentelemetry_otlp::new_exporter()
             .tonic()
-            .with_endpoint(endpoint)
+            .with_export_config(export_config)
             .into(),
     };
 
@@ -76,14 +84,17 @@ fn read_headers_from_env() -> HashMap<String, String> {
     ));
     headers
 }
-fn read_protocol_and_endpoint_from_env() -> (Option<String>, Option<String>) {
+fn read_export_config_from_env() -> (Option<String>, Option<String>, Option<String>) {
     let maybe_endpoint = std::env::var("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
         .or_else(|_| std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT"))
         .ok();
     let maybe_protocol = std::env::var("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL")
         .or_else(|_| std::env::var("OTEL_EXPORTER_OTLP_PROTOCOL"))
         .ok();
-    (maybe_protocol, maybe_endpoint)
+    let maybe_timeout = std::env::var("OTEL_EXPORTER_OTLP_TRACES_TIMEOUT")
+        .or_else(|_| std::env::var("OTEL_EXPORTER_OTLP_TIMEOUT"))
+        .ok();
+    (maybe_protocol, maybe_endpoint, maybe_timeout)
 }
 pub fn read_otel_log_level_from_env() -> Level {
     let default_log_level = Level::INFO;
@@ -132,24 +143,44 @@ where
     v
 }
 
-fn infer_protocol_and_endpoint(
+fn infer_export_config(
     maybe_protocol: Option<&str>,
     maybe_endpoint: Option<&str>,
-) -> (String, String) {
-    let protocol = maybe_protocol.unwrap_or_else(|| {
-        if maybe_endpoint.map_or(false, |e| e.contains(":4317")) {
-            "grpc"
-        } else {
-            "http/protobuf"
+    maybe_timeout: Option<&str>,
+) -> Result<ExportConfig, TraceError> {
+    let protocol = match maybe_protocol {
+        Some("grpc") => Protocol::Grpc,
+        Some("http") | Some("http/protobuf") => Protocol::HttpBinary,
+        Some(other) => {
+            return Err(TraceError::from(format!(
+                "unsupported protocol {other:?} form env"
+            )))
         }
-    });
-
-    let endpoint = match protocol {
-        "http/protobuf" => maybe_endpoint.unwrap_or("http://localhost:4318"), //Devskim: ignore DS137138
-        _ => maybe_endpoint.unwrap_or("http://localhost:4317"), //Devskim: ignore DS137138
+        None => match maybe_endpoint {
+            Some(e) if e.contains(":4317") => Protocol::Grpc,
+            _ => Protocol::HttpBinary,
+        },
     };
 
-    (protocol.to_string(), endpoint.to_string())
+    let endpoint = match protocol {
+        Protocol::HttpBinary => maybe_endpoint.unwrap_or("http://localhost:4318"),
+        Protocol::Grpc => maybe_endpoint.unwrap_or("http://localhost:4317"),
+    };
+
+    let timeout = match maybe_timeout {
+        Some(millis) => Duration::from_millis(millis.parse::<u64>().map_err(|err| {
+            TraceError::from(format!("invalid timeout {millis:?} form env: {err}"))
+        })?),
+        None => {
+            Duration::from_secs(opentelemetry_otlp::OTEL_EXPORTER_OTLP_TIMEOUT_DEFAULT)
+        }
+    };
+
+    Ok(ExportConfig {
+        endpoint: endpoint.to_owned(),
+        protocol,
+        timeout,
+    })
 }
 
 #[cfg(test)]
@@ -158,39 +189,72 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
+    use Protocol::*;
+
+    const TIMEOUT: Duration =
+        Duration::from_secs(opentelemetry_otlp::OTEL_EXPORTER_OTLP_TIMEOUT_DEFAULT);
 
     #[rstest]
-    #[case(None, None, "http/protobuf", "http://localhost:4318")] //Devskim: ignore DS137138
-    #[case(Some("http/protobuf"), None, "http/protobuf", "http://localhost:4318")] //Devskim: ignore DS137138
-    #[case(Some("grpc"), None, "grpc", "http://localhost:4317")] //Devskim: ignore DS137138
-    #[case(None, Some("http://localhost:4317"), "grpc", "http://localhost:4317")]
+    #[case(None, None, None, HttpBinary, "http://localhost:4318", TIMEOUT)]
     #[case(
         Some("http/protobuf"),
-        Some("http://localhost:4318"), //Devskim: ignore DS137138
-        "http/protobuf",
-        "http://localhost:4318" //Devskim: ignore DS137138
+        None,
+        None,
+        HttpBinary,
+        "http://localhost:4318",
+        TIMEOUT
+    )]
+    #[case(Some("http"), None, None, HttpBinary, "http://localhost:4318", TIMEOUT)]
+    #[case(Some("grpc"), None, None, Grpc, "http://localhost:4317", TIMEOUT)]
+    #[case(
+        None,
+        Some("http://localhost:4317"),
+        None,
+        Grpc,
+        "http://localhost:4317",
+        TIMEOUT
+    )]
+    #[case(
+        Some("http/protobuf"),
+        Some("http://localhost:4318"),
+        None,
+        HttpBinary,
+        "http://localhost:4318",
+        TIMEOUT
     )]
     #[case(
         Some("http/protobuf"),
         Some("https://examples.com:4318"),
-        "http/protobuf",
-        "https://examples.com:4318"
+        None,
+        HttpBinary,
+        "https://examples.com:4318",
+        TIMEOUT
     )]
     #[case(
         Some("http/protobuf"),
         Some("https://examples.com:4317"),
-        "http/protobuf",
-        "https://examples.com:4317"
+        Some("12345"),
+        HttpBinary,
+        "https://examples.com:4317",
+        Duration::from_millis(12345)
     )]
-    fn test_infer_protocol_and_endpoint(
+    fn test_infer_export_config(
         #[case] traces_protocol: Option<&str>,
         #[case] traces_endpoint: Option<&str>,
-        #[case] expected_protocol: &str,
+        #[case] traces_timeout: Option<&str>,
+        #[case] expected_protocol: Protocol,
         #[case] expected_endpoint: &str,
+        #[case] expected_timeout: Duration,
     ) {
-        assert!(
-            infer_protocol_and_endpoint(traces_protocol, traces_endpoint)
-                == (expected_protocol.to_string(), expected_endpoint.to_string())
-        );
+        let ExportConfig {
+            protocol,
+            endpoint,
+            timeout,
+        } = infer_export_config(traces_protocol, traces_endpoint, traces_timeout)
+            .unwrap();
+
+        assert!(protocol == expected_protocol);
+        assert!(endpoint == expected_endpoint);
+        assert!(timeout == expected_timeout);
     }
 }

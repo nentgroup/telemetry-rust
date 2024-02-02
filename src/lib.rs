@@ -23,7 +23,7 @@ pub use tracing_opentelemetry_instrumentation_sdk;
 #[cfg(feature = "otlp")]
 pub mod otlp;
 
-#[cfg(feature = "integration_test")]
+#[cfg(feature = "test")]
 pub mod test;
 
 mod filter;

@@ -27,6 +27,7 @@ pub mod otlp;
 pub mod test;
 
 mod filter;
+mod util;
 
 #[derive(Debug, Default)]
 pub struct DetectResource {
@@ -84,18 +85,16 @@ pub struct ServiceInfoDetector {
 
 impl ResourceDetector for ServiceInfoDetector {
     fn detect(&self, _timeout: std::time::Duration) -> Resource {
-        let service_name = std::env::var("OTEL_SERVICE_NAME")
-            .or_else(|_| std::env::var("SERVICE_NAME"))
-            .or_else(|_| std::env::var("APP_NAME"))
-            .ok()
+        let service_name = util::env_var("OTEL_SERVICE_NAME")
+            .or_else(|| util::env_var("SERVICE_NAME"))
+            .or_else(|| util::env_var("APP_NAME"))
             .or_else(|| Some(self.fallback_service_name.to_string()))
             .map(|v| {
                 opentelemetry_semantic_conventions::resource::SERVICE_NAME.string(v)
             });
-        let service_version = std::env::var("OTEL_SERVICE_VERSION")
-            .or_else(|_| std::env::var("SERVICE_VERSION"))
-            .or_else(|_| std::env::var("APP_VERSION"))
-            .ok()
+        let service_version = util::env_var("OTEL_SERVICE_VERSION")
+            .or_else(|| util::env_var("SERVICE_VERSION"))
+            .or_else(|| util::env_var("APP_VERSION"))
             .or_else(|| Some(self.fallback_service_version.to_string()))
             .map(|v| {
                 opentelemetry_semantic_conventions::resource::SERVICE_VERSION.string(v)

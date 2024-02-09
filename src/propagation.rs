@@ -63,6 +63,7 @@ impl TextMapSplitPropagator {
             .map(|s| s.trim().to_lowercase())
             .filter(|s| !s.is_empty())
             .collect();
+        tracing::debug!(target: "otel::setup", propagators = propagators.join(","));
 
         let inject_propagator = if let Some(name) = propagators.first() {
             propagator_from_string(name)?

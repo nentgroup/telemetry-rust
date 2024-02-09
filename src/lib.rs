@@ -148,7 +148,7 @@ pub fn init_tracing_with_fallbacks(
         otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
 
     opentelemetry::global::set_text_map_propagator(
-        propagation::TextMapSplitPropagator::default(),
+        propagation::TextMapSplitPropagator::from_env().expect("setup of Propagation"),
     );
 
     let otel_layer = tracing_opentelemetry::layer()

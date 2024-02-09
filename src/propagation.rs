@@ -11,18 +11,17 @@ use opentelemetry_sdk::propagation::{
 use opentelemetry_zipkin::{B3Encoding, Propagator as B3Propagator};
 use std::collections::BTreeSet;
 
+pub type Propagator = Box<dyn TextMapPropagator + Send + Sync>;
+
 #[derive(Debug)]
 pub struct TextMapSplitPropagator {
-    extract_propagator: Box<dyn TextMapPropagator + Send + Sync>,
-    inject_propagator: Box<dyn TextMapPropagator + Send + Sync>,
+    extract_propagator: Propagator,
+    inject_propagator: Propagator,
     fields: Vec<String>,
 }
 
 impl TextMapSplitPropagator {
-    pub fn new(
-        extract_propagator: Box<dyn TextMapPropagator + Send + Sync>,
-        inject_propagator: Box<dyn TextMapPropagator + Send + Sync>,
-    ) -> Self {
+    pub fn new(extract_propagator: Propagator, inject_propagator: Propagator) -> Self {
         let mut fields = BTreeSet::from_iter(extract_propagator.fields());
         fields.extend(inject_propagator.fields());
         let fields = fields.into_iter().map(String::from).collect();

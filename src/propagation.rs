@@ -7,6 +7,7 @@ use opentelemetry::{
 use opentelemetry_sdk::propagation::{
     TextMapCompositePropagator, TraceContextPropagator,
 };
+#[cfg(feature = "zipkin")]
 use opentelemetry_zipkin::{B3Encoding, Propagator as B3Propagator};
 use std::collections::BTreeSet;
 
@@ -51,9 +52,11 @@ impl TextMapPropagator for TextMapSplitPropagator {
 impl Default for TextMapSplitPropagator {
     fn default() -> Self {
         let trace_context_propagator = TraceContextPropagator::new();
+        #[cfg(feature = "zipkin")]
         let b3_propagator = B3Propagator::with_encoding(B3Encoding::SingleAndMultiHeader);
         let composite_propagator = TextMapCompositePropagator::new(vec![
             Box::new(trace_context_propagator.clone()),
+            #[cfg(feature = "zipkin")]
             Box::new(b3_propagator),
         ]);
 

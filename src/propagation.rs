@@ -65,18 +65,16 @@ impl TextMapSplitPropagator {
             .collect();
         tracing::info!(target: "otel::setup", propagators = propagators.join(","));
 
-        let inject_propagator = if let Some(name) = propagators.first() {
-            propagator_from_string(name)?
-        } else {
-            Box::new(NonePropagator)
+        let inject_propagator = match propagators.first() {
+            Some(s) => propagator_from_string(s)?,
+            None => Box::new(NonePropagator),
         };
-        let extract_propagators: Vec<Propagator> = propagators
-            .into_iter()
-            .map(|s| propagator_from_string(&s.trim().to_lowercase()))
+        let propagators = propagators
+            .iter()
+            .map(|s| propagator_from_string(s))
             .collect::<Result<Vec<_>, _>>()?;
+        let extract_propagator = Box::new(TextMapCompositePropagator::new(propagators));
 
-        let extract_propagator =
-            Box::new(TextMapCompositePropagator::new(extract_propagators));
         Ok(Self::new(extract_propagator, inject_propagator))
     }
 }
@@ -97,19 +95,18 @@ impl TextMapPropagator for TextMapSplitPropagator {
 
 impl Default for TextMapSplitPropagator {
     fn default() -> Self {
-        let trace_context_propagator = TraceContextPropagator::new();
+        let trace_context_propagator = Box::new(TraceContextPropagator::new());
         #[cfg(feature = "zipkin")]
-        let b3_propagator = B3Propagator::with_encoding(B3Encoding::SingleAndMultiHeader);
-        let composite_propagator = TextMapCompositePropagator::new(vec![
-            Box::new(trace_context_propagator.clone()),
+        let b3_propagator = Box::new(B3Propagator::with_encoding(
+            B3Encoding::SingleAndMultiHeader,
+        ));
+        let composite_propagator = Box::new(TextMapCompositePropagator::new(vec![
+            trace_context_propagator.clone(),
             #[cfg(feature = "zipkin")]
-            Box::new(b3_propagator),
-        ]);
+            b3_propagator,
+        ]));
 
-        Self::new(
-            Box::new(composite_propagator),
-            Box::new(trace_context_propagator),
-        )
+        Self::new(composite_propagator, trace_context_propagator)
     }
 }
 

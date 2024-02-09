@@ -63,7 +63,7 @@ impl TextMapSplitPropagator {
             .map(|s| s.trim().to_lowercase())
             .filter(|s| !s.is_empty())
             .collect();
-        tracing::debug!(target: "otel::setup", propagators = propagators.join(","));
+        tracing::info!(target: "otel::setup", propagators = propagators.join(","));
 
         let inject_propagator = if let Some(name) = propagators.first() {
             propagator_from_string(name)?
@@ -117,19 +117,23 @@ fn propagator_from_string(v: &str) -> Result<Propagator, TraceError> {
     match v.trim() {
         "tracecontext" => Ok(Box::new(TraceContextPropagator::new())),
         "baggage" => Ok(Box::new(BaggagePropagator::new())),
+        "none" => Ok(Box::new(NonePropagator)),
         #[cfg(feature = "zipkin")]
-        "b3" => Ok(Box::new(B3Propagator::with_encoding(B3Encoding::SingleHeader))),
+        "b3" => Ok(Box::new(B3Propagator::with_encoding(
+            B3Encoding::SingleHeader,
+        ))),
         #[cfg(not(feature = "zipkin"))]
         "b3" => Err(TraceError::from(
             "unsupported propagator form env OTEL_PROPAGATORS: 'b3', try to enable compile feature 'zipkin'"
         )),
         #[cfg(feature = "zipkin")]
-        "b3multi" => Ok(Box::new(B3Propagator::with_encoding(B3Encoding::MultipleHeader))),
+        "b3multi" => Ok(Box::new(B3Propagator::with_encoding(
+            B3Encoding::MultipleHeader,
+        ))),
         #[cfg(not(feature = "zipkin"))]
         "b3multi" => Err(TraceError::from(
             "unsupported propagator form env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'"
         )),
-        "none" => Ok(Box::new(NonePropagator)),
         unknown => Err(TraceError::from(format!(
             "unsupported propagator form env OTEL_PROPAGATORS: {unknown:?}"
         ))),

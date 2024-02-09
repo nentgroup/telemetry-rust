@@ -3,7 +3,7 @@
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
 use opentelemetry_sdk::{
-    resource::{OsResourceDetector, ResourceDetector},
+    resource::{EnvResourceDetector, OsResourceDetector, ResourceDetector},
     Resource,
 };
 use tracing::{level_filters::LevelFilter, Subscriber};
@@ -63,7 +63,7 @@ impl DetectResource {
                     fallback_service_version: self.fallback_service_version,
                 }),
                 Box::new(OsResourceDetector),
-                //Box::new(ProcessResourceDetector),
+                Box::new(EnvResourceDetector::new()),
             ],
         );
         let rsrc = base.merge(&fallback); // base has lower priority

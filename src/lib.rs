@@ -3,7 +3,7 @@
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
 use opentelemetry_sdk::{
-    resource::{OsResourceDetector, ResourceDetector},
+    resource::{EnvResourceDetector, OsResourceDetector, ResourceDetector},
     Resource,
 };
 use tracing::{level_filters::LevelFilter, Subscriber};
@@ -27,6 +27,7 @@ pub mod otlp;
 pub mod test;
 
 mod filter;
+mod util;
 
 #[derive(Debug, Default)]
 pub struct DetectResource {
@@ -62,7 +63,7 @@ impl DetectResource {
                     fallback_service_version: self.fallback_service_version,
                 }),
                 Box::new(OsResourceDetector),
-                //Box::new(ProcessResourceDetector),
+                Box::new(EnvResourceDetector::new()),
             ],
         );
         let rsrc = base.merge(&fallback); // base has lower priority
@@ -84,18 +85,16 @@ pub struct ServiceInfoDetector {
 
 impl ResourceDetector for ServiceInfoDetector {
     fn detect(&self, _timeout: std::time::Duration) -> Resource {
-        let service_name = std::env::var("OTEL_SERVICE_NAME")
-            .or_else(|_| std::env::var("SERVICE_NAME"))
-            .or_else(|_| std::env::var("APP_NAME"))
-            .ok()
+        let service_name = util::env_var("OTEL_SERVICE_NAME")
+            .or_else(|| util::env_var("SERVICE_NAME"))
+            .or_else(|| util::env_var("APP_NAME"))
             .or_else(|| Some(self.fallback_service_name.to_string()))
             .map(|v| {
                 opentelemetry_semantic_conventions::resource::SERVICE_NAME.string(v)
             });
-        let service_version = std::env::var("OTEL_SERVICE_VERSION")
-            .or_else(|_| std::env::var("SERVICE_VERSION"))
-            .or_else(|_| std::env::var("APP_VERSION"))
-            .ok()
+        let service_version = util::env_var("OTEL_SERVICE_VERSION")
+            .or_else(|| util::env_var("SERVICE_VERSION"))
+            .or_else(|| util::env_var("APP_VERSION"))
             .or_else(|| Some(self.fallback_service_version.to_string()))
             .map(|v| {
                 opentelemetry_semantic_conventions::resource::SERVICE_VERSION.string(v)
@@ -149,7 +148,7 @@ pub fn init_tracing_with_fallbacks(
         otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
 
     opentelemetry::global::set_text_map_propagator(
-        propagation::TextMapSplitPropagator::default(),
+        propagation::TextMapSplitPropagator::from_env().expect("setup of Propagation"),
     );
 
     let otel_layer = tracing_opentelemetry::layer()

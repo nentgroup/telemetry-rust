@@ -14,6 +14,8 @@ use opentelemetry_sdk::{
 use std::time::Duration;
 use tracing::Level;
 
+use crate::util;
+
 #[must_use]
 pub fn identity(
     v: opentelemetry_otlp::OtlpTracePipeline<SpanExporterBuilder>,
@@ -77,28 +79,25 @@ fn parse_headers(val: &str) -> impl Iterator<Item = (String, String)> + '_ {
 fn read_headers_from_env() -> HashMap<String, String> {
     let mut headers = HashMap::new();
     headers.extend(parse_headers(
-        &std::env::var("OTEL_EXPORTER_OTLP_HEADERS").unwrap_or_default(),
+        &util::env_var("OTEL_EXPORTER_OTLP_HEADERS").unwrap_or_default(),
     ));
     headers.extend(parse_headers(
-        &std::env::var("OTEL_EXPORTER_OTLP_TRACES_HEADERS").unwrap_or_default(),
+        &util::env_var("OTEL_EXPORTER_OTLP_TRACES_HEADERS").unwrap_or_default(),
     ));
     headers
 }
 fn read_export_config_from_env() -> (Option<String>, Option<String>, Option<String>) {
-    let maybe_endpoint = std::env::var("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
-        .or_else(|_| std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT"))
-        .ok();
-    let maybe_protocol = std::env::var("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL")
-        .or_else(|_| std::env::var("OTEL_EXPORTER_OTLP_PROTOCOL"))
-        .ok();
-    let maybe_timeout = std::env::var("OTEL_EXPORTER_OTLP_TRACES_TIMEOUT")
-        .or_else(|_| std::env::var("OTEL_EXPORTER_OTLP_TIMEOUT"))
-        .ok();
+    let maybe_endpoint = util::env_var("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
+        .or_else(|| util::env_var("OTEL_EXPORTER_OTLP_ENDPOINT"));
+    let maybe_protocol = util::env_var("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL")
+        .or_else(|| util::env_var("OTEL_EXPORTER_OTLP_PROTOCOL"));
+    let maybe_timeout = util::env_var("OTEL_EXPORTER_OTLP_TRACES_TIMEOUT")
+        .or_else(|| util::env_var("OTEL_EXPORTER_OTLP_TIMEOUT"));
     (maybe_protocol, maybe_endpoint, maybe_timeout)
 }
 pub fn read_otel_log_level_from_env() -> Level {
     let default_log_level = Level::INFO;
-    if let Ok(level_str) = std::env::var("OTEL_LOG_LEVEL") {
+    if let Some(level_str) = util::env_var("OTEL_LOG_LEVEL") {
         level_str.parse().unwrap_or(default_log_level)
     } else {
         default_log_level
@@ -108,8 +107,7 @@ pub fn read_otel_log_level_from_env() -> Level {
 /// see <https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/#general-sdk-configuration>
 /// TODO log error and infered sampler
 fn read_sampler_from_env() -> Sampler {
-    let mut name = std::env::var("OTEL_TRACES_SAMPLER")
-        .ok()
+    let mut name = util::env_var("OTEL_TRACES_SAMPLER")
         .unwrap_or_default()
         .to_lowercase();
     let v = match name.as_str() {
@@ -137,7 +135,7 @@ where
     T: FromStr + Copy + std::fmt::Debug,
 {
     //TODO Log for invalid value (how to log)
-    let v = std::env::var("OTEL_TRACES_SAMPLER_ARG")
+    let v = util::env_var("OTEL_TRACES_SAMPLER_ARG")
         .map_or(default, |s| T::from_str(&s).unwrap_or(default));
     tracing::debug!(target: "otel::setup", OTEL_TRACES_SAMPLER_ARG = ?v);
     v

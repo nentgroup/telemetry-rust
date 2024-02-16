@@ -1,4 +1,5 @@
 use tracing::{subscriber::Interest, Level, Metadata, Subscriber};
+use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 use tracing_subscriber::layer::{Context, Filter, Layer};
 
 use crate::util;
@@ -27,7 +28,7 @@ impl TracingFilter {
         if meta.is_event() {
             meta.level() <= &self.log_level
         } else {
-            meta.target() == "otel::tracing" || meta.level() <= &self.tracing_level
+            meta.target() == TRACING_TARGET || meta.level() <= &self.tracing_level
         }
     }
 

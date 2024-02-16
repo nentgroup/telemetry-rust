@@ -7,8 +7,9 @@ use opentelemetry_sdk::{
     Resource,
 };
 use tracing::level_filters::LevelFilter;
-use tracing_subscriber::fmt::writer::MakeWriterExt;
-use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt};
+#[cfg(debug_assertions)]
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::layer::SubscriberExt;
 
 pub mod middleware;
 pub mod propagation;
@@ -101,21 +102,19 @@ impl ResourceDetector for ServiceInfoDetector {
 }
 
 macro_rules! fmt_layer {
-    ($log_level:expr) => {{
+    () => {{
         let layer = tracing_subscriber::fmt::layer();
 
         #[cfg(debug_assertions)]
-        let layer = layer
-            .pretty()
-            .with_line_number(true)
-            .with_thread_names(true);
+        let layer = layer.compact().with_span_events(FmtSpan::CLOSE);
         #[cfg(not(debug_assertions))]
-        let layer = layer.json();
+        let layer = layer
+            .json()
+            .flatten_event(true)
+            .with_current_span(false)
+            .with_span_list(true);
 
-        layer
-            .with_timer(tracing_subscriber::fmt::time::uptime())
-            .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
-            .with_writer(std::io::stdout.with_max_level($log_level))
+        layer.with_writer(std::io::stdout)
     }};
 }
 
@@ -127,7 +126,7 @@ pub fn init_tracing_with_fallbacks(
     // set to debug to log detected resources, configuration read and infered
     let setup_subscriber = tracing_subscriber::registry()
         .with(Into::<LevelFilter>::into(log_level))
-        .with(fmt_layer!(log_level));
+        .with(fmt_layer!());
     let _guard = tracing::subscriber::set_default(setup_subscriber);
     tracing::info!("init logging & tracing");
 
@@ -143,7 +142,7 @@ pub fn init_tracing_with_fallbacks(
     let otel_layer = tracing_opentelemetry::layer().with_tracer(otel_tracer);
     let subscriber = tracing_subscriber::registry()
         .with(Into::<filter::TracingFilter>::into(log_level))
-        .with(fmt_layer!(log_level))
+        .with(fmt_layer!())
         .with(otel_layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();
 }

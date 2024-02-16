@@ -11,15 +11,15 @@ pub struct TracingFilter {
 }
 
 impl TracingFilter {
-    pub fn new(log_level: Level) -> Self {
-        Self::new_with_tracing_level(log_level, read_tracing_level_from_env())
-    }
-
-    pub fn new_with_tracing_level(log_level: Level, tracing_level: Level) -> Self {
+    pub fn new(log_level: Level, tracing_level: Level) -> Self {
         Self {
             log_level,
             tracing_level,
         }
+    }
+
+    pub fn from_level(log_level: Level) -> Self {
+        Self::new(log_level, read_tracing_level_from_env())
     }
 
     #[inline(always)]
@@ -58,6 +58,13 @@ impl<S: Subscriber> Layer<S> for TracingFilter {
 
     fn register_callsite(&self, meta: &'static Metadata<'static>) -> Interest {
         self._callsite_enabled(meta)
+    }
+}
+
+impl From<Level> for TracingFilter {
+    #[inline]
+    fn from(level: Level) -> Self {
+        Self::from_level(level)
     }
 }
 

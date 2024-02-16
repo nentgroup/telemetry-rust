@@ -142,7 +142,7 @@ pub fn init_tracing_with_fallbacks(
 
     let otel_layer = tracing_opentelemetry::layer().with_tracer(otel_tracer);
     let subscriber = tracing_subscriber::registry()
-        .with(filter::TracingFilter::new(log_level))
+        .with(Into::<filter::TracingFilter>::into(log_level))
         .with(fmt_layer!(log_level))
         .with(otel_layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();

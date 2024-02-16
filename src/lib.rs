@@ -2,6 +2,8 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
+use std::cmp::max;
+
 use opentelemetry_sdk::{
     resource::{EnvResourceDetector, OsResourceDetector, ResourceDetector},
     Resource,
@@ -141,10 +143,13 @@ pub fn init_tracing_with_fallbacks(
         propagation::TextMapSplitPropagator::from_env().expect("setup of Propagation"),
     );
 
+    let otel_log_level = otlp::read_otel_log_level_from_env();
+    let max_log_level = max(log_level, otel_log_level);
     let otel_layer = tracing_opentelemetry::layer()
         .with_tracer(otel_tracer)
-        .with_filter(filter::OtelFilter::default());
+        .with_filter(filter::OtelFilter::new(otel_log_level));
     let subscriber = tracing_subscriber::registry()
+        .with(filter::OtelFilter::new(max_log_level))
         .with(fmt_layer!(log_level))
         .with(otel_layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();

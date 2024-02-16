@@ -18,7 +18,6 @@ pub mod http;
 #[cfg(feature = "axum")]
 pub use tracing_opentelemetry_instrumentation_sdk;
 
-#[cfg(feature = "otlp")]
 pub mod otlp;
 
 #[cfg(feature = "test")]

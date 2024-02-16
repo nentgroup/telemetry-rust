@@ -13,8 +13,8 @@ use opentelemetry_sdk::{
 };
 use std::time::Duration;
 
-use crate::util;
 pub use crate::filter::read_tracing_level_from_env as read_otel_log_level_from_env;
+use crate::util;
 
 #[must_use]
 pub fn identity(

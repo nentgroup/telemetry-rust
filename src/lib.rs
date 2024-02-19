@@ -6,11 +6,10 @@ use opentelemetry_sdk::{
     resource::{EnvResourceDetector, OsResourceDetector, ResourceDetector},
     Resource,
 };
-use tracing::{level_filters::LevelFilter, Subscriber};
-use tracing_subscriber::fmt::writer::MakeWriterExt;
-use tracing_subscriber::{
-    fmt::format::FmtSpan, layer::SubscriberExt, registry::LookupSpan, Layer,
-};
+use tracing::level_filters::LevelFilter;
+#[cfg(debug_assertions)]
+use tracing_subscriber::fmt::format::FmtSpan;
+use tracing_subscriber::layer::SubscriberExt;
 
 pub mod middleware;
 pub mod propagation;
@@ -20,7 +19,6 @@ pub mod http;
 #[cfg(feature = "axum")]
 pub use tracing_opentelemetry_instrumentation_sdk;
 
-#[cfg(feature = "otlp")]
 pub mod otlp;
 
 #[cfg(feature = "test")]
@@ -103,31 +101,21 @@ impl ResourceDetector for ServiceInfoDetector {
     }
 }
 
-pub fn build_logger_text<S>(
-    log_level: tracing::Level,
-) -> Box<dyn Layer<S> + Send + Sync + 'static>
-where
-    S: Subscriber + for<'a> LookupSpan<'a>,
-{
-    if cfg!(debug_assertions) {
-        Box::new(
-            tracing_subscriber::fmt::layer()
-                .pretty()
-                .with_line_number(true)
-                .with_thread_names(true)
-                .with_timer(tracing_subscriber::fmt::time::uptime())
-                .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
-                .with_writer(std::io::stdout.with_max_level(log_level)),
-        )
-    } else {
-        Box::new(
-            tracing_subscriber::fmt::layer()
-                .json()
-                .with_timer(tracing_subscriber::fmt::time::uptime())
-                .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
-                .with_writer(std::io::stdout.with_max_level(log_level)),
-        )
-    }
+macro_rules! fmt_layer {
+    () => {{
+        let layer = tracing_subscriber::fmt::layer();
+
+        #[cfg(debug_assertions)]
+        let layer = layer.compact().with_span_events(FmtSpan::CLOSE);
+        #[cfg(not(debug_assertions))]
+        let layer = layer
+            .json()
+            .flatten_event(true)
+            .with_current_span(false)
+            .with_span_list(true);
+
+        layer.with_writer(std::io::stdout)
+    }};
 }
 
 pub fn init_tracing_with_fallbacks(
@@ -138,7 +126,7 @@ pub fn init_tracing_with_fallbacks(
     // set to debug to log detected resources, configuration read and infered
     let setup_subscriber = tracing_subscriber::registry()
         .with(Into::<LevelFilter>::into(log_level))
-        .with(build_logger_text(log_level));
+        .with(fmt_layer!());
     let _guard = tracing::subscriber::set_default(setup_subscriber);
     tracing::info!("init logging & tracing");
 
@@ -151,11 +139,10 @@ pub fn init_tracing_with_fallbacks(
         propagation::TextMapSplitPropagator::from_env().expect("setup of Propagation"),
     );
 
-    let otel_layer = tracing_opentelemetry::layer()
-        .with_tracer(otel_tracer)
-        .with_filter(filter::OtelFilter::default());
+    let otel_layer = tracing_opentelemetry::layer().with_tracer(otel_tracer);
     let subscriber = tracing_subscriber::registry()
-        .with(build_logger_text(log_level))
+        .with(Into::<filter::TracingFilter>::into(log_level))
+        .with(fmt_layer!())
         .with(otel_layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();
 }

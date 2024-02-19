@@ -12,8 +12,8 @@ use opentelemetry_sdk::{
     Resource,
 };
 use std::time::Duration;
-use tracing::Level;
 
+pub use crate::filter::read_tracing_level_from_env as read_otel_log_level_from_env;
 use crate::util;
 
 #[must_use]
@@ -94,14 +94,6 @@ fn read_export_config_from_env() -> (Option<String>, Option<String>, Option<Stri
     let maybe_timeout = util::env_var("OTEL_EXPORTER_OTLP_TRACES_TIMEOUT")
         .or_else(|| util::env_var("OTEL_EXPORTER_OTLP_TIMEOUT"));
     (maybe_protocol, maybe_endpoint, maybe_timeout)
-}
-pub fn read_otel_log_level_from_env() -> Level {
-    let default_log_level = Level::INFO;
-    if let Some(level_str) = util::env_var("OTEL_LOG_LEVEL") {
-        level_str.parse().unwrap_or(default_log_level)
-    } else {
-        default_log_level
-    }
 }
 
 /// see <https://opentelemetry.io/docs/reference/specification/sdk-environment-variables/#general-sdk-configuration>

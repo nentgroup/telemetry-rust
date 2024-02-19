@@ -11,14 +11,14 @@ opentelemetry = { version = "0.21.0", default-features = false, features = [
   "trace",
 ] }
 tracing-opentelemetry = "0.22"
-opentelemetry-http = { version = "0.10.0", optional = true, features = ["hyper", "tokio"] }
-opentelemetry-otlp = { version = "0.14", optional = true, features = ["http-proto"] }
+opentelemetry-http = { version = "0.10.0", features = ["hyper", "tokio"] }
+opentelemetry-otlp = { version = "0.14", features = ["http-proto"] }
 opentelemetry-zipkin = { version = "0.19", features = [], optional = true }
 opentelemetry_sdk = { version = "0.21", default-features = false, features = [
   "rt-tokio",
 ] }
-opentelemetry-semantic-conventions = { version = "0.13", optional = true }
-tracing-opentelemetry-instrumentation-sdk = { version = "0.16.0", features = ["http"], optional = true }
+opentelemetry-semantic-conventions = "0.13"
+tracing-opentelemetry-instrumentation-sdk = { version = "0.16.0", features = ["http"] }
 tracing = { version = "0.1.40", default-features = false }
 tracing-subscriber = { version = "0.3.18", default-features = false, features = [
   "env-filter",
@@ -34,7 +34,7 @@ tower = { version = "0.4", optional = true }
 axum = { version = "0.7.4", optional = true }
 pin-project-lite = { version = "0.2", optional = true }
 futures-util = { version = "0.3", default_features = false, features = [], optional = true }
-hyper = { version = "0.14", default-features = false, features = ["http1", "client"], optional = true }
+hyper = { version = "0.14", default-features = false, features = ["http1", "client"] }
 hyper-v1 = { package = "hyper", version = "1.1", default-features = false, features = ["http1", "client"], optional = true }
 http-body-util = { version = "0.1.0", optional = true }
 
@@ -44,12 +44,10 @@ rstest = "0.18"
 
 [features]
 full = ["test"]
-default = ["otlp", "zipkin"]
+default = ["zipkin"]
 zipkin = ["dep:opentelemetry-zipkin"]
-otlp = ["opentelemetry-otlp/http-proto", "tracer", "dep:tracing-opentelemetry-instrumentation-sdk", "dep:opentelemetry-http", "dep:hyper"]
-tracer = ["dep:opentelemetry-semantic-conventions"]
-test = ["axum", "dep:serde", "dep:serde_json", "dep:opentelemetry_api", "dep:rand", "dep:hyper"]
-axum = ["dep:axum", "dep:tower", "dep:futures-util", "dep:pin-project-lite", "dep:tracing-opentelemetry-instrumentation-sdk"]
+test = ["axum", "dep:serde", "dep:serde_json", "dep:opentelemetry_api", "dep:rand"]
+axum = ["dep:axum", "dep:tower", "dep:futures-util", "dep:pin-project-lite"]
 hyper-v1 = ["dep:hyper-v1", "dep:http-body-util"]
 
 [profile.dev]

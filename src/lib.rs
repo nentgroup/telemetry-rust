@@ -11,6 +11,13 @@ use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 
+pub use opentelemetry::{
+    global,
+    trace::{SpanBuilder, SpanKind, Tracer},
+    Context,
+};
+pub use tracing_opentelemetry::OpenTelemetrySpanExt;
+
 pub mod middleware;
 pub mod propagation;
 

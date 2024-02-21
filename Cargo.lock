@@ -974,6 +974,7 @@ dependencies = [
  "itoa",
  "pin-project-lite",
  "tokio",
+ "want",
 ]
 
 [[package]]
@@ -2018,6 +2019,7 @@ dependencies = [
  "http 1.0.0",
  "http-body-util",
  "hyper 0.14.28",
+ "hyper 1.1.0",
  "opentelemetry",
  "opentelemetry-http",
  "opentelemetry-otlp",

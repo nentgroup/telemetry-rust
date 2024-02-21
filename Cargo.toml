@@ -37,10 +37,6 @@ futures-util = { version = "0.3", default_features = false, features = [], optio
 hyper = { version = "0.14", default-features = false, features = ["http1", "client"] }
 hyper-v1 = { package = "hyper", version = "1.1", default-features = false, features = ["http1", "client"], optional = true }
 http-body-util = { version = "0.1.0", optional = true }
-aws-sdk-dynamodb = { version = "1.7.0", optional = true }
-aws-sdk-firehose = { version = "1.7.0", optional = true }
-aws-sdk-sns = { version = "1.7.0", optional = true }
-
 
 [dev-dependencies]
 assert2 = "0.3"
@@ -53,10 +49,7 @@ zipkin = ["dep:opentelemetry-zipkin"]
 test = ["axum", "dep:serde", "dep:serde_json", "dep:opentelemetry_api", "dep:rand"]
 axum = ["dep:axum", "dep:tower", "dep:futures-util", "dep:pin-project-lite"]
 hyper-v1 = ["dep:hyper-v1", "dep:http-body-util"]
-aws = ["aws-dynamodb", "aws-firehose", "aws-sns"]
-aws-dynamodb = ["dep:aws-sdk-dynamodb"]
-aws-firehose = ["dep:aws-sdk-firehose"]
-aws-sns = ["dep:aws-sdk-sns"]
+aws = []
 
 [profile.dev]
 lto = false

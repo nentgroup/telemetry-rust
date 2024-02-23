@@ -13,7 +13,6 @@ pub use opentelemetry_semantic_conventions as semcov;
 // }
 
 // Once this scope is closed, all spans inside are closed as well
-#[cfg(any(feature = "aws", feature = "aws_dynamo"))]
 pub fn info_span_dynamo(
     table_name: &str,
     operation: &str,

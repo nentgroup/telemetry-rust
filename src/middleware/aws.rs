@@ -1,14 +1,13 @@
+use aws_types::request_id::RequestId;
 use opentelemetry::{
     global::{self, BoxedSpan},
-    trace::{SpanKind, Tracer, Status, Span as TelemetrySpan},
-    Context,
-    KeyValue
+    trace::{Span as TelemetrySpan, SpanKind, Status, Tracer},
+    Context, KeyValue,
 };
-use tracing::Span;
 use opentelemetry_semantic_conventions as semcov;
-use tracing_opentelemetry::OpenTelemetrySpanExt;
-use aws_types::request_id::RequestId;
 use std::error::Error;
+use tracing::Span;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 // TODO: Write as macro
 //

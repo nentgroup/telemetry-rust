@@ -1,11 +1,14 @@
 use opentelemetry::{
-    global,
-    trace::{SpanKind, Tracer},
+    global::{self, BoxedSpan},
+    trace::{SpanKind, Tracer, Status, Span as TelemetrySpan},
     Context,
+    KeyValue
 };
-pub use opentelemetry::{trace::Span, KeyValue};
-pub use opentelemetry_semantic_conventions as semcov;
+use tracing::Span;
+use opentelemetry_semantic_conventions as semcov;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+use aws_types::request_id::RequestId;
+use std::error::Error;
 
 // TODO: Write as macro
 //
@@ -39,7 +42,7 @@ pub fn info_span_dynamo(
         .with_kind(SpanKind::Client);
     match parent_context {
         Some(ctx) => span.start_with_context(&tracer, ctx),
-        None => span.start_with_context(&tracer, &tracing::Span::current().context()),
+        None => span.start_with_context(&tracer, &Span::current().context()),
     }
 }
 
@@ -66,7 +69,7 @@ pub fn info_span_firehose(
         .with_kind(SpanKind::Client);
     match parent_context {
         Some(ctx) => span.start_with_context(&tracer, ctx),
-        None => span.start_with_context(&tracer, &tracing::Span::current().context()),
+        None => span.start_with_context(&tracer, &Span::current().context()),
     }
 }
 
@@ -94,6 +97,25 @@ pub fn info_span_sns(
     // .start_with_context(&tracer, parent_context);
     match parent_context {
         Some(ctx) => span.start_with_context(&tracer, ctx),
-        None => span.start_with_context(&tracer, &tracing::Span::current().context()),
+        None => span.start_with_context(&tracer, &Span::current().context()),
     }
+}
+
+pub fn end_aws_span<T, E>(mut span: BoxedSpan, aws_response: &Result<T, E>)
+where
+    T: RequestId,
+    E: RequestId + Error,
+{
+    let (status, request_id) = match aws_response {
+        Ok(resp) => (Status::Ok, resp.request_id()),
+        Err(error) => {
+            span.record_error(&error);
+            (Status::error(error.to_string()), error.request_id())
+        }
+    };
+    if let Some(value) = request_id {
+        span.set_attribute(semcov::trace::AWS_REQUEST_ID.string(value.to_owned()));
+    }
+    span.set_attribute(KeyValue::new("success", status == Status::Ok));
+    span.set_status(status);
 }

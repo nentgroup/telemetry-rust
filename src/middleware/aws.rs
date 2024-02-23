@@ -71,7 +71,6 @@ pub fn info_span_firehose(
     span
 }
 
-#[cfg(any(feature = "aws", feature = "aws_sns"))]
 pub fn info_span_sns(
     operation: &str,
     method: &str,

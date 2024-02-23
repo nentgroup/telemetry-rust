@@ -40,7 +40,6 @@ pub fn info_span_dynamo(
     span
 }
 
-#[cfg(any(feature = "aws", feature = "aws_firehose"))]
 pub fn info_span_firehose(
     firehose_stream_name: &str,
     operation: &str,

@@ -71,6 +71,7 @@ pub fn info_span_firehose(
 }
 
 pub fn info_span_sns(
+    topic_arn: &str,
     operation: &str,
     method: &str,
     parent_context: Option<&Context>,
@@ -85,6 +86,7 @@ pub fn info_span_sns(
             semcov::trace::RPC_SYSTEM.string("aws-api"),
             semcov::trace::RPC_SERVICE.string("SNS"),
             KeyValue::new("sns", true),
+            KeyValue::new("sns.topic.arn", topic_arn.to_string()),
             KeyValue::new("system", "sns"),
             KeyValue::new("operation", operation.to_string()),
         ])

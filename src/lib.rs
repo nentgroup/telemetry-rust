@@ -13,6 +13,7 @@ use tracing_subscriber::layer::SubscriberExt;
 
 pub use opentelemetry::Context;
 pub use tracing_opentelemetry::OpenTelemetrySpanExt;
+pub use opentelemetry_semantic_conventions::trace as semcov;
 
 pub mod middleware;
 pub mod propagation;

@@ -2,12 +2,13 @@ use aws_types::request_id::RequestId;
 use opentelemetry::{
     global::{self, BoxedSpan, BoxedTracer},
     trace::{Span as TelemetrySpan, SpanBuilder, SpanKind, Status, Tracer},
-    Context, KeyValue,
+    Context, KeyValue, StringValue,
 };
-use opentelemetry_semantic_conventions as semcov;
 use std::error::Error;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+
+use crate::semcov;
 
 pub enum AwsTarget<'a> {
     Dynamo(&'a str),
@@ -16,7 +17,7 @@ pub enum AwsTarget<'a> {
 }
 
 impl AwsTarget<'_> {
-    pub fn system(&self) -> &'static str {
+    pub fn service(&self) -> &'static str {
         match self {
             AwsTarget::Dynamo(_) => "dynamodb",
             AwsTarget::Firehose(_) => "firehose",
@@ -24,19 +25,23 @@ impl AwsTarget<'_> {
         }
     }
 
-    pub fn attributes(&self) -> Vec<KeyValue> {
+    pub fn attributes(&self, operation: &str) -> Vec<KeyValue> {
         match self {
             AwsTarget::Dynamo(table_name) => vec![
-                KeyValue::new("dynamoDB", true),
-                KeyValue::new("db.name", table_name.to_string()),
+                semcov::DB_SYSTEM.string("dynamodb"),
+                semcov::DB_OPERATION.string(operation.to_string()),
+                semcov::AWS_DYNAMODB_TABLE_NAMES
+                    .array(vec![Into::<StringValue>::into(table_name.to_string())]),
             ],
             AwsTarget::Firehose(stream_name) => vec![
-                KeyValue::new("firehose", true),
-                KeyValue::new("firehose.name", stream_name.to_string()),
+                semcov::MESSAGING_SYSTEM.string("firehose"),
+                semcov::MESSAGING_OPERATION.string(operation.to_string()),
+                semcov::MESSAGING_DESTINATION_NAME.string(stream_name.to_string()),
             ],
             AwsTarget::Sns(topic_arn) => vec![
-                KeyValue::new("sns", true),
-                KeyValue::new("sns.topic.arn", topic_arn.to_string()),
+                semcov::MESSAGING_SYSTEM.string("sns"),
+                semcov::MESSAGING_OPERATION.string(operation.to_string()),
+                semcov::MESSAGING_DESTINATION_NAME.string(topic_arn.to_string()),
             ],
         }
     }
@@ -50,18 +55,15 @@ pub enum AwsSpan {
 impl AwsSpan {
     pub fn new(aws_target: AwsTarget, operation: &str, method: &str) -> Self {
         let tracer = global::tracer("aws_sdk");
-        let system = aws_target.system();
+        let service = aws_target.service();
         let mut attributes = vec![
-            semcov::trace::RPC_METHOD.string(method.to_string()),
-            semcov::trace::RPC_SYSTEM.string("aws-api"),
-            semcov::trace::RPC_SERVICE.string(system),
-            KeyValue::new("aws_operation", operation.to_string()),
-            KeyValue::new("db.system", system),
-            KeyValue::new("db.operation", method.to_string()),
+            semcov::RPC_METHOD.string(method.to_string()),
+            semcov::RPC_SYSTEM.string("aws-api"),
+            semcov::RPC_SERVICE.string(service),
         ];
-        attributes.extend(aws_target.attributes());
+        attributes.extend(aws_target.attributes(operation));
         let span_builder = tracer
-            .span_builder(format!("aws_{system}"))
+            .span_builder(format!("aws_{service}"))
             .with_attributes(attributes)
             .with_kind(SpanKind::Client);
 
@@ -103,9 +105,8 @@ impl AwsSpan {
             }
         };
         if let Some(value) = request_id {
-            span.set_attribute(semcov::trace::AWS_REQUEST_ID.string(value.to_owned()));
+            span.set_attribute(semcov::AWS_REQUEST_ID.string(value.to_owned()));
         }
-        span.set_attribute(KeyValue::new("success", status == Status::Ok));
         span.set_status(status);
     }
 }

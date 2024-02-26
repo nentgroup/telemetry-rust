@@ -8,89 +8,60 @@ use opentelemetry_semantic_conventions as semcov;
 use std::error::Error;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
-// TODO: Write as macro
-//
-// #[instrument_aws(table_name = "cars", operation = "CreateCar", method = "Post")]
-// fn create_car_in_database() {
-//      info_span_dynamo();
-// }
 
-// Once this scope is closed, all spans inside are closed as well
-pub fn info_span_dynamo(
-    table_name: &str,
-    operation: &str,
-    method: &str,
-    parent_context: Option<&Context>,
-) -> opentelemetry::global::BoxedSpan {
-    // Spans will be sent to the configured OpenTelemetry exporter
+pub enum AwsTarget<'a> {
+    Dynamo(&'a str),
+    Firehose(&'a str),
+    Sns(&'a str),
+}
 
-    let tracer = global::tracer("aws_sdk");
-    let span = tracer
-        .span_builder("aws_dynamo")
-        .with_attributes(vec![
-            semcov::trace::RPC_METHOD.string(method.to_string()),
-            semcov::trace::RPC_SYSTEM.string("aws-api"),
-            semcov::trace::RPC_SERVICE.string("DynamoDB"),
-            KeyValue::new("dynamoDB", true),
-            KeyValue::new("aws_operation", operation.to_string()),
-            KeyValue::new("db.name", table_name.to_string()),
-            KeyValue::new("db.system", "dynamodb"),
-            KeyValue::new("db.operation", method.to_string()),
-        ])
-        .with_kind(SpanKind::Client);
-    match parent_context {
-        Some(ctx) => span.start_with_context(&tracer, ctx),
-        None => span.start_with_context(&tracer, &Span::current().context()),
+impl AwsTarget<'_> {
+    pub fn system(&self) -> &'static str {
+        match self {
+            AwsTarget::Dynamo(_) => "dynamodb",
+            AwsTarget::Firehose(_) => "firehose",
+            AwsTarget::Sns(_) => "sns",
+        }
+    }
+
+    pub fn attributes(&self) -> Vec<KeyValue> {
+        match self {
+            AwsTarget::Dynamo(table_name) => vec![
+                KeyValue::new("dynamoDB", true),
+                KeyValue::new("db.name", table_name.to_string()),
+            ],
+            AwsTarget::Firehose(stream_name) => vec![
+                KeyValue::new("firehose", true),
+                KeyValue::new("firehose.name", stream_name.to_string()),
+            ],
+            AwsTarget::Sns(topic_arn) => vec![
+                KeyValue::new("sns", true),
+                KeyValue::new("sns.topic.arn", topic_arn.to_string()),
+            ],
+        }
     }
 }
 
-pub fn info_span_firehose(
-    firehose_stream_name: &str,
+pub fn create_aws_span(
+    aws_target: AwsTarget,
     operation: &str,
     method: &str,
     parent_context: Option<&Context>,
 ) -> opentelemetry::global::BoxedSpan {
-    // Spans will be sent to the configured OpenTelemetry exporter
-    // use telemetry_rust::OpenTelemetrySpanExt;
     let tracer = global::tracer("aws_sdk");
+    let system = aws_target.system();
+    let mut attributes = vec![
+        semcov::trace::RPC_METHOD.string(method.to_string()),
+        semcov::trace::RPC_SYSTEM.string("aws-api"),
+        semcov::trace::RPC_SERVICE.string(system),
+        KeyValue::new("aws_operation", operation.to_string()),
+        KeyValue::new("db.system", system),
+        KeyValue::new("db.operation", method.to_string()),
+    ];
+    attributes.extend(aws_target.attributes());
     let span = tracer
-        .span_builder("aws_firehose")
-        .with_attributes(vec![
-            semcov::trace::RPC_METHOD.string(method.to_string()),
-            semcov::trace::RPC_SYSTEM.string("aws-api"),
-            semcov::trace::RPC_SERVICE.string("Firehose"),
-            KeyValue::new("firehose", true),
-            KeyValue::new("firehose.name", firehose_stream_name.to_string()),
-            KeyValue::new("system", "firehose"),
-            KeyValue::new("operation", operation.to_string()),
-        ])
-        .with_kind(SpanKind::Client);
-    match parent_context {
-        Some(ctx) => span.start_with_context(&tracer, ctx),
-        None => span.start_with_context(&tracer, &Span::current().context()),
-    }
-}
-
-pub fn info_span_sns(
-    topic_arn: &str,
-    operation: &str,
-    method: &str,
-    parent_context: Option<&Context>,
-) -> opentelemetry::global::BoxedSpan {
-    // Spans will be sent to the configured OpenTelemetry exporter
-    // use telemetry_rust::OpenTelemetrySpanExt;
-    let tracer = global::tracer("aws_sdk");
-    let span = tracer
-        .span_builder("aws_sns")
-        .with_attributes(vec![
-            semcov::trace::RPC_METHOD.string(method.to_string()),
-            semcov::trace::RPC_SYSTEM.string("aws-api"),
-            semcov::trace::RPC_SERVICE.string("SNS"),
-            KeyValue::new("sns", true),
-            KeyValue::new("sns.topic.arn", topic_arn.to_string()),
-            KeyValue::new("system", "sns"),
-            KeyValue::new("operation", operation.to_string()),
-        ])
+        .span_builder(format!("aws_{system}"))
+        .with_attributes(attributes)
         .with_kind(SpanKind::Client);
     match parent_context {
         Some(ctx) => span.start_with_context(&tracer, ctx),

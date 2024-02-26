@@ -25,7 +25,7 @@ impl AwsTarget<'_> {
         }
     }
 
-    pub fn attributes(&self, operation: impl Into<StringValue>) -> Vec<KeyValue> {
+    pub fn into_attributes(self, operation: impl Into<StringValue>) -> Vec<KeyValue> {
         match self {
             AwsTarget::Dynamo(table_name) => vec![
                 semcov::DB_SYSTEM.string("dynamodb"),
@@ -65,7 +65,7 @@ impl AwsSpanBuilder {
             semcov::RPC_SYSTEM.string("aws-api"),
             semcov::RPC_SERVICE.string(service),
         ];
-        attributes.extend(aws_target.attributes(operation));
+        attributes.extend(aws_target.into_attributes(operation));
         let inner = tracer
             .span_builder(format!("aws_{service}"))
             .with_attributes(attributes)

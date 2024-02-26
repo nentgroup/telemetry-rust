@@ -16,8 +16,13 @@ pub enum AwsTarget<'a> {
     Sns(&'a str),
 }
 
-impl AwsTarget<'_> {
-    pub fn service(&self) -> &'static str {
+pub trait IntoAttributes {
+    fn service(&self) -> &'static str;
+    fn into_attributes(self, operation: impl Into<StringValue>) -> Vec<KeyValue>;
+}
+
+impl IntoAttributes for AwsTarget<'_> {
+    fn service(&self) -> &'static str {
         match self {
             AwsTarget::Dynamo(_) => "dynamodb",
             AwsTarget::Firehose(_) => "firehose",
@@ -25,7 +30,7 @@ impl AwsTarget<'_> {
         }
     }
 
-    pub fn into_attributes(self, operation: impl Into<StringValue>) -> Vec<KeyValue> {
+    fn into_attributes(self, operation: impl Into<StringValue>) -> Vec<KeyValue> {
         match self {
             AwsTarget::Dynamo(table_name) => vec![
                 semcov::DB_SYSTEM.string("dynamodb"),
@@ -54,7 +59,7 @@ pub struct AwsSpanBuilder {
 
 impl AwsSpanBuilder {
     pub fn new(
-        aws_target: AwsTarget,
+        aws_target: impl IntoAttributes,
         operation: impl Into<StringValue>,
         method: impl Into<StringValue>,
     ) -> Self {
@@ -91,7 +96,7 @@ pub struct AwsSpan {
 
 impl AwsSpan {
     pub fn new(
-        aws_target: AwsTarget,
+        aws_target: impl IntoAttributes,
         operation: impl Into<StringValue>,
         method: impl Into<StringValue>,
     ) -> AwsSpanBuilder {

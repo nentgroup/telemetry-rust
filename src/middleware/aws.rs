@@ -8,7 +8,6 @@ use opentelemetry_semantic_conventions as semcov;
 use std::error::Error;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
-
 // TODO: Write as macro
 //
 // #[instrument_aws(table_name = "cars", operation = "CreateCar", method = "Post")]
@@ -93,7 +92,6 @@ pub fn info_span_sns(
             KeyValue::new("operation", operation.to_string()),
         ])
         .with_kind(SpanKind::Client);
-    // .start_with_context(&tracer, parent_context);
     match parent_context {
         Some(ctx) => span.start_with_context(&tracer, ctx),
         None => span.start_with_context(&tracer, &Span::current().context()),

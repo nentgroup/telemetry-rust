@@ -47,43 +47,47 @@ impl AwsTarget<'_> {
     }
 }
 
-pub enum AwsSpan {
-    Pending(Box<SpanBuilder>, BoxedTracer),
-    Started(BoxedSpan),
+pub struct AwsSpanBuilder {
+    inner: SpanBuilder,
+    tracer: BoxedTracer,
 }
 
-impl AwsSpan {
+impl AwsSpanBuilder {
     pub fn new(aws_target: AwsTarget, operation: &str, method: &str) -> Self {
         let tracer = global::tracer("aws_sdk");
         let service = aws_target.service();
-        let mut attributes = vec![
+        let mut attributes: Vec<KeyValue> = vec![
             semcov::RPC_METHOD.string(method.to_string()),
             semcov::RPC_SYSTEM.string("aws-api"),
             semcov::RPC_SERVICE.string(service),
         ];
         attributes.extend(aws_target.attributes(operation));
-        let span_builder = tracer
+        let inner = tracer
             .span_builder(format!("aws_{service}"))
             .with_attributes(attributes)
             .with_kind(SpanKind::Client);
 
-        Self::Pending(Box::new(span_builder), tracer)
+        Self { inner, tracer }
     }
 
-    pub fn start_with_context(self, parent_cx: &Context) -> Self {
-        let span = match self {
-            AwsSpan::Pending(builder, tracer) => {
-                builder.start_with_context(&tracer, parent_cx)
-            }
-            AwsSpan::Started(_) => {
-                panic!("Span already started");
-            }
-        };
-        AwsSpan::Started(span)
+    pub fn start_with_context(self, parent_cx: &Context) -> AwsSpan {
+        self.inner
+            .start_with_context(&self.tracer, parent_cx)
+            .into()
     }
 
-    pub fn start(self) -> Self {
+    pub fn start(self) -> AwsSpan {
         self.start_with_context(&Span::current().context())
+    }
+}
+
+pub struct AwsSpan {
+    span: BoxedSpan,
+}
+
+impl AwsSpan {
+    pub fn new(aws_target: AwsTarget, operation: &str, method: &str) -> AwsSpanBuilder {
+        AwsSpanBuilder::new(aws_target, operation, method)
     }
 
     pub fn end<T, E>(self, aws_response: &Result<T, E>)
@@ -91,12 +95,7 @@ impl AwsSpan {
         T: RequestId,
         E: RequestId + Error,
     {
-        let mut span = match self {
-            AwsSpan::Pending(_, _) => {
-                panic!("Span not started");
-            }
-            AwsSpan::Started(span) => span,
-        };
+        let mut span = self.span;
         let (status, request_id) = match aws_response {
             Ok(resp) => (Status::Ok, resp.request_id()),
             Err(error) => {
@@ -108,5 +107,12 @@ impl AwsSpan {
             span.set_attribute(semcov::AWS_REQUEST_ID.string(value.to_owned()));
         }
         span.set_status(status);
+    }
+}
+
+impl From<BoxedSpan> for AwsSpan {
+    #[inline]
+    fn from(span: BoxedSpan) -> Self {
+        Self { span }
     }
 }

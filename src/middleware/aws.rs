@@ -43,7 +43,7 @@ impl AwsTarget<'_> {
 }
 
 pub enum AwsSpan {
-    Pending(SpanBuilder, BoxedTracer),
+    Pending(Box<SpanBuilder>, BoxedTracer),
     Started(BoxedSpan),
 }
 
@@ -65,7 +65,7 @@ impl AwsSpan {
             .with_attributes(attributes)
             .with_kind(SpanKind::Client);
 
-        Self::Pending(span_builder, tracer)
+        Self::Pending(Box::new(span_builder), tracer)
     }
 
     pub fn start_with_context(self, parent_cx: &Context) -> Self {

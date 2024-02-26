@@ -25,22 +25,22 @@ impl AwsTarget<'_> {
         }
     }
 
-    pub fn attributes(&self, operation: &str) -> Vec<KeyValue> {
+    pub fn attributes(&self, operation: impl Into<StringValue>) -> Vec<KeyValue> {
         match self {
             AwsTarget::Dynamo(table_name) => vec![
                 semcov::DB_SYSTEM.string("dynamodb"),
-                semcov::DB_OPERATION.string(operation.to_string()),
+                semcov::DB_OPERATION.string(operation),
                 semcov::AWS_DYNAMODB_TABLE_NAMES
                     .array(vec![Into::<StringValue>::into(table_name.to_string())]),
             ],
             AwsTarget::Firehose(stream_name) => vec![
                 semcov::MESSAGING_SYSTEM.string("firehose"),
-                semcov::MESSAGING_OPERATION.string(operation.to_string()),
+                semcov::MESSAGING_OPERATION.string(operation),
                 semcov::MESSAGING_DESTINATION_NAME.string(stream_name.to_string()),
             ],
             AwsTarget::Sns(topic_arn) => vec![
                 semcov::MESSAGING_SYSTEM.string("sns"),
-                semcov::MESSAGING_OPERATION.string(operation.to_string()),
+                semcov::MESSAGING_OPERATION.string(operation),
                 semcov::MESSAGING_DESTINATION_NAME.string(topic_arn.to_string()),
             ],
         }
@@ -53,11 +53,15 @@ pub struct AwsSpanBuilder {
 }
 
 impl AwsSpanBuilder {
-    pub fn new(aws_target: AwsTarget, operation: &str, method: &str) -> Self {
+    pub fn new(
+        aws_target: AwsTarget,
+        operation: impl Into<StringValue>,
+        method: impl Into<StringValue>,
+    ) -> Self {
         let tracer = global::tracer("aws_sdk");
         let service = aws_target.service();
         let mut attributes: Vec<KeyValue> = vec![
-            semcov::RPC_METHOD.string(method.to_string()),
+            semcov::RPC_METHOD.string(method),
             semcov::RPC_SYSTEM.string("aws-api"),
             semcov::RPC_SERVICE.string(service),
         ];
@@ -86,7 +90,11 @@ pub struct AwsSpan {
 }
 
 impl AwsSpan {
-    pub fn new(aws_target: AwsTarget, operation: &str, method: &str) -> AwsSpanBuilder {
+    pub fn new(
+        aws_target: AwsTarget,
+        operation: impl Into<StringValue>,
+        method: impl Into<StringValue>,
+    ) -> AwsSpanBuilder {
         AwsSpanBuilder::new(aws_target, operation, method)
     }
 

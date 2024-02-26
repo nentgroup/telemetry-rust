@@ -11,9 +11,9 @@ use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 
-pub use opentelemetry::Context;
-pub use tracing_opentelemetry::OpenTelemetrySpanExt;
+pub use opentelemetry::{Array, Context, Key, KeyValue, StringValue, Value};
 pub use opentelemetry_semantic_conventions::trace as semcov;
+pub use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 pub mod middleware;
 pub mod propagation;

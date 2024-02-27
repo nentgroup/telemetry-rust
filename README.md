@@ -31,3 +31,32 @@ async fn main() {
 
     // ...
 ```
+
+## AWS instrumentation
+
+Creating new span:
+
+```rust
+// create new span directly by using current span context
+let aws_span = AwsSpan::new(AwsTarget::Dynamo("table_name"), "MyOperation", "GET");
+
+// or by providing an explicit parent context
+let context = Span::current().context();
+let aws_span = AwsSpan::with_context(AwsTarget::Dynamo("table_name"), "MyOperation", "GET", &context);
+
+// or build it using builder pattern
+let builder = AwsSpan::build(AwsTarget::Dynamo("table_name"), "MyOperation", "GET")
+let aws_span = builder.start();
+let aws_span = builder.start_with_context(&context);
+```
+
+Ending the span once AWS operation is complete:
+
+```rust
+let res = dynamo_client
+    .transact_get_items()
+    .set_transact_items(Some(transact_items))
+    .send()
+    .await;
+aws_span.end(&res);
+```

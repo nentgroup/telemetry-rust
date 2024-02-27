@@ -93,12 +93,32 @@ pub struct AwsSpan {
 }
 
 impl AwsSpan {
-    pub fn new(
+    #[inline]
+    pub fn build(
         aws_target: impl IntoAttributes,
         operation: impl Into<StringValue>,
         method: impl Into<StringValue>,
     ) -> AwsSpanBuilder {
         AwsSpanBuilder::new(aws_target, operation, method)
+    }
+
+    #[inline]
+    pub fn new(
+        aws_target: impl IntoAttributes,
+        operation: impl Into<StringValue>,
+        method: impl Into<StringValue>,
+    ) -> Self {
+        Self::build(aws_target, operation, method).start()
+    }
+
+    #[inline]
+    pub fn new_with_context(
+        aws_target: impl IntoAttributes,
+        operation: impl Into<StringValue>,
+        method: impl Into<StringValue>,
+        parent_cx: &Context,
+    ) -> Self {
+        Self::build(aws_target, operation, method).start_with_context(parent_cx)
     }
 
     pub fn end<T, E>(self, aws_response: &Result<T, E>)

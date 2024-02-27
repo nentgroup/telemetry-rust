@@ -2,13 +2,11 @@ use aws_types::request_id::RequestId;
 use opentelemetry::{
     global::{self, BoxedSpan, BoxedTracer},
     trace::{Span as TelemetrySpan, SpanBuilder, SpanKind, Status, Tracer},
-    Context, KeyValue, StringValue,
 };
 use std::error::Error;
 use tracing::Span;
-use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use crate::semcov;
+use crate::{semcov, Context, KeyValue, OpenTelemetrySpanExt, StringValue};
 
 pub enum AwsTarget<'a> {
     Dynamo(&'a str),

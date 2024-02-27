@@ -16,7 +16,7 @@ pub enum AwsTarget<T: Into<StringValue>> {
 
 pub trait IntoAttributes {
     fn service(&self) -> &'static str;
-    fn into_attributes(self, operation: impl Into<StringValue>) -> Vec<KeyValue>;
+    fn into_attributes(self, method: &StringValue) -> Vec<KeyValue>;
 }
 
 impl<T: Into<StringValue>> IntoAttributes for AwsTarget<T> {
@@ -28,22 +28,25 @@ impl<T: Into<StringValue>> IntoAttributes for AwsTarget<T> {
         }
     }
 
-    fn into_attributes(self, operation: impl Into<StringValue>) -> Vec<KeyValue> {
+    fn into_attributes(self, method: &StringValue) -> Vec<KeyValue> {
         match self {
-            AwsTarget::Dynamo(table_name) => vec![
-                semcov::DB_SYSTEM.string("dynamodb"),
-                semcov::DB_OPERATION.string(operation),
-                semcov::AWS_DYNAMODB_TABLE_NAMES
-                    .array(vec![Into::<StringValue>::into(table_name)]),
-            ],
+            AwsTarget::Dynamo(table_name) => {
+                let table_name: StringValue = table_name.into();
+                vec![
+                    semcov::DB_SYSTEM.string("dynamodb"),
+                    semcov::DB_NAME.string(table_name.clone()),
+                    semcov::DB_OPERATION.string(method.to_owned()),
+                    semcov::AWS_DYNAMODB_TABLE_NAMES.array(vec![table_name]),
+                ]
+            }
             AwsTarget::Firehose(stream_name) => vec![
-                semcov::MESSAGING_SYSTEM.string("firehose"),
-                semcov::MESSAGING_OPERATION.string(operation),
+                semcov::MESSAGING_SYSTEM.string("aws_firehose"),
+                semcov::MESSAGING_OPERATION.string("publish"),
                 semcov::MESSAGING_DESTINATION_NAME.string(stream_name),
             ],
             AwsTarget::Sns(topic_arn) => vec![
-                semcov::MESSAGING_SYSTEM.string("sns"),
-                semcov::MESSAGING_OPERATION.string(operation),
+                semcov::MESSAGING_SYSTEM.string("aws_sns"),
+                semcov::MESSAGING_OPERATION.string("publish"),
                 semcov::MESSAGING_DESTINATION_NAME.string(topic_arn),
             ],
         }
@@ -56,20 +59,17 @@ pub struct AwsSpanBuilder {
 }
 
 impl AwsSpanBuilder {
-    pub fn new(
-        aws_target: impl IntoAttributes,
-        operation: impl Into<StringValue>,
-        method: impl Into<StringValue> + Display,
-    ) -> Self {
+    pub fn new(aws_target: impl IntoAttributes, method: impl Into<StringValue>) -> Self {
         let tracer = global::tracer("aws_sdk");
         let service = aws_target.service();
+        let method: StringValue = method.into();
         let span_name = format!("{service}.{method}");
-        let mut attributes: Vec<KeyValue> = vec![
+        let mut attributes = aws_target.into_attributes(&method);
+        attributes.extend(vec![
             semcov::RPC_METHOD.string(method),
             semcov::RPC_SYSTEM.string("aws-api"),
             semcov::RPC_SERVICE.string(service),
-        ];
-        attributes.extend(aws_target.into_attributes(operation));
+        ]);
         let inner = tracer
             .span_builder(span_name)
             .with_attributes(attributes)
@@ -97,29 +97,26 @@ impl AwsSpan {
     #[inline]
     pub fn build(
         aws_target: impl IntoAttributes,
-        operation: impl Into<StringValue>,
         method: impl Into<StringValue> + Display,
     ) -> AwsSpanBuilder {
-        AwsSpanBuilder::new(aws_target, operation, method)
+        AwsSpanBuilder::new(aws_target, method)
     }
 
     #[inline]
     pub fn new(
         aws_target: impl IntoAttributes,
-        operation: impl Into<StringValue>,
         method: impl Into<StringValue> + Display,
     ) -> Self {
-        Self::build(aws_target, operation, method).start()
+        Self::build(aws_target, method).start()
     }
 
     #[inline]
     pub fn with_context(
         aws_target: impl IntoAttributes,
-        operation: impl Into<StringValue>,
         method: impl Into<StringValue> + Display,
         parent_cx: &Context,
     ) -> Self {
-        Self::build(aws_target, operation, method).start_with_context(parent_cx)
+        Self::build(aws_target, method).start_with_context(parent_cx)
     }
 
     pub fn end<T, E>(self, aws_response: &Result<T, E>)

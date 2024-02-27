@@ -16,6 +16,7 @@ pub enum AwsTarget<T: Into<StringValue>> {
 
 pub trait IntoAttributes {
     fn service(&self) -> &'static str;
+    fn span_kind(&self) -> SpanKind;
     fn into_attributes(self, method: &StringValue) -> Vec<KeyValue>;
 }
 
@@ -25,6 +26,14 @@ impl<T: Into<StringValue>> IntoAttributes for AwsTarget<T> {
             AwsTarget::Dynamo(_) => "DynamoDB",
             AwsTarget::Firehose(_) => "Firehose",
             AwsTarget::Sns(_) => "SNS",
+        }
+    }
+
+    fn span_kind(&self) -> SpanKind {
+        match self {
+            AwsTarget::Dynamo(_) => SpanKind::Client,
+            AwsTarget::Firehose(_) => SpanKind::Producer,
+            AwsTarget::Sns(_) => SpanKind::Consumer,
         }
     }
 
@@ -64,6 +73,7 @@ impl AwsSpanBuilder {
         let service = aws_target.service();
         let method: StringValue = method.into();
         let span_name = format!("{service}.{method}");
+        let span_kind = aws_target.span_kind();
         let mut attributes = aws_target.into_attributes(&method);
         attributes.extend(vec![
             semcov::RPC_METHOD.string(method),
@@ -73,7 +83,7 @@ impl AwsSpanBuilder {
         let inner = tracer
             .span_builder(span_name)
             .with_attributes(attributes)
-            .with_kind(SpanKind::Client);
+            .with_kind(span_kind);
 
         Self { inner, tracer }
     }

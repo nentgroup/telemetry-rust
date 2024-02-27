@@ -3,7 +3,7 @@ use opentelemetry::{
     global::{self, BoxedSpan, BoxedTracer},
     trace::{Span as TelemetrySpan, SpanBuilder, SpanKind, Status, Tracer},
 };
-use std::error::Error;
+use std::{error::Error, fmt::Display};
 use tracing::Span;
 
 use crate::{semcov, Context, KeyValue, OpenTelemetrySpanExt, StringValue};
@@ -22,9 +22,9 @@ pub trait IntoAttributes {
 impl<T: Into<StringValue>> IntoAttributes for AwsTarget<T> {
     fn service(&self) -> &'static str {
         match self {
-            AwsTarget::Dynamo(_) => "dynamodb",
-            AwsTarget::Firehose(_) => "firehose",
-            AwsTarget::Sns(_) => "sns",
+            AwsTarget::Dynamo(_) => "DynamoDB",
+            AwsTarget::Firehose(_) => "Firehose",
+            AwsTarget::Sns(_) => "SNS",
         }
     }
 
@@ -59,10 +59,11 @@ impl AwsSpanBuilder {
     pub fn new(
         aws_target: impl IntoAttributes,
         operation: impl Into<StringValue>,
-        method: impl Into<StringValue>,
+        method: impl Into<StringValue> + Display,
     ) -> Self {
         let tracer = global::tracer("aws_sdk");
         let service = aws_target.service();
+        let span_name = format!("{service}.{method}");
         let mut attributes: Vec<KeyValue> = vec![
             semcov::RPC_METHOD.string(method),
             semcov::RPC_SYSTEM.string("aws-api"),
@@ -70,7 +71,7 @@ impl AwsSpanBuilder {
         ];
         attributes.extend(aws_target.into_attributes(operation));
         let inner = tracer
-            .span_builder(format!("aws_{service}"))
+            .span_builder(span_name)
             .with_attributes(attributes)
             .with_kind(SpanKind::Client);
 
@@ -97,7 +98,7 @@ impl AwsSpan {
     pub fn build(
         aws_target: impl IntoAttributes,
         operation: impl Into<StringValue>,
-        method: impl Into<StringValue>,
+        method: impl Into<StringValue> + Display,
     ) -> AwsSpanBuilder {
         AwsSpanBuilder::new(aws_target, operation, method)
     }
@@ -106,7 +107,7 @@ impl AwsSpan {
     pub fn new(
         aws_target: impl IntoAttributes,
         operation: impl Into<StringValue>,
-        method: impl Into<StringValue>,
+        method: impl Into<StringValue> + Display,
     ) -> Self {
         Self::build(aws_target, operation, method).start()
     }
@@ -115,7 +116,7 @@ impl AwsSpan {
     pub fn with_context(
         aws_target: impl IntoAttributes,
         operation: impl Into<StringValue>,
-        method: impl Into<StringValue>,
+        method: impl Into<StringValue> + Display,
         parent_cx: &Context,
     ) -> Self {
         Self::build(aws_target, operation, method).start_with_context(parent_cx)

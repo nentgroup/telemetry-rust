@@ -8,10 +8,10 @@ use tracing::Span;
 
 use crate::{semcov, Context, KeyValue, OpenTelemetrySpanExt, StringValue};
 
-pub enum AwsTarget<'a> {
-    Dynamo(&'a str),
-    Firehose(&'a str),
-    Sns(&'a str),
+pub enum AwsTarget<T: Into<StringValue>> {
+    Dynamo(T),
+    Firehose(T),
+    Sns(T),
 }
 
 pub trait IntoAttributes {
@@ -19,7 +19,7 @@ pub trait IntoAttributes {
     fn into_attributes(self, operation: impl Into<StringValue>) -> Vec<KeyValue>;
 }
 
-impl IntoAttributes for AwsTarget<'_> {
+impl<T: Into<StringValue>> IntoAttributes for AwsTarget<T> {
     fn service(&self) -> &'static str {
         match self {
             AwsTarget::Dynamo(_) => "dynamodb",
@@ -34,17 +34,17 @@ impl IntoAttributes for AwsTarget<'_> {
                 semcov::DB_SYSTEM.string("dynamodb"),
                 semcov::DB_OPERATION.string(operation),
                 semcov::AWS_DYNAMODB_TABLE_NAMES
-                    .array(vec![Into::<StringValue>::into(table_name.to_string())]),
+                    .array(vec![Into::<StringValue>::into(table_name)]),
             ],
             AwsTarget::Firehose(stream_name) => vec![
                 semcov::MESSAGING_SYSTEM.string("firehose"),
                 semcov::MESSAGING_OPERATION.string(operation),
-                semcov::MESSAGING_DESTINATION_NAME.string(stream_name.to_string()),
+                semcov::MESSAGING_DESTINATION_NAME.string(stream_name),
             ],
             AwsTarget::Sns(topic_arn) => vec![
                 semcov::MESSAGING_SYSTEM.string("sns"),
                 semcov::MESSAGING_OPERATION.string(operation),
-                semcov::MESSAGING_DESTINATION_NAME.string(topic_arn.to_string()),
+                semcov::MESSAGING_DESTINATION_NAME.string(topic_arn),
             ],
         }
     }

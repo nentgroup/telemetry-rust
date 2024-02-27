@@ -112,7 +112,7 @@ impl AwsSpan {
     }
 
     #[inline]
-    pub fn new_with_context(
+    pub fn with_context(
         aws_target: impl IntoAttributes,
         operation: impl Into<StringValue>,
         method: impl Into<StringValue>,

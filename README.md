@@ -38,14 +38,14 @@ Creating new span:
 
 ```rust
 // create new span directly by using current span context
-let aws_span = AwsSpan::new(AwsTarget::Dynamo("table_name"), "MyOperation", "GET");
+let aws_span = AwsSpan::new(AwsTarget::Dynamo("table_name"), "TransactGetItems");
 
 // or by providing an explicit parent context
 let context = Span::current().context();
-let aws_span = AwsSpan::with_context(AwsTarget::Dynamo("table_name"), "MyOperation", "GET", &context);
+let aws_span = AwsSpan::with_context(AwsTarget::Dynamo("table_name"), "TransactGetItems", &context);
 
 // or build it using builder pattern
-let builder = AwsSpan::build(AwsTarget::Dynamo("table_name"), "MyOperation", "GET")
+let builder = AwsSpan::build(AwsTarget::Dynamo("table_name"), "TransactGetItems")
 let aws_span = builder.start();
 let aws_span = builder.start_with_context(&context);
 ```
@@ -59,4 +59,23 @@ let res = dynamo_client
     .send()
     .await;
 aws_span.end(&res);
+```
+
+Defining a custom aws target:
+
+```rust
+struct S3Target {}
+impl IntoAttributes for S3Target {
+    fn service(&self) -> &'static str {
+        "s3"
+    }
+
+    fn into_attributes(self, _method: &'static str) -> Vec<KeyValue> {
+        vec![semcov::AWS_S3_BUCKET.string("my_bucket")]
+    }
+}
+```
+
+```rust
+let s3_span = AwsSpan::new(S3Target {}, "GetObject");
 ```

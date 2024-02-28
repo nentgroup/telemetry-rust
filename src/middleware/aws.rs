@@ -17,7 +17,7 @@ pub enum AwsTarget<T: Into<StringValue>> {
 pub trait IntoAttributes {
     fn service(&self) -> &'static str;
     fn span_kind(&self) -> SpanKind;
-    fn into_attributes(self, method: &StringValue) -> Vec<KeyValue>;
+    fn into_attributes(self, method: &'static str) -> Vec<KeyValue>;
 }
 
 impl<T: Into<StringValue>> IntoAttributes for AwsTarget<T> {
@@ -37,14 +37,14 @@ impl<T: Into<StringValue>> IntoAttributes for AwsTarget<T> {
         }
     }
 
-    fn into_attributes(self, method: &StringValue) -> Vec<KeyValue> {
+    fn into_attributes(self, method: &'static str) -> Vec<KeyValue> {
         match self {
             AwsTarget::Dynamo(table_name) => {
                 let table_name: StringValue = table_name.into();
                 vec![
                     semcov::DB_SYSTEM.string("dynamodb"),
                     semcov::DB_NAME.string(table_name.clone()),
-                    semcov::DB_OPERATION.string(method.to_owned()),
+                    semcov::DB_OPERATION.string(method),
                     semcov::AWS_DYNAMODB_TABLE_NAMES.array(vec![table_name]),
                 ]
             }
@@ -68,13 +68,13 @@ pub struct AwsSpanBuilder {
 }
 
 impl AwsSpanBuilder {
-    pub fn new(aws_target: impl IntoAttributes, method: impl Into<StringValue>) -> Self {
+    pub fn new(aws_target: impl IntoAttributes, method: impl Into<&'static str>) -> Self {
         let tracer = global::tracer("aws_sdk");
         let service = aws_target.service();
-        let method: StringValue = method.into();
+        let method: &'static str = method.into();
         let span_name = format!("{service}.{method}");
         let span_kind = aws_target.span_kind();
-        let mut attributes = aws_target.into_attributes(&method);
+        let mut attributes = aws_target.into_attributes(method);
         attributes.extend(vec![
             semcov::RPC_METHOD.string(method),
             semcov::RPC_SYSTEM.string("aws-api"),
@@ -107,23 +107,20 @@ impl AwsSpan {
     #[inline]
     pub fn build(
         aws_target: impl IntoAttributes,
-        method: impl Into<StringValue> + Display,
+        method: impl Into<&'static str>,
     ) -> AwsSpanBuilder {
         AwsSpanBuilder::new(aws_target, method)
     }
 
     #[inline]
-    pub fn new(
-        aws_target: impl IntoAttributes,
-        method: impl Into<StringValue> + Display,
-    ) -> Self {
+    pub fn new(aws_target: impl IntoAttributes, method: impl Into<&'static str>) -> Self {
         Self::build(aws_target, method).start()
     }
 
     #[inline]
     pub fn with_context(
         aws_target: impl IntoAttributes,
-        method: impl Into<StringValue> + Display,
+        method: impl Into<&'static str>,
         parent_cx: &Context,
     ) -> Self {
         Self::build(aws_target, method).start_with_context(parent_cx)

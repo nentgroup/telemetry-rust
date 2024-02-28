@@ -3,7 +3,7 @@ use opentelemetry::{
     global::{self, BoxedSpan, BoxedTracer},
     trace::{Span as TelemetrySpan, SpanBuilder, SpanKind, Status, Tracer},
 };
-use std::{error::Error, fmt::Display};
+use std::error::Error;
 use tracing::Span;
 
 use crate::{semcov, Context, KeyValue, OpenTelemetrySpanExt, StringValue};

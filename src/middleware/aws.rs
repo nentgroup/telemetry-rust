@@ -16,7 +16,9 @@ pub enum AwsTarget<T: Into<StringValue>> {
 
 pub trait IntoAttributes {
     fn service(&self) -> &'static str;
-    fn span_kind(&self) -> SpanKind;
+    fn span_kind(&self) -> SpanKind {
+        SpanKind::Client
+    }
     fn into_attributes(self, method: &'static str) -> Vec<KeyValue>;
 }
 

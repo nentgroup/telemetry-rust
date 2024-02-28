@@ -31,3 +31,54 @@ async fn main() {
 
     // ...
 ```
+
+## AWS instrumentation
+
+Creating new span:
+
+```rust
+// create new span directly by using current span context
+let aws_span = AwsSpan::new(AwsTarget::Dynamo("table_name"), "GetItem");
+
+// or by providing an explicit parent context
+let context = Span::current().context();
+let aws_span = AwsSpan::with_context(AwsTarget::Dynamo("table_name"), "GetItem", &context);
+
+// or build it using builder pattern
+let builder = AwsSpan::build(AwsTarget::Dynamo("table_name"), "GetItem")
+    .set_attribute(semcov::AWS_DYNAMODB_INDEX_NAME.string("my_index"));
+let aws_span = builder.start();
+let aws_span = builder.start_with_context(&context);
+```
+
+Ending the span once AWS operation is complete:
+
+```rust
+let res = dynamo_client
+    .get_item()
+    .table_name("table_name")
+    .index_name("my_index")
+    .set_key(primary_key)
+    .send()
+    .await;
+aws_span.end(&res);
+```
+
+Defining a custom aws target:
+
+```rust
+struct S3Target {}
+impl IntoAttributes for S3Target {
+    fn service(&self) -> &'static str {
+        "s3"
+    }
+
+    fn into_attributes(self, _method: &'static str) -> Vec<KeyValue> {
+        vec![semcov::AWS_S3_BUCKET.string("my_bucket")]
+    }
+}
+```
+
+```rust
+let s3_span = AwsSpan::new(S3Target {}, "GetObject");
+```

@@ -37,18 +37,20 @@ futures-util = { version = "0.3", default_features = false, features = [], optio
 hyper = { version = "0.14", default-features = false, features = ["http1", "client"] }
 hyper-v1 = { package = "hyper", version = "1.1", default-features = false, features = ["http1", "client"], optional = true }
 http-body-util = { version = "0.1.0", optional = true }
+aws-types =  { version = "1", optional = true }
 
 [dev-dependencies]
 assert2 = "0.3"
 rstest = "0.18"
 
 [features]
-full = ["test"]
+full = ["aws", "test"]
 default = ["zipkin"]
 zipkin = ["dep:opentelemetry-zipkin"]
 test = ["axum", "dep:serde", "dep:serde_json", "dep:opentelemetry_api", "dep:rand"]
 axum = ["dep:axum", "dep:tower", "dep:futures-util", "dep:pin-project-lite"]
 hyper-v1 = ["dep:hyper-v1", "dep:http-body-util"]
+aws = ["dep:aws-types"]
 
 [profile.dev]
 lto = false

@@ -35,7 +35,7 @@ impl<T: Into<StringValue>> IntoAttributes for AwsTarget<T> {
         match self {
             AwsTarget::Dynamo(_) => SpanKind::Client,
             AwsTarget::Firehose(_) => SpanKind::Producer,
-            AwsTarget::Sns(_) => SpanKind::Consumer,
+            AwsTarget::Sns(_) => SpanKind::Producer,
         }
     }
 

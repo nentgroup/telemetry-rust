@@ -90,6 +90,12 @@ impl AwsSpanBuilder {
         Self { inner, tracer }
     }
 
+    pub fn set_attribute(&mut self, attribute: KeyValue) {
+        if let Some(attributes) = &mut self.inner.attributes {
+            attributes.push(attribute);
+        }
+    }
+
     pub fn start_with_context(self, parent_cx: &Context) -> AwsSpan {
         self.inner
             .start_with_context(&self.tracer, parent_cx)

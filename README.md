@@ -34,6 +34,24 @@ async fn main() {
 
 ## AWS instrumentation
 
+### AwsInstrumented trait
+
+```rust
+let res = dynamo_client
+    .get_item()
+    .table_name("table_name")
+    .index_name("my_index")
+    .set_key(primary_key)
+    .send()
+    .instrument(AwsSpan::build(
+        AwsTarget::Dynamo("table_name"),
+        "GetItem",
+    ))
+    .await;
+```
+
+### Low level API
+
 Creating new span:
 
 ```rust
@@ -47,7 +65,9 @@ let aws_span = AwsSpan::with_context(AwsTarget::Dynamo("table_name"), "GetItem",
 // or build it using builder pattern
 let builder = AwsSpan::build(AwsTarget::Dynamo("table_name"), "GetItem")
     .set_attribute(semcov::AWS_DYNAMODB_INDEX_NAME.string("my_index"));
+// and manually start it using either start or start_with_context
 let aws_span = builder.start();
+let aws_span = builder.context(&context).start();
 let aws_span = builder.start_with_context(&context);
 ```
 

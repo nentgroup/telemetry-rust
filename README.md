@@ -34,7 +34,7 @@ async fn main() {
 
 ## AWS instrumentation
 
-### AwsInstrumented trait
+### `AwsInstrumented` trait
 
 ```rust
 let res = dynamo_client

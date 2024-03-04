@@ -1653,6 +1653,7 @@ name = "telemetry-rust"
 version = "1.4.0"
 dependencies = [
  "assert2",
+ "async-trait",
  "aws-types",
  "axum 0.7.4",
  "futures-util",

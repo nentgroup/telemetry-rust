@@ -8,6 +8,12 @@ use tracing::Span;
 
 use crate::{semcov, Context, KeyValue, OpenTelemetrySpanExt, StringValue};
 
+#[cfg(feature = "aws-instrumentation")]
+mod instrumentation;
+
+#[cfg(feature = "aws-instrumentation")]
+pub use instrumentation::AwsInstrumented;
+
 pub enum AwsTarget<T: Into<StringValue>> {
     Dynamo(T),
     Firehose(T),
@@ -64,12 +70,13 @@ impl<T: Into<StringValue>> IntoAttributes for AwsTarget<T> {
     }
 }
 
-pub struct AwsSpanBuilder {
+pub struct AwsSpanBuilder<'a> {
     inner: SpanBuilder,
     tracer: BoxedTracer,
+    context: Option<&'a Context>,
 }
 
-impl AwsSpanBuilder {
+impl<'a> AwsSpanBuilder<'a> {
     pub fn new(aws_target: impl IntoAttributes, method: impl Into<&'static str>) -> Self {
         let tracer = global::tracer("aws_sdk");
         let service = aws_target.service();
@@ -87,13 +94,28 @@ impl AwsSpanBuilder {
             .with_attributes(attributes)
             .with_kind(span_kind);
 
-        Self { inner, tracer }
+        Self {
+            inner,
+            tracer,
+            context: None,
+        }
     }
 
-    pub fn set_attribute(&mut self, attribute: KeyValue) {
+    pub fn attribute(mut self, attribute: KeyValue) -> Self {
         if let Some(attributes) = &mut self.inner.attributes {
             attributes.push(attribute);
         }
+        self
+    }
+
+    pub fn context(mut self, context: &'a Context) -> Self {
+        self.context = Some(context);
+        self
+    }
+
+    pub fn set_context(mut self, context: Option<&'a Context>) -> Self {
+        self.context = context;
+        self
     }
 
     pub fn start_with_context(self, parent_cx: &Context) -> AwsSpan {
@@ -103,7 +125,10 @@ impl AwsSpanBuilder {
     }
 
     pub fn start(self) -> AwsSpan {
-        self.start_with_context(&Span::current().context())
+        match self.context {
+            Some(context) => self.start_with_context(context),
+            None => self.start_with_context(&Span::current().context()),
+        }
     }
 }
 
@@ -113,10 +138,10 @@ pub struct AwsSpan {
 
 impl AwsSpan {
     #[inline]
-    pub fn build(
+    pub fn build<'a>(
         aws_target: impl IntoAttributes,
         method: impl Into<&'static str>,
-    ) -> AwsSpanBuilder {
+    ) -> AwsSpanBuilder<'a> {
         AwsSpanBuilder::new(aws_target, method)
     }
 

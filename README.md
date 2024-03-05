@@ -3,8 +3,9 @@
 ```rust
 use tracing::Level::INFO;
 // middleware::axum is available if feature flag axum is on
-use telemetry_rust::{init_tracing, middleware::axum::{
-    OtelAxumLayer, OtelInResponseLayer
+use telemetry_rust::{
+    init_tracing,
+    middleware::axum::{OtelAxumLayer, OtelInResponseLayer},
 };
 
 #[tracing::instrument]

@@ -3,7 +3,7 @@ use aws_types::request_id::RequestId;
 use futures_util::Future;
 use std::error::Error;
 
-use super::AwsSpanBuilder;
+use super::AwsOperation;
 
 #[async_trait]
 pub trait AwsInstrumented<T, E>
@@ -11,7 +11,10 @@ where
     T: RequestId,
     E: RequestId + Error,
 {
-    async fn instrument<'a>(self, span: AwsSpanBuilder<'a>) -> Result<T, E>;
+    async fn instrument<'a>(
+        self,
+        span: impl Into<AwsOperation<'a>> + Send,
+    ) -> Result<T, E>;
 }
 
 #[async_trait]
@@ -21,8 +24,11 @@ where
     E: RequestId + Error,
     F: Future<Output = Result<T, E>> + Send,
 {
-    async fn instrument<'a>(self, span: AwsSpanBuilder<'a>) -> Result<T, E> {
-        let span = span.start();
+    async fn instrument<'a>(
+        self,
+        span: impl Into<AwsOperation<'a>> + Send,
+    ) -> Result<T, E> {
+        let span = span.into().start();
         let result = self.await;
         span.end(&result);
         result

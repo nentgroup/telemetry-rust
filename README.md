@@ -44,10 +44,7 @@ let res = dynamo_client
     .index_name("my_index")
     .set_key(primary_key)
     .send()
-    .instrument(AwsSpan::build(
-        AwsTarget::Dynamo("table_name"),
-        "GetItem",
-    ))
+    .instrument(DynamoDBOperation::new("GetItem", "table_name"))
     .await;
 ```
 
@@ -56,20 +53,17 @@ let res = dynamo_client
 Creating new span:
 
 ```rust
-// create new span directly by using current span context
-let aws_span = AwsSpan::new(AwsTarget::Dynamo("table_name"), "GetItem");
+// create new span in the current span's context
+let aws_span = DynamoDBOperation::new("GetItem", "table_name").start();
 
-// or by providing an explicit parent context
+// or provide an explicit parent context
 let context = Span::current().context();
-let aws_span = AwsSpan::with_context(AwsTarget::Dynamo("table_name"), "GetItem", &context);
+let aws_span = DynamoDBOperation::new("GetItem", "table_name").context(&context).start();
 
-// or build it using builder pattern
-let builder = AwsSpan::build(AwsTarget::Dynamo("table_name"), "GetItem")
-    .set_attribute(semcov::AWS_DYNAMODB_INDEX_NAME.string("my_index"));
-// and manually start it using either start or start_with_context
-let aws_span = builder.start();
-let aws_span = builder.context(&context).start();
-let aws_span = builder.start_with_context(&context);
+// optionally, set custom span span attributes
+let builder = DynamoDBOperation::new("GetItem", "table_name")
+    .attribute(semcov::AWS_DYNAMODB_INDEX_NAME.string("my_index"))
+    .start();
 ```
 
 Ending the span once AWS operation is complete:
@@ -85,21 +79,13 @@ let res = dynamo_client
 aws_span.end(&res);
 ```
 
-Defining a custom aws target:
+Creating a span for a custom aws target:
 
 ```rust
-struct S3Target {}
-impl IntoAttributes for S3Target {
-    fn service(&self) -> &'static str {
-        "s3"
-    }
-
-    fn into_attributes(self, _method: &'static str) -> Vec<KeyValue> {
-        vec![semcov::AWS_S3_BUCKET.string("my_bucket")]
-    }
-}
-```
-
-```rust
-let s3_span = AwsSpan::new(S3Target {}, "GetObject");
+let s3_span = AwsOperation::client(
+    "S3",
+    "GetObject",
+    vec![semcov::AWS_S3_BUCKET.string("my_bucket")],
+)
+.start();
 ```

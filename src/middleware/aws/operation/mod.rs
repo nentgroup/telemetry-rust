@@ -109,3 +109,40 @@ impl<'a> AwsOperation<'a> {
         }
     }
 }
+
+macro_rules! aws_target {
+    ($target: ident) => {
+        pub struct $target<'a>($crate::middleware::aws::AwsOperation<'a>);
+
+        impl<'a> From<$target<'a>> for $crate::middleware::aws::AwsOperation<'a> {
+            #[inline]
+            fn from(outer: $target<'a>) -> Self {
+                outer.0
+            }
+        }
+
+        impl<'a> $target<'a> {
+            #[inline]
+            pub fn attribute(self, attribute: $crate::KeyValue) -> Self {
+                Self(self.0.attribute(attribute))
+            }
+
+            #[inline]
+            pub fn context(self, context: &'a $crate::Context) -> Self {
+                Self(self.0.context(context))
+            }
+
+            #[inline]
+            pub fn set_context(self, context: Option<&'a $crate::Context>) -> Self {
+                Self(self.0.set_context(context))
+            }
+
+            #[inline]
+            pub fn start(self) -> $crate::middleware::aws::AwsSpan {
+                self.0.start()
+            }
+        }
+    };
+}
+
+pub(super) use aws_target;

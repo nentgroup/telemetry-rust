@@ -1,8 +1,8 @@
-use crate::{semcov, Context, KeyValue, StringValue};
+use crate::{semcov, StringValue};
 
-use super::{AwsOperation, AwsSpan};
+use super::{aws_target, AwsOperation};
 
-pub struct FirehoseOperation<'a>(AwsOperation<'a>);
+aws_target!(FirehoseOperation);
 
 impl FirehoseOperation<'_> {
     pub fn new(
@@ -15,34 +15,5 @@ impl FirehoseOperation<'_> {
             semcov::MESSAGING_DESTINATION_NAME.string(stream_name),
         ];
         Self(AwsOperation::producer("Firehose", method, attributes))
-    }
-}
-
-impl<'a> From<FirehoseOperation<'a>> for AwsOperation<'a> {
-    #[inline]
-    fn from(outer: FirehoseOperation<'a>) -> Self {
-        outer.0
-    }
-}
-
-impl<'a> FirehoseOperation<'a> {
-    #[inline]
-    pub fn attribute(self, attribute: KeyValue) -> Self {
-        Self(self.0.attribute(attribute))
-    }
-
-    #[inline]
-    pub fn context(self, context: &'a Context) -> Self {
-        Self(self.0.context(context))
-    }
-
-    #[inline]
-    pub fn set_context(self, context: Option<&'a Context>) -> Self {
-        Self(self.0.set_context(context))
-    }
-
-    #[inline]
-    pub fn start(self) -> AwsSpan {
-        self.0.start()
     }
 }

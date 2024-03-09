@@ -74,12 +74,16 @@ impl<'a> AwsOperation<'a> {
         Self::new(SpanKind::Consumer, service, method, attributes)
     }
 
-    #[inline]
-    pub fn attribute(mut self, attribute: KeyValue) -> Self {
+    pub fn attributes(mut self, iter: impl IntoIterator<Item = KeyValue>) -> Self {
         if let Some(attributes) = &mut self.inner.attributes {
-            attributes.push(attribute);
+            attributes.extend(iter);
         }
         self
+    }
+
+    #[inline]
+    pub fn attribute(self, attribute: KeyValue) -> Self {
+        self.attributes(std::iter::once(attribute))
     }
 
     #[inline]
@@ -122,6 +126,13 @@ macro_rules! aws_target {
         }
 
         impl<'a> $target<'a> {
+            pub fn attributes(
+                self,
+                iter: impl IntoIterator<Item = $crate::KeyValue>,
+            ) -> Self {
+                Self(self.0.attributes(iter))
+            }
+
             #[inline]
             pub fn attribute(self, attribute: $crate::KeyValue) -> Self {
                 Self(self.0.attribute(attribute))

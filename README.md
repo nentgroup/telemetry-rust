@@ -63,8 +63,12 @@ let context = Span::current().context();
 let aws_span = DynamoDBOperation::get_item("table_name").context(&context).start();
 
 // or set custom span attributes
-let builder = DynamoDBOperation::get_item("table_name")
+let aws_span = DynamoDBOperation::get_item("table_name")
     .attribute(semcov::AWS_DYNAMODB_INDEX_NAME.string("my_index"))
+    .attributes(vec![
+        semcov::AWS_DYNAMODB_LIMIT.i64(6),
+        semcov::AWS_DYNAMODB_SELECT.string("ALL_ATTRIBUTES"),
+    ])
     .start();
 ```
 

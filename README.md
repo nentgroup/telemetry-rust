@@ -53,14 +53,16 @@ let res = dynamo_client
 Creating new span:
 
 ```rust
-// create new span in the current span's context
+// create new span in the current span's context using either a dedicated constructor
 let aws_span = DynamoDBOperation::get_item("table_name").start();
+// or a generic one
+let aws_span = DynamoDBOperation::new("GetItem", "table_name").start();
 
-// or provide an explicit parent context
+// optionally, provide an explicit parent context
 let context = Span::current().context();
 let aws_span = DynamoDBOperation::get_item("table_name").context(&context).start();
 
-// optionally, set custom span span attributes
+// or set custom span attributes
 let builder = DynamoDBOperation::get_item("table_name")
     .attribute(semcov::AWS_DYNAMODB_INDEX_NAME.string("my_index"))
     .start();
@@ -79,11 +81,15 @@ let res = dynamo_client
 aws_span.end(&res);
 ```
 
-Creating a span for a custom aws operation:
+Only the following AWS targets are fully supported at the moment:
+
+ * DynamoDB
+ * SNS
+ * Firehose
+
+But a generic `AwsOperation` could be used to instrument any other AWS SDK:
 
 ```rust
-let dynamo_span = DynamoDBOperation::new("GetItem", "table_name").start();
-
 let s3_span = AwsOperation::client(
     "S3",
     "GetObject",

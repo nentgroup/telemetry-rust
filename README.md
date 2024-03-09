@@ -44,7 +44,7 @@ let res = dynamo_client
     .index_name("my_index")
     .set_key(primary_key)
     .send()
-    .instrument(DynamoDBOperation::new("GetItem", "table_name"))
+    .instrument(DynamoDBOperation::get_item("table_name"))
     .await;
 ```
 
@@ -54,14 +54,14 @@ Creating new span:
 
 ```rust
 // create new span in the current span's context
-let aws_span = DynamoDBOperation::new("GetItem", "table_name").start();
+let aws_span = DynamoDBOperation::get_item("table_name").start();
 
 // or provide an explicit parent context
 let context = Span::current().context();
-let aws_span = DynamoDBOperation::new("GetItem", "table_name").context(&context).start();
+let aws_span = DynamoDBOperation::get_item("table_name").context(&context).start();
 
 // optionally, set custom span span attributes
-let builder = DynamoDBOperation::new("GetItem", "table_name")
+let builder = DynamoDBOperation::get_item("table_name")
     .attribute(semcov::AWS_DYNAMODB_INDEX_NAME.string("my_index"))
     .start();
 ```
@@ -79,9 +79,11 @@ let res = dynamo_client
 aws_span.end(&res);
 ```
 
-Creating a span for a custom aws target:
+Creating a span for a custom aws operation:
 
 ```rust
+let dynamo_span = DynamoDBOperation::new("GetItem", "table_name").start();
+
 let s3_span = AwsOperation::client(
     "S3",
     "GetObject",

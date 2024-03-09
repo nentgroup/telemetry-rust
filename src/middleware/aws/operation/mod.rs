@@ -4,7 +4,7 @@ use opentelemetry::{
 };
 use tracing::Span;
 
-pub use super::AwsSpan;
+pub(super) use super::AwsSpan;
 use crate::{semcov, Context, KeyValue, OpenTelemetrySpanExt, StringValue};
 
 mod dynamodb;
@@ -145,4 +145,10 @@ macro_rules! aws_target {
     };
 }
 
-pub(super) use aws_target;
+macro_rules! stringify_camel {
+    ($var: ident) => {
+        paste::paste! { stringify!([<$var:camel>]) }
+    };
+}
+
+pub(super) use {aws_target, stringify_camel};

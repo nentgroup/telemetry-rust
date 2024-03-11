@@ -114,6 +114,42 @@ impl<'a> AwsOperation<'a> {
     }
 }
 
+pub enum MessagingOperationKind {
+    Publish,
+    Create,
+    Receive,
+    Control,
+}
+
+impl MessagingOperationKind {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            MessagingOperationKind::Publish => "publish",
+            MessagingOperationKind::Create => "create",
+            MessagingOperationKind::Receive => "receive",
+            MessagingOperationKind::Control => "control",
+        }
+    }
+}
+
+impl std::fmt::Display for MessagingOperationKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.as_str().fmt(f)
+    }
+}
+
+impl From<MessagingOperationKind> for SpanKind {
+    #[inline]
+    fn from(kind: MessagingOperationKind) -> Self {
+        match kind {
+            MessagingOperationKind::Publish => SpanKind::Producer,
+            MessagingOperationKind::Create => SpanKind::Producer,
+            MessagingOperationKind::Receive => SpanKind::Consumer,
+            MessagingOperationKind::Control => SpanKind::Client,
+        }
+    }
+}
+
 macro_rules! aws_target {
     ($target: ident) => {
         pub struct $target<'a>($crate::middleware::aws::AwsOperation<'a>);

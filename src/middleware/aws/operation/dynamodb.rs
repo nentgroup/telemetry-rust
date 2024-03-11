@@ -19,7 +19,7 @@ impl DynamoDBOperation<'_> {
         match table_names.len() {
             0 => {}
             1 => {
-                attributes.append(&mut vec![
+                attributes.extend([
                     semcov::DB_NAME.string(table_names[0].clone()),
                     semcov::AWS_DYNAMODB_TABLE_NAMES.array(table_names),
                 ]);

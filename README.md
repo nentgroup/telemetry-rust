@@ -56,7 +56,7 @@ Creating new span:
 // create new span in the current span's context using either a dedicated constructor
 let aws_span = DynamoDBOperation::get_item("table_name").start();
 // or a generic one
-let aws_span = DynamoDBOperation::new("GetItem", "table_name").start();
+let aws_span = DynamoDBOperation::new("GetItem", vec!["table_name"]).start();
 
 // optionally, provide an explicit parent context
 let context = Span::current().context();

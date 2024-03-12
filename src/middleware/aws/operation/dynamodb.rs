@@ -2,10 +2,10 @@ use crate::{semcov, StringValue};
 
 use super::*;
 
-aws_target!(DynamoDBOperation);
+pub enum DynamoDBOperation {}
 
-impl DynamoDBOperation<'_> {
-    pub fn new(
+impl<'a> AwsOperation<'a> {
+    pub fn dynamodb(
         method: impl Into<StringValue>,
         table_names: impl IntoIterator<Item = impl Into<StringValue>>,
     ) -> Self {
@@ -28,16 +28,19 @@ impl DynamoDBOperation<'_> {
                 attributes.push(semcov::AWS_DYNAMODB_TABLE_NAMES.array(table_names));
             }
         }
-        Self(AwsOperation::client("DynamoDB", method, attributes))
+        Self::client("DynamoDB", method, attributes)
     }
 }
 
 macro_rules! dynamodb_global_operation {
     ($op: ident) => {
-        impl<'a> DynamoDBOperation<'a> {
+        impl DynamoDBOperation {
             #[inline]
-            pub fn $op() -> Self {
-                Self::new(stringify_camel!($op), std::iter::empty::<StringValue>())
+            pub fn $op<'a>() -> AwsOperation<'a> {
+                AwsOperation::dynamodb(
+                    stringify_camel!($op),
+                    std::iter::empty::<StringValue>(),
+                )
             }
         }
     };
@@ -45,9 +48,9 @@ macro_rules! dynamodb_global_operation {
 
 macro_rules! dynamodb_table_operation {
     ($op: ident) => {
-        impl<'a> DynamoDBOperation<'a> {
-            pub fn $op(table_name: impl Into<StringValue>) -> Self {
-                Self::new(stringify_camel!($op), std::iter::once(table_name))
+        impl DynamoDBOperation {
+            pub fn $op<'a>(table_name: impl Into<StringValue>) -> AwsOperation<'a> {
+                AwsOperation::dynamodb(stringify_camel!($op), std::iter::once(table_name))
             }
         }
     };
@@ -55,10 +58,13 @@ macro_rules! dynamodb_table_operation {
 
 macro_rules! dynamodb_table_arn_operation {
     ($op: ident) => {
-        impl<'a> DynamoDBOperation<'a> {
-            pub fn $op(table_arn: impl Into<StringValue>) -> Self {
-                Self::new(stringify_camel!($op), std::iter::empty::<StringValue>())
-                    .attribute(semcov::DB_NAME.string(table_arn))
+        impl DynamoDBOperation {
+            pub fn $op<'a>(table_arn: impl Into<StringValue>) -> AwsOperation<'a> {
+                AwsOperation::dynamodb(
+                    stringify_camel!($op),
+                    std::iter::empty::<StringValue>(),
+                )
+                .attribute(semcov::DB_NAME.string(table_arn))
             }
         }
     };
@@ -66,11 +72,11 @@ macro_rules! dynamodb_table_arn_operation {
 
 macro_rules! dynamodb_batch_operation {
     ($op: ident) => {
-        impl<'a> DynamoDBOperation<'a> {
-            pub fn $op(
+        impl DynamoDBOperation {
+            pub fn $op<'a>(
                 table_names: impl IntoIterator<Item = impl Into<StringValue>>,
-            ) -> Self {
-                Self::new(stringify_camel!($op), table_names)
+            ) -> AwsOperation<'a> {
+                AwsOperation::dynamodb(stringify_camel!($op), table_names)
             }
         }
     };

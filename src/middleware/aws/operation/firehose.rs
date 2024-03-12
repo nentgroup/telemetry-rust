@@ -2,10 +2,10 @@ use crate::{semcov, StringValue};
 
 use super::*;
 
-aws_target!(FirehoseOperation);
+pub enum FirehoseOperation {}
 
-impl FirehoseOperation<'_> {
-    pub fn with_operation_kind(
+impl<'a> AwsOperation<'a> {
+    pub fn firehose(
         operation_kind: MessagingOperationKind,
         method: impl Into<StringValue>,
         stream_name: Option<impl Into<StringValue>>,
@@ -17,28 +17,20 @@ impl FirehoseOperation<'_> {
         if let Some(stream_name) = stream_name {
             attributes.push(semcov::MESSAGING_DESTINATION_NAME.string(stream_name))
         }
-        Self(AwsOperation::new(
-            operation_kind.into(),
-            "Firehose",
-            method,
-            attributes,
-        ))
-    }
-
-    pub fn new(
-        method: impl Into<StringValue>,
-        stream_name: Option<impl Into<StringValue>>,
-    ) -> Self {
-        Self::with_operation_kind(MessagingOperationKind::Control, method, stream_name)
+        Self::new(operation_kind.into(), "Firehose", method, attributes)
     }
 }
 
 macro_rules! firehose_global_operation {
     ($op: ident) => {
-        impl<'a> FirehoseOperation<'a> {
+        impl FirehoseOperation {
             #[inline]
-            pub fn $op() -> Self {
-                Self::new(stringify_camel!($op), None::<StringValue>)
+            pub fn $op<'a>() -> AwsOperation<'a> {
+                AwsOperation::firehose(
+                    MessagingOperationKind::Control,
+                    stringify_camel!($op),
+                    None::<StringValue>,
+                )
             }
         }
     };
@@ -46,9 +38,9 @@ macro_rules! firehose_global_operation {
 
 macro_rules! firehose_publish_operation {
     ($op: ident, $kind: expr) => {
-        impl<'a> FirehoseOperation<'a> {
-            pub fn $op(topic_arn: impl Into<StringValue>) -> Self {
-                Self::with_operation_kind($kind, stringify_camel!($op), Some(topic_arn))
+        impl FirehoseOperation {
+            pub fn $op<'a>(topic_arn: impl Into<StringValue>) -> AwsOperation<'a> {
+                AwsOperation::firehose($kind, stringify_camel!($op), Some(topic_arn))
             }
         }
     };
@@ -56,9 +48,13 @@ macro_rules! firehose_publish_operation {
 
 macro_rules! firehose_stream_operation {
     ($op: ident) => {
-        impl<'a> FirehoseOperation<'a> {
-            pub fn $op(stream_name: impl Into<StringValue>) -> Self {
-                Self::new(stringify_camel!($op), Some(stream_name))
+        impl FirehoseOperation {
+            pub fn $op<'a>(stream_name: impl Into<StringValue>) -> AwsOperation<'a> {
+                AwsOperation::firehose(
+                    MessagingOperationKind::Control,
+                    stringify_camel!($op),
+                    Some(stream_name),
+                )
             }
         }
     };

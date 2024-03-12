@@ -150,52 +150,10 @@ impl From<MessagingOperationKind> for SpanKind {
     }
 }
 
-macro_rules! aws_target {
-    ($target: ident) => {
-        pub struct $target<'a>($crate::middleware::aws::AwsOperation<'a>);
-
-        impl<'a> From<$target<'a>> for $crate::middleware::aws::AwsOperation<'a> {
-            #[inline]
-            fn from(outer: $target<'a>) -> Self {
-                outer.0
-            }
-        }
-
-        impl<'a> $target<'a> {
-            pub fn attributes(
-                self,
-                iter: impl IntoIterator<Item = $crate::KeyValue>,
-            ) -> Self {
-                Self(self.0.attributes(iter))
-            }
-
-            #[inline]
-            pub fn attribute(self, attribute: $crate::KeyValue) -> Self {
-                Self(self.0.attribute(attribute))
-            }
-
-            #[inline]
-            pub fn context(self, context: &'a $crate::Context) -> Self {
-                Self(self.0.context(context))
-            }
-
-            #[inline]
-            pub fn set_context(self, context: Option<&'a $crate::Context>) -> Self {
-                Self(self.0.set_context(context))
-            }
-
-            #[inline]
-            pub fn start(self) -> $crate::middleware::aws::AwsSpan {
-                self.0.start()
-            }
-        }
-    };
-}
-
 macro_rules! stringify_camel {
     ($var: ident) => {
         paste::paste! { stringify!([<$var:camel>]) }
     };
 }
 
-pub(super) use {aws_target, stringify_camel};
+pub(super) use stringify_camel;

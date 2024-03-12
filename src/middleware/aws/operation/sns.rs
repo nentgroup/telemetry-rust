@@ -2,10 +2,10 @@ use crate::{semcov, StringValue};
 
 use super::*;
 
-aws_target!(SnsOperation);
+pub enum SnsOperation {}
 
-impl SnsOperation<'_> {
-    pub fn with_operation_kind(
+impl<'a> AwsOperation<'a> {
+    pub fn sns(
         operation_kind: MessagingOperationKind,
         method: impl Into<StringValue>,
         topic_arn: Option<impl Into<StringValue>>,
@@ -17,28 +17,20 @@ impl SnsOperation<'_> {
         if let Some(topic_arn) = topic_arn {
             attributes.push(semcov::MESSAGING_DESTINATION_NAME.string(topic_arn))
         }
-        Self(AwsOperation::new(
-            operation_kind.into(),
-            "SNS",
-            method,
-            attributes,
-        ))
-    }
-
-    pub fn new(
-        method: impl Into<StringValue>,
-        topic_arn: Option<impl Into<StringValue>>,
-    ) -> Self {
-        Self::with_operation_kind(MessagingOperationKind::Control, method, topic_arn)
+        Self::new(operation_kind.into(), "SNS", method, attributes)
     }
 }
 
 macro_rules! sns_global_operation {
     ($op: ident) => {
-        impl<'a> SnsOperation<'a> {
+        impl SnsOperation {
             #[inline]
-            pub fn $op() -> Self {
-                Self::new(stringify_camel!($op), None::<StringValue>)
+            pub fn $op<'a>() -> AwsOperation<'a> {
+                AwsOperation::sns(
+                    MessagingOperationKind::Control,
+                    stringify_camel!($op),
+                    None::<StringValue>,
+                )
             }
         }
     };
@@ -46,9 +38,9 @@ macro_rules! sns_global_operation {
 
 macro_rules! sns_publish_operation {
     ($op: ident, $kind: expr) => {
-        impl<'a> SnsOperation<'a> {
-            pub fn $op(topic_arn: impl Into<StringValue>) -> Self {
-                Self::with_operation_kind($kind, stringify_camel!($op), Some(topic_arn))
+        impl SnsOperation {
+            pub fn $op<'a>(topic_arn: impl Into<StringValue>) -> AwsOperation<'a> {
+                AwsOperation::sns($kind, stringify_camel!($op), Some(topic_arn))
             }
         }
     };
@@ -56,9 +48,13 @@ macro_rules! sns_publish_operation {
 
 macro_rules! sns_topic_operation {
     ($op: ident) => {
-        impl<'a> SnsOperation<'a> {
-            pub fn $op(topic_arn: impl Into<StringValue>) -> Self {
-                Self::new(stringify_camel!($op), Some(topic_arn))
+        impl SnsOperation {
+            pub fn $op<'a>(topic_arn: impl Into<StringValue>) -> AwsOperation<'a> {
+                AwsOperation::sns(
+                    MessagingOperationKind::Control,
+                    stringify_camel!($op),
+                    Some(topic_arn),
+                )
             }
         }
     };

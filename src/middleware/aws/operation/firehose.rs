@@ -2,9 +2,9 @@ use crate::{semcov, StringValue};
 
 use super::*;
 
-pub enum FirehoseOperation {}
+pub enum FirehoseSpanBuilder {}
 
-impl<'a> AwsOperation<'a> {
+impl<'a> AwsSpanBuilder<'a> {
     pub fn firehose(
         operation_kind: MessagingOperationKind,
         method: impl Into<StringValue>,
@@ -23,10 +23,10 @@ impl<'a> AwsOperation<'a> {
 
 macro_rules! firehose_global_operation {
     ($op: ident) => {
-        impl FirehoseOperation {
+        impl FirehoseSpanBuilder {
             #[inline]
-            pub fn $op<'a>() -> AwsOperation<'a> {
-                AwsOperation::firehose(
+            pub fn $op<'a>() -> AwsSpanBuilder<'a> {
+                AwsSpanBuilder::firehose(
                     MessagingOperationKind::Control,
                     stringify_camel!($op),
                     None::<StringValue>,
@@ -38,9 +38,9 @@ macro_rules! firehose_global_operation {
 
 macro_rules! firehose_publish_operation {
     ($op: ident, $kind: expr) => {
-        impl FirehoseOperation {
-            pub fn $op<'a>(stream_name: impl Into<StringValue>) -> AwsOperation<'a> {
-                AwsOperation::firehose($kind, stringify_camel!($op), Some(stream_name))
+        impl FirehoseSpanBuilder {
+            pub fn $op<'a>(stream_name: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
+                AwsSpanBuilder::firehose($kind, stringify_camel!($op), Some(stream_name))
             }
         }
     };
@@ -48,9 +48,9 @@ macro_rules! firehose_publish_operation {
 
 macro_rules! firehose_stream_operation {
     ($op: ident) => {
-        impl FirehoseOperation {
-            pub fn $op<'a>(stream_name: impl Into<StringValue>) -> AwsOperation<'a> {
-                AwsOperation::firehose(
+        impl FirehoseSpanBuilder {
+            pub fn $op<'a>(stream_name: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
+                AwsSpanBuilder::firehose(
                     MessagingOperationKind::Control,
                     stringify_camel!($op),
                     Some(stream_name),

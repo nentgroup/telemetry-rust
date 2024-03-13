@@ -2,9 +2,9 @@ use crate::{semcov, StringValue};
 
 use super::*;
 
-pub enum DynamoDBOperation {}
+pub enum DynamodbSpanBuilder {}
 
-impl<'a> AwsOperation<'a> {
+impl<'a> AwsSpanBuilder<'a> {
     pub fn dynamodb(
         method: impl Into<StringValue>,
         table_names: impl IntoIterator<Item = impl Into<StringValue>>,
@@ -34,10 +34,10 @@ impl<'a> AwsOperation<'a> {
 
 macro_rules! dynamodb_global_operation {
     ($op: ident) => {
-        impl DynamoDBOperation {
+        impl DynamodbSpanBuilder {
             #[inline]
-            pub fn $op<'a>() -> AwsOperation<'a> {
-                AwsOperation::dynamodb(
+            pub fn $op<'a>() -> AwsSpanBuilder<'a> {
+                AwsSpanBuilder::dynamodb(
                     stringify_camel!($op),
                     std::iter::empty::<StringValue>(),
                 )
@@ -48,9 +48,12 @@ macro_rules! dynamodb_global_operation {
 
 macro_rules! dynamodb_table_operation {
     ($op: ident) => {
-        impl DynamoDBOperation {
-            pub fn $op<'a>(table_name: impl Into<StringValue>) -> AwsOperation<'a> {
-                AwsOperation::dynamodb(stringify_camel!($op), std::iter::once(table_name))
+        impl DynamodbSpanBuilder {
+            pub fn $op<'a>(table_name: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
+                AwsSpanBuilder::dynamodb(
+                    stringify_camel!($op),
+                    std::iter::once(table_name),
+                )
             }
         }
     };
@@ -58,9 +61,9 @@ macro_rules! dynamodb_table_operation {
 
 macro_rules! dynamodb_table_arn_operation {
     ($op: ident) => {
-        impl DynamoDBOperation {
-            pub fn $op<'a>(table_arn: impl Into<StringValue>) -> AwsOperation<'a> {
-                AwsOperation::dynamodb(
+        impl DynamodbSpanBuilder {
+            pub fn $op<'a>(table_arn: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
+                AwsSpanBuilder::dynamodb(
                     stringify_camel!($op),
                     std::iter::empty::<StringValue>(),
                 )
@@ -72,11 +75,11 @@ macro_rules! dynamodb_table_arn_operation {
 
 macro_rules! dynamodb_batch_operation {
     ($op: ident) => {
-        impl DynamoDBOperation {
+        impl DynamodbSpanBuilder {
             pub fn $op<'a>(
                 table_names: impl IntoIterator<Item = impl Into<StringValue>>,
-            ) -> AwsOperation<'a> {
-                AwsOperation::dynamodb(stringify_camel!($op), table_names)
+            ) -> AwsSpanBuilder<'a> {
+                AwsSpanBuilder::dynamodb(stringify_camel!($op), table_names)
             }
         }
     };

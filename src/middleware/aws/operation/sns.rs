@@ -2,9 +2,9 @@ use crate::{semcov, StringValue};
 
 use super::*;
 
-pub enum SnsOperation {}
+pub enum SnsSpanBuilder {}
 
-impl<'a> AwsOperation<'a> {
+impl<'a> AwsSpanBuilder<'a> {
     pub fn sns(
         operation_kind: MessagingOperationKind,
         method: impl Into<StringValue>,
@@ -23,10 +23,10 @@ impl<'a> AwsOperation<'a> {
 
 macro_rules! sns_global_operation {
     ($op: ident) => {
-        impl SnsOperation {
+        impl SnsSpanBuilder {
             #[inline]
-            pub fn $op<'a>() -> AwsOperation<'a> {
-                AwsOperation::sns(
+            pub fn $op<'a>() -> AwsSpanBuilder<'a> {
+                AwsSpanBuilder::sns(
                     MessagingOperationKind::Control,
                     stringify_camel!($op),
                     None::<StringValue>,
@@ -38,9 +38,9 @@ macro_rules! sns_global_operation {
 
 macro_rules! sns_publish_operation {
     ($op: ident, $kind: expr) => {
-        impl SnsOperation {
-            pub fn $op<'a>(topic_arn: impl Into<StringValue>) -> AwsOperation<'a> {
-                AwsOperation::sns($kind, stringify_camel!($op), Some(topic_arn))
+        impl SnsSpanBuilder {
+            pub fn $op<'a>(topic_arn: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
+                AwsSpanBuilder::sns($kind, stringify_camel!($op), Some(topic_arn))
             }
         }
     };
@@ -48,9 +48,9 @@ macro_rules! sns_publish_operation {
 
 macro_rules! sns_topic_operation {
     ($op: ident) => {
-        impl SnsOperation {
-            pub fn $op<'a>(topic_arn: impl Into<StringValue>) -> AwsOperation<'a> {
-                AwsOperation::sns(
+        impl SnsSpanBuilder {
+            pub fn $op<'a>(topic_arn: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
+                AwsSpanBuilder::sns(
                     MessagingOperationKind::Control,
                     stringify_camel!($op),
                     Some(topic_arn),

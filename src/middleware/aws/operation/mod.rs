@@ -11,17 +11,17 @@ mod dynamodb;
 mod firehose;
 mod sns;
 
-pub use dynamodb::DynamoDBOperation;
-pub use firehose::FirehoseOperation;
-pub use sns::SnsOperation;
+pub use dynamodb::DynamodbSpanBuilder;
+pub use firehose::FirehoseSpanBuilder;
+pub use sns::SnsSpanBuilder;
 
-pub struct AwsOperation<'a> {
+pub struct AwsSpanBuilder<'a> {
     inner: SpanBuilder,
     tracer: BoxedTracer,
     context: Option<&'a Context>,
 }
 
-impl<'a> AwsOperation<'a> {
+impl<'a> AwsSpanBuilder<'a> {
     fn new(
         span_kind: SpanKind,
         service: impl Into<StringValue>,

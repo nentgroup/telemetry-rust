@@ -39,8 +39,8 @@ macro_rules! firehose_global_operation {
 macro_rules! firehose_publish_operation {
     ($op: ident, $kind: expr) => {
         impl FirehoseOperation {
-            pub fn $op<'a>(topic_arn: impl Into<StringValue>) -> AwsOperation<'a> {
-                AwsOperation::firehose($kind, stringify_camel!($op), Some(topic_arn))
+            pub fn $op<'a>(stream_name: impl Into<StringValue>) -> AwsOperation<'a> {
+                AwsOperation::firehose($kind, stringify_camel!($op), Some(stream_name))
             }
         }
     };

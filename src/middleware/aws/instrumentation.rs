@@ -6,7 +6,7 @@ use std::error::Error;
 use super::AwsOperation;
 
 #[async_trait]
-pub trait AwsInstrumented<T, E>
+pub trait AwsInstrument<T, E>
 where
     T: RequestId,
     E: RequestId + Error,
@@ -18,7 +18,7 @@ where
 }
 
 #[async_trait]
-impl<T, E, F> AwsInstrumented<T, E> for F
+impl<T, E, F> AwsInstrument<T, E> for F
 where
     T: RequestId,
     E: RequestId + Error,

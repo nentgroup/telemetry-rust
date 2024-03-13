@@ -12,7 +12,7 @@ mod instrumentation;
 mod operation;
 
 #[cfg(feature = "aws-instrumentation")]
-pub use instrumentation::AwsInstrumented;
+pub use instrumentation::AwsInstrument;
 pub use operation::*;
 
 pub struct AwsSpan {

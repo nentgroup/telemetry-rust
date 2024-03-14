@@ -6,23 +6,29 @@ use std::error::Error;
 use super::AwsSpanBuilder;
 
 #[async_trait]
-pub trait AwsInstrumented<T, E>
+pub trait AwsInstrument<T, E>
 where
     T: RequestId,
     E: RequestId + Error,
 {
-    async fn instrument<'a>(self, span: AwsSpanBuilder<'a>) -> Result<T, E>;
+    async fn instrument<'a>(
+        self,
+        span: impl Into<AwsSpanBuilder<'a>> + Send,
+    ) -> Result<T, E>;
 }
 
 #[async_trait]
-impl<T, E, F> AwsInstrumented<T, E> for F
+impl<T, E, F> AwsInstrument<T, E> for F
 where
     T: RequestId,
     E: RequestId + Error,
     F: Future<Output = Result<T, E>> + Send,
 {
-    async fn instrument<'a>(self, span: AwsSpanBuilder<'a>) -> Result<T, E> {
-        let span = span.start();
+    async fn instrument<'a>(
+        self,
+        span: impl Into<AwsSpanBuilder<'a>> + Send,
+    ) -> Result<T, E> {
+        let span = span.into().start();
         let result = self.await;
         span.end(&result);
         result

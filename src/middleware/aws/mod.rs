@@ -10,11 +10,11 @@ use crate::{semcov, Context, KeyValue, OpenTelemetrySpanExt, StringValue};
 
 #[cfg(feature = "aws-instrumentation")]
 mod instrumentation;
-mod operation;
+mod operations;
 
 #[cfg(feature = "aws-instrumentation")]
 pub use instrumentation::AwsInstrument;
-pub use operation::*;
+pub use operations::*;
 
 pub struct AwsSpan {
     span: BoxedSpan,

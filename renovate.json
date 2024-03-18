@@ -2,6 +2,7 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
         "config:recommended",
+        "github>Turbo87/renovate-config//rust/updateToolchain",
         "schedule:monthly"
     ],
     "packageRules": [

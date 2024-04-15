@@ -35,7 +35,7 @@ impl AwsSpan {
             }
         };
         if let Some(value) = request_id {
-            span.set_attribute(semconv::AWS_REQUEST_ID.string(value.to_owned()));
+            span.set_attribute(KeyValue::new(semconv::AWS_REQUEST_ID, value.to_owned()));
         }
         span.set_status(status);
     }
@@ -66,9 +66,9 @@ impl<'a> AwsSpanBuilder<'a> {
         let tracer = global::tracer("aws_sdk");
         let span_name = format!("{service}.{method}");
         let mut attributes = vec![
-            semconv::RPC_METHOD.string(method),
-            semconv::RPC_SYSTEM.string("aws-api"),
-            semconv::RPC_SERVICE.string(service),
+            KeyValue::new(semconv::RPC_METHOD, method),
+            KeyValue::new(semconv::RPC_SYSTEM, "aws-api"),
+            KeyValue::new(semconv::RPC_SERVICE, service),
         ];
         attributes.extend(custom_attributes);
         let inner = tracer

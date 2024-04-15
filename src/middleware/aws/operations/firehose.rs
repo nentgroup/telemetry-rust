@@ -1,4 +1,4 @@
-use crate::{semconv, StringValue};
+use crate::{semconv, KeyValue, StringValue};
 
 use super::*;
 
@@ -11,11 +11,14 @@ impl<'a> AwsSpanBuilder<'a> {
         stream_name: Option<impl Into<StringValue>>,
     ) -> Self {
         let mut attributes = vec![
-            semconv::MESSAGING_SYSTEM.string("aws_firehose"),
-            semconv::MESSAGING_OPERATION.string(operation_kind.as_str()),
+            KeyValue::new(semconv::MESSAGING_SYSTEM, "aws_firehose"),
+            KeyValue::new(semconv::MESSAGING_OPERATION, operation_kind.as_str()),
         ];
         if let Some(stream_name) = stream_name {
-            attributes.push(semconv::MESSAGING_DESTINATION_NAME.string(stream_name))
+            attributes.push(KeyValue::new(
+                semconv::MESSAGING_DESTINATION_NAME,
+                stream_name.into(),
+            ))
         }
         Self::new(operation_kind.into(), "Firehose", method, attributes)
     }

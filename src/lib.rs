@@ -13,7 +13,7 @@ use tracing_subscriber::layer::SubscriberExt;
 
 pub use opentelemetry::{Array, Context, Key, KeyValue, StringValue, Value};
 pub use opentelemetry_sdk::trace::TracerProvider;
-pub use opentelemetry_semantic_conventions::trace as semconv;
+pub use opentelemetry_semantic_conventions::{resource, trace as semconv};
 pub use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 pub mod middleware;
@@ -92,16 +92,12 @@ impl ResourceDetector for ServiceInfoDetector {
             .or_else(|| util::env_var("SERVICE_NAME"))
             .or_else(|| util::env_var("APP_NAME"))
             .or_else(|| Some(self.fallback_service_name.to_string()))
-            .map(|v| {
-                opentelemetry_semantic_conventions::resource::SERVICE_NAME.string(v)
-            });
+            .map(|v| KeyValue::new(resource::SERVICE_NAME, v));
         let service_version = util::env_var("OTEL_SERVICE_VERSION")
             .or_else(|| util::env_var("SERVICE_VERSION"))
             .or_else(|| util::env_var("APP_VERSION"))
             .or_else(|| Some(self.fallback_service_version.to_string()))
-            .map(|v| {
-                opentelemetry_semantic_conventions::resource::SERVICE_VERSION.string(v)
-            });
+            .map(|v| KeyValue::new(resource::SERVICE_VERSION, v));
         Resource::new(vec![service_name, service_version].into_iter().flatten())
     }
 }

@@ -1,4 +1,4 @@
-use crate::{semconv, StringValue};
+use crate::{semconv, KeyValue, StringValue, Value};
 
 use super::*;
 
@@ -13,19 +13,25 @@ impl<'a> AwsSpanBuilder<'a> {
         let table_names: Vec<StringValue> =
             table_names.into_iter().map(|item| item.into()).collect();
         let mut attributes = vec![
-            semconv::DB_SYSTEM.string("dynamodb"),
-            semconv::DB_OPERATION.string(method.clone()),
+            KeyValue::new(semconv::DB_SYSTEM, "dynamodb"),
+            KeyValue::new(semconv::DB_OPERATION, method.clone()),
         ];
         match table_names.len() {
             0 => {}
             1 => {
                 attributes.extend([
-                    semconv::DB_NAME.string(table_names[0].clone()),
-                    semconv::AWS_DYNAMODB_TABLE_NAMES.array(table_names),
+                    KeyValue::new(semconv::DB_NAME, table_names[0].clone()),
+                    KeyValue::new(
+                        semconv::AWS_DYNAMODB_TABLE_NAMES,
+                        Value::Array(table_names.into()),
+                    ),
                 ]);
             }
             _ => {
-                attributes.push(semconv::AWS_DYNAMODB_TABLE_NAMES.array(table_names));
+                attributes.push(KeyValue::new(
+                    semconv::AWS_DYNAMODB_TABLE_NAMES,
+                    Value::Array(table_names.into()),
+                ));
             }
         }
         Self::client("DynamoDB", method, attributes)
@@ -67,7 +73,7 @@ macro_rules! dynamodb_table_arn_operation {
                     stringify_camel!($op),
                     std::iter::empty::<StringValue>(),
                 )
-                .attribute(semconv::DB_NAME.string(table_arn))
+                .attribute(KeyValue::new(semconv::DB_NAME, table_arn.into()))
             }
         }
     };

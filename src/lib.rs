@@ -12,6 +12,7 @@ use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 
 pub use opentelemetry::{Array, Context, Key, KeyValue, StringValue, Value};
+pub use opentelemetry_sdk::trace::TracerProvider;
 pub use opentelemetry_semantic_conventions::trace as semcov;
 pub use tracing_opentelemetry::OpenTelemetrySpanExt;
 
@@ -126,7 +127,7 @@ pub fn init_tracing_with_fallbacks(
     log_level: tracing::Level,
     fallback_service_name: &'static str,
     fallback_service_version: &'static str,
-) {
+) -> TracerProvider {
     // set to debug to log detected resources, configuration read and infered
     let setup_subscriber = tracing_subscriber::registry()
         .with(Into::<LevelFilter>::into(log_level))
@@ -139,6 +140,8 @@ pub fn init_tracing_with_fallbacks(
     let otel_tracer =
         otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
 
+    let tracer_provider = otel_tracer.provider().unwrap();
+
     opentelemetry::global::set_text_map_propagator(
         propagation::TextMapSplitPropagator::from_env().expect("setup of Propagation"),
     );
@@ -149,6 +152,8 @@ pub fn init_tracing_with_fallbacks(
         .with(fmt_layer!())
         .with(otel_layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();
+
+    tracer_provider
 }
 
 #[macro_export]
@@ -158,7 +163,7 @@ macro_rules! init_tracing {
             $log_level,
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_VERSION"),
-        );
+        )
     };
 }
 

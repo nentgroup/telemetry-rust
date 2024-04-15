@@ -55,7 +55,7 @@ axum = ["dep:axum", "dep:tower", "dep:futures-util", "dep:pin-project-lite"]
 hyper-v1 = ["dep:hyper-v1", "dep:http-body-util"]
 aws-span = ["dep:aws-types", "dep:paste"]
 aws-instrumentation = ["dep:async-trait", "dep:futures-util"]
-aws-lambda = ["dep:tower", "dep:lambda_runtime"]
+aws-lambda = ["dep:tower", "dep:lambda_runtime", "dep:pin-project-lite"]
 aws = ["aws-span", "aws-instrumentation"]
 aws-full = ["aws", "aws-lambda"]
 

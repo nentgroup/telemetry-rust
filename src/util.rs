@@ -1,5 +1,5 @@
 #[inline]
-pub fn env_var(key: &str) -> Option<String> {
+pub(crate) fn env_var(key: &str) -> Option<String> {
     match std::env::var(key) {
         Ok(value) => {
             if value.trim().is_empty() {

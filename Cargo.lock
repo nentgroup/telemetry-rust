@@ -1726,7 +1726,6 @@ name = "telemetry-rust"
 version = "3.0.0"
 dependencies = [
  "assert2",
- "async-trait",
  "aws-types",
  "axum 0.7.5",
  "futures-util",
@@ -1748,6 +1747,7 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
+ "tokio",
  "tower",
  "tracing",
  "tracing-opentelemetry",

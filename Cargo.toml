@@ -27,7 +27,7 @@ tracing-subscriber = { version = "0.3.18", default-features = false, features = 
   "ansi"
 ] }
 serde = { version = "1.0.198", features = ["derive"], optional = true }
-serde_json = { version = "1.0.111", optional = true }
+serde_json = { version = "1.0.116", optional = true }
 opentelemetry_api = { version = "0.20.0", features = ["testing"], optional = true }
 rand = { version = "0.8.5", optional = true }
 tower = { version = "0.4", optional = true }

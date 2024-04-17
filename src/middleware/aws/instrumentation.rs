@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use aws_types::request_id::RequestId;
-use futures_util::Future;
-use std::error::Error;
+use std::{error::Error, future::Future};
 
 use super::AwsSpanBuilder;
 

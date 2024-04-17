@@ -6,7 +6,7 @@ license = "MIT"
 description = "Open Telemetry fox Axum and Tracing"
 
 [dependencies]
-http = "1.0.0"
+http = "1.1.0"
 opentelemetry = { version = "0.22", default-features = false, features = [
   "trace",
 ] }

@@ -64,10 +64,10 @@ let aws_span = DynamodbSpanBuilder::get_item("table_name").context(&context).sta
 
 // or set custom span attributes
 let aws_span = DynamodbSpanBuilder::get_item("table_name")
-    .attribute(semcov::AWS_DYNAMODB_INDEX_NAME.string("my_index"))
+    .attribute(KeyValue::new(semconv::AWS_DYNAMODB_INDEX_NAME, "my_index"))
     .attributes(vec![
-        semcov::AWS_DYNAMODB_LIMIT.i64(6),
-        semcov::AWS_DYNAMODB_SELECT.string("ALL_ATTRIBUTES"),
+        KeyValue::new(semconv::AWS_DYNAMODB_LIMIT, 6),
+        KeyValue::new(semconv::AWS_DYNAMODB_SELECT, "ALL_ATTRIBUTES"),
     ])
     .start();
 ```
@@ -97,7 +97,7 @@ But a generic `AwsSpanBuilder` could be used to instrument any other AWS SDK:
 let s3_span = AwsSpanBuilder::client(
     "S3",
     "GetObject",
-    vec![semcov::AWS_S3_BUCKET.string("my_bucket")],
+    vec![KeyValue::new(semconv::AWS_S3_BUCKET, "my_bucket")],
 )
 .start();
 ```

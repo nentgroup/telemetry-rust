@@ -74,7 +74,7 @@ mod tests {
 
     impl InstrumentedFutureContext<i32> for TestContext<'_> {
         fn on_result(self, result: &i32) {
-            assert!(self.0.fetch_add(1, Ordering::Relaxed) == self.1);
+            assert!(self.0.fetch_add(1, Ordering::AcqRel) == self.1);
             assert!(result == &self.2);
         }
     }
@@ -86,8 +86,10 @@ mod tests {
         let fut2 = InstrumentedFuture::new(fut1, TestContext(&hook_called, 0, 42));
         let fut3 = InstrumentedFuture::new(fut2, TestContext(&hook_called, 1, 42));
 
+        assert!(hook_called.load(Ordering::Acquire) == 0);
         let res = fut3.await;
 
+        assert!(hook_called.load(Ordering::Acquire) == 2);
         assert!(res == 42);
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    future::{HookedFuture, HookedFutureContext},
+    future::{InstrumentedFuture, InstrumentedFutureContext},
     semconv,
 };
 use lambda_runtime::LambdaInvocation;
@@ -30,7 +30,7 @@ impl<S> Layer<S> for OtelLambdaLayer {
     }
 }
 
-impl<T> HookedFutureContext<T> for TracerProvider {
+impl<T> InstrumentedFutureContext<T> for TracerProvider {
     fn on_result(self, _: &T) {
         self.force_flush();
     }
@@ -48,7 +48,7 @@ where
 {
     type Response = ();
     type Error = S::Error;
-    type Future = HookedFuture<Instrumented<S::Future>, TracerProvider>;
+    type Future = InstrumentedFuture<Instrumented<S::Future>, TracerProvider>;
 
     fn poll_ready(&mut self, cx: &mut TaskContext<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx)
@@ -66,6 +66,6 @@ where
         self.coldstart = false;
 
         let future = self.inner.call(req).instrument(span);
-        HookedFuture::new(future, self.provider.clone())
+        InstrumentedFuture::new(future, self.provider.clone())
     }
 }

@@ -2,9 +2,9 @@ use aws_types::request_id::RequestId;
 use std::{error::Error, future::Future};
 
 use super::{AwsSpan, AwsSpanBuilder};
-use crate::future::{HookedFuture, HookedFutureContext};
+use crate::future::{InstrumentedFuture, InstrumentedFutureContext};
 
-impl<T, E> HookedFutureContext<Result<T, E>> for AwsSpan
+impl<T, E> InstrumentedFutureContext<Result<T, E>> for AwsSpan
 where
     T: RequestId,
     E: RequestId + Error,
@@ -23,7 +23,7 @@ where
     fn instrument<'a>(
         self,
         span: impl Into<AwsSpanBuilder<'a>>,
-    ) -> HookedFuture<F, AwsSpan>;
+    ) -> InstrumentedFuture<F, AwsSpan>;
 }
 
 impl<T, E, F> AwsInstrument<T, E, F> for F
@@ -35,8 +35,8 @@ where
     fn instrument<'a>(
         self,
         span: impl Into<AwsSpanBuilder<'a>>,
-    ) -> HookedFuture<F, AwsSpan> {
+    ) -> InstrumentedFuture<F, AwsSpan> {
         let span = span.into().start();
-        HookedFuture::new(self, span)
+        InstrumentedFuture::new(self, span)
     }
 }

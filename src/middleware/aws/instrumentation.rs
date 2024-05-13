@@ -2,7 +2,17 @@ use aws_types::request_id::RequestId;
 use std::{error::Error, future::Future};
 
 use super::{AwsSpan, AwsSpanBuilder};
-use crate::future::HookedFuture;
+use crate::future::{HookedFuture, HookedFutureContext};
+
+impl<T, E> HookedFutureContext<Result<T, E>> for AwsSpan
+where
+    T: RequestId,
+    E: RequestId + Error,
+{
+    fn on_result(self, result: &Result<T, E>) {
+        self.end(result);
+    }
+}
 
 pub trait AwsInstrument<T, E, F>
 where
@@ -27,6 +37,6 @@ where
         span: impl Into<AwsSpanBuilder<'a>>,
     ) -> HookedFuture<F, AwsSpan> {
         let span = span.into().start();
-        HookedFuture::new(self, span, |span, result| span.end(result))
+        HookedFuture::new(self, span)
     }
 }

@@ -1,4 +1,7 @@
-use crate::{future::HookedFuture, semconv};
+use crate::{
+    future::{HookedFuture, HookedFutureContext},
+    semconv,
+};
 use lambda_runtime::LambdaInvocation;
 use opentelemetry_sdk::trace::TracerProvider;
 use std::task::{Context as TaskContext, Poll};
@@ -24,6 +27,12 @@ impl<S> Layer<S> for OtelLambdaLayer {
             provider: self.provider.clone(),
             coldstart: true,
         }
+    }
+}
+
+impl<T> HookedFutureContext<T> for TracerProvider {
+    fn on_result(self, _: &T) {
+        self.force_flush();
     }
 }
 
@@ -57,8 +66,6 @@ where
         self.coldstart = false;
 
         let future = self.inner.call(req).instrument(span);
-        HookedFuture::new(future, self.provider.clone(), |provider, _| {
-            provider.force_flush();
-        })
+        HookedFuture::new(future, self.provider.clone())
     }
 }

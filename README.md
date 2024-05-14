@@ -33,7 +33,7 @@ async fn main() {
     // ...
 ```
 
-## AWS instrumentation
+## AWS SDK instrumentation
 
 ### `AwsInstrumented` trait
 
@@ -100,4 +100,28 @@ let s3_span = AwsSpanBuilder::client(
     vec![KeyValue::new(semconv::AWS_S3_BUCKET, "my_bucket")],
 )
 .start();
+```
+
+## AWS Lambda instrumentation
+
+```rust
+#[tokio::main]
+async fn main() -> Result<(), LambdaRuntimeError> {
+    // Grab TracerProvider after telemetry initialisation
+    let provider = telemetry_rust::init_tracing!(tracing::Level::WARN);
+
+    // Create lambda telemetry layer
+    let telemetry_layer = telemetry_rust::middleware::lambda::OtelLambdaLayer::new(provider);
+
+    // Run lambda runtime with telemetry layer
+    Runtime::new(handler)
+        .layer(telemetry_layer)
+        .run()
+        .await?;
+
+    // Shutdown tracer provider before exiting
+    telemetry_rust::shutdown_signal();
+
+    Ok(())
+}
 ```

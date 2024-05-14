@@ -57,10 +57,11 @@ where
     fn call(&mut self, req: LambdaInvocation) -> Self::Future {
         let span = tracing::info_span!(
             "Lambda function invocation",
-            "otel.name" = req.context.env_config.function_name,
             { semconv::FAAS_TRIGGER } = "http",
+            { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
+            { semconv::FAAS_INVOKED_NAME } = req.context.env_config.function_name,
             { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
-            { semconv::FAAS_COLDSTART } = self.coldstart
+            { semconv::FAAS_COLDSTART } = self.coldstart,
         );
 
         self.coldstart = false;

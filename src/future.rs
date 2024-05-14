@@ -74,8 +74,9 @@ mod tests {
 
     impl InstrumentedFutureContext<i32> for TestContext<'_> {
         fn on_result(self, result: &i32) {
-            assert!(self.0.fetch_add(1, Ordering::AcqRel) == self.1);
-            assert!(result == &self.2);
+            let Self(counter, expected_count, expected_result) = self;
+            assert!(counter.fetch_add(1, Ordering::AcqRel) == expected_count);
+            assert!(result == &expected_result);
         }
     }
 

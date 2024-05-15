@@ -43,11 +43,11 @@ pub struct OtelLambdaService<S> {
     coldstart: bool,
 }
 
-impl<S> Service<LambdaInvocation> for OtelLambdaService<S>
+impl<S, R> Service<LambdaInvocation> for OtelLambdaService<S>
 where
-    S: Service<LambdaInvocation, Response = ()>,
+    S: Service<LambdaInvocation, Response = R>,
 {
-    type Response = ();
+    type Response = R;
     type Error = S::Error;
     type Future = InstrumentedFuture<Instrumented<S::Future>, TracerProvider>;
 

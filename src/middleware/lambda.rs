@@ -58,7 +58,7 @@ where
     }
 
     fn call(&mut self, req: LambdaInvocation) -> Self::Future {
-        let span = tracing::info_span!(
+        let span = tracing::trace_span!(
             target: TRACING_TARGET,
             "Lambda function invocation",
             { semconv::FAAS_TRIGGER } = "http",

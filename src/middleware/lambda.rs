@@ -3,7 +3,10 @@ use crate::{
     semconv, OpenTelemetrySpanExt,
 };
 use lambda_runtime::LambdaInvocation;
-use opentelemetry::{trace::TraceContextExt, Context};
+use opentelemetry::{
+    trace::{SpanKind, TraceContextExt},
+    Context,
+};
 use opentelemetry_aws::trace::xray_propagator::span_context_from_str;
 use opentelemetry_sdk::trace::TracerProvider;
 use std::task::{Context as TaskContext, Poll};
@@ -61,7 +64,10 @@ where
         let span = tracing::trace_span!(
             target: TRACING_TARGET,
             "Lambda function invocation",
-            { semconv::FAAS_TRIGGER } = "http",
+            // TODO: set correct otel.kind and faas.trigger
+            // see https://opentelemetry.io/docs/specs/semconv/faas/aws-lambda/
+            "otel.kind" = ?SpanKind::Server,
+            { semconv::FAAS_TRIGGER } = "other",
             { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
             { semconv::FAAS_INVOKED_NAME } = req.context.env_config.function_name,
             { semconv::FAAS_INVOCATION_ID } = req.context.request_id,

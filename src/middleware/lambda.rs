@@ -67,9 +67,9 @@ where
             // TODO: set correct otel.kind and faas.trigger
             // see https://opentelemetry.io/docs/specs/semconv/faas/aws-lambda/
             "otel.kind" = ?SpanKind::Server,
+            "otel.name" = req.context.env_config.function_name,
             { semconv::FAAS_TRIGGER } = "other",
             { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
-            { semconv::FAAS_INVOKED_NAME } = req.context.env_config.function_name,
             { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
             { semconv::FAAS_COLDSTART } = self.coldstart,
         );

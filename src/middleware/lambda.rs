@@ -1,13 +1,9 @@
 use crate::{
     future::{InstrumentedFuture, InstrumentedFutureContext},
-    semconv, OpenTelemetrySpanExt,
+    semconv,
 };
 use lambda_runtime::LambdaInvocation;
-use opentelemetry::{
-    trace::{SpanKind, TraceContextExt},
-    Context,
-};
-use opentelemetry_aws::trace::xray_propagator::span_context_from_str;
+use opentelemetry::trace::SpanKind;
 use opentelemetry_sdk::trace::TracerProvider;
 use std::task::{Context as TaskContext, Poll};
 use tower::{Layer, Service};
@@ -73,18 +69,6 @@ where
             { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
             { semconv::FAAS_COLDSTART } = self.coldstart,
         );
-
-        let context = req
-            .context
-            .xray_trace_id
-            .as_deref()
-            .and_then(span_context_from_str)
-            .map(|span_context| {
-                Context::map_current(|cx| cx.with_remote_span_context(span_context))
-            });
-        if let Some(cx) = context {
-            span.set_parent(cx);
-        }
 
         self.coldstart = false;
 

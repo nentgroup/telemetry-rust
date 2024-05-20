@@ -42,18 +42,18 @@ impl LambdaServiceContext for GenericLambdaService {
 
 pub struct PubSubLambdaService {
     system: StringValue,
-    destination: StringValue,
+    destination: Option<StringValue>,
 }
 
 impl OtelLambdaLayer<PubSubLambdaService> {
     pub fn pub_sub(
         provider: TracerProvider,
         system: impl Into<StringValue>,
-        destination: impl Into<StringValue>,
+        destination: Option<impl Into<StringValue>>,
     ) -> Self {
         let context = PubSubLambdaService {
             system: system.into(),
-            destination: destination.into(),
+            destination: destination.map(|value| value.into()),
         };
         Self::with_context(context, provider)
     }
@@ -61,13 +61,14 @@ impl OtelLambdaLayer<PubSubLambdaService> {
 
 impl OtelLambdaLayer<PubSubLambdaService> {
     pub fn sqs(provider: TracerProvider, topic_arn: impl Into<StringValue>) -> Self {
-        Self::pub_sub(provider, "AmazonSQS", topic_arn)
+        Self::pub_sub(provider, "AmazonSQS", Some(topic_arn))
     }
 }
 
 impl LambdaServiceContext for PubSubLambdaService {
     #[inline]
     fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span {
+        let destination = self.destination.as_ref().map(|value| value.as_str());
         tracing::trace_span!(
             target: TRACING_TARGET,
             "Lambda function invocation",
@@ -79,7 +80,7 @@ impl LambdaServiceContext for PubSubLambdaService {
             { semconv::FAAS_COLDSTART } = coldstart,
             { semconv::MESSAGING_OPERATION } = "process",
             { semconv::MESSAGING_SYSTEM } = self.system.as_str(),
-            { semconv::MESSAGING_DESTINATION_NAME } = self.destination.as_str(),
+            { semconv::MESSAGING_DESTINATION_NAME } = destination,
         )
     }
 }

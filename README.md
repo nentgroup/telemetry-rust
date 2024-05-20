@@ -106,7 +106,7 @@ let s3_span = AwsSpanBuilder::client(
 
 ```rust
 #[tokio::main]
-async fn main() -> Result<(), LambdaRuntimeError> {
+async fn main() -> Result<(), lambda_runtime::Error> {
     // Grab TracerProvider after telemetry initialisation
     let provider = telemetry_rust::init_tracing!(tracing::Level::WARN);
 
@@ -114,7 +114,7 @@ async fn main() -> Result<(), LambdaRuntimeError> {
     let telemetry_layer = telemetry_rust::middleware::lambda::OtelLambdaLayer::new(provider);
 
     // Run lambda runtime with telemetry layer
-    Runtime::new(handler)
+    lambda_runtime::Runtime::new(tower::service_fn(handler))
         .layer(telemetry_layer)
         .run()
         .await?;

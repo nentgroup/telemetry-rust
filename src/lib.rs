@@ -29,6 +29,9 @@ pub mod otlp;
 #[cfg(feature = "test")]
 pub mod test;
 
+#[cfg(feature = "future")]
+pub mod future;
+
 mod filter;
 mod util;
 

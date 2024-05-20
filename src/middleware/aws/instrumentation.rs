@@ -1,36 +1,42 @@
-use async_trait::async_trait;
 use aws_types::request_id::RequestId;
-use futures_util::Future;
-use std::error::Error;
+use std::{error::Error, future::Future};
 
-use super::AwsSpanBuilder;
+use super::{AwsSpan, AwsSpanBuilder};
+use crate::future::{InstrumentedFuture, InstrumentedFutureContext};
 
-#[async_trait]
-pub trait AwsInstrument<T, E>
+impl<T, E> InstrumentedFutureContext<Result<T, E>> for AwsSpan
 where
     T: RequestId,
     E: RequestId + Error,
 {
-    async fn instrument<'a>(
-        self,
-        span: impl Into<AwsSpanBuilder<'a>> + Send,
-    ) -> Result<T, E>;
+    fn on_result(self, result: &Result<T, E>) {
+        self.end(result);
+    }
 }
 
-#[async_trait]
-impl<T, E, F> AwsInstrument<T, E> for F
+pub trait AwsInstrument<T, E, F>
 where
     T: RequestId,
     E: RequestId + Error,
-    F: Future<Output = Result<T, E>> + Send,
+    F: Future<Output = Result<T, E>>,
 {
-    async fn instrument<'a>(
+    fn instrument<'a>(
         self,
-        span: impl Into<AwsSpanBuilder<'a>> + Send,
-    ) -> Result<T, E> {
+        span: impl Into<AwsSpanBuilder<'a>>,
+    ) -> InstrumentedFuture<F, AwsSpan>;
+}
+
+impl<T, E, F> AwsInstrument<T, E, F> for F
+where
+    T: RequestId,
+    E: RequestId + Error,
+    F: Future<Output = Result<T, E>>,
+{
+    fn instrument<'a>(
+        self,
+        span: impl Into<AwsSpanBuilder<'a>>,
+    ) -> InstrumentedFuture<F, AwsSpan> {
         let span = span.into().start();
-        let result = self.await;
-        span.end(&result);
-        result
+        InstrumentedFuture::new(self, span)
     }
 }

@@ -11,7 +11,7 @@ pub trait InstrumentedFutureContext<T> {
 
 pin_project! {
     #[project = InstrumentedFutureProj]
-    #[project_replace = InstrumentedFutureReplace]
+    #[project_replace = InstrumentedFutureOwn]
     pub enum InstrumentedFuture<F, C>
     where
         F: Future,
@@ -55,8 +55,8 @@ where
         // If we got the ready value, we first drop the future: this ensures that the
         // OpenTelemetry span attached to it is closed and included in the subsequent flush.
         let context = match self.project_replace(InstrumentedFuture::Complete) {
-            InstrumentedFutureReplace::Pending { future: _, context } => context,
-            InstrumentedFutureReplace::Complete => panic!("future already completed"),
+            InstrumentedFutureOwn::Pending { future: _, context } => context,
+            InstrumentedFutureOwn::Complete => unreachable!("future already completed"),
         };
 
         context.on_result(&ready);

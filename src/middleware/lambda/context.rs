@@ -11,6 +11,22 @@ pub trait LambdaServiceContext {
     fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span;
 }
 
+trait AsValue {
+    fn as_value(&self) -> Option<&str>;
+}
+
+impl AsValue for StringValue {
+    fn as_value(&self) -> Option<&str> {
+        Some(self.as_str())
+    }
+}
+
+impl AsValue for Option<StringValue> {
+    fn as_value(&self) -> Option<&str> {
+        self.as_ref().map(|value| value.as_str())
+    }
+}
+
 // Generic lambda
 
 pub struct GenericLambdaService {}
@@ -68,7 +84,6 @@ impl OtelLambdaLayer<PubSubLambdaService> {
 impl LambdaServiceContext for PubSubLambdaService {
     #[inline]
     fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span {
-        let destination = self.destination.as_ref().map(|value| value.as_str());
         tracing::trace_span!(
             target: TRACING_TARGET,
             "Lambda function invocation",
@@ -79,8 +94,8 @@ impl LambdaServiceContext for PubSubLambdaService {
             { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
             { semconv::FAAS_COLDSTART } = coldstart,
             { semconv::MESSAGING_OPERATION } = "process",
-            { semconv::MESSAGING_SYSTEM } = self.system.as_str(),
-            { semconv::MESSAGING_DESTINATION_NAME } = destination,
+            { semconv::MESSAGING_SYSTEM } = self.system.as_value(),
+            { semconv::MESSAGING_DESTINATION_NAME } = self.destination.as_value(),
         )
     }
 }
@@ -112,7 +127,6 @@ impl OtelLambdaLayer<DatasourceLambdaService> {
 impl LambdaServiceContext for DatasourceLambdaService {
     #[inline]
     fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span {
-        let document_name = self.document_name.as_ref().map(|value| value.as_str());
         tracing::trace_span!(
             target: TRACING_TARGET,
             "Lambda function invocation",
@@ -122,9 +136,9 @@ impl LambdaServiceContext for DatasourceLambdaService {
             { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
             { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
             { semconv::FAAS_COLDSTART } = coldstart,
-            { semconv::FAAS_DOCUMENT_COLLECTION } = self.collection.as_str(),
-            { semconv::FAAS_DOCUMENT_OPERATION } = self.operation.as_str(),
-            { semconv::FAAS_DOCUMENT_NAME } = document_name,
+            { semconv::FAAS_DOCUMENT_COLLECTION } = self.collection.as_value(),
+            { semconv::FAAS_DOCUMENT_OPERATION } = self.operation.as_value(),
+            { semconv::FAAS_DOCUMENT_NAME } = self.document_name.as_value(),
         )
     }
 }
@@ -150,7 +164,6 @@ impl OtelLambdaLayer<TimerLambdaService> {
 impl LambdaServiceContext for TimerLambdaService {
     #[inline]
     fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span {
-        let cron = self.cron.as_ref().map(|value| value.as_str());
         tracing::trace_span!(
             target: TRACING_TARGET,
             "Lambda function invocation",
@@ -160,7 +173,7 @@ impl LambdaServiceContext for TimerLambdaService {
             { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
             { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
             { semconv::FAAS_COLDSTART } = coldstart,
-            { semconv::FAAS_CRON } = cron,
+            { semconv::FAAS_CRON } = self.cron.as_value(),
         )
     }
 }

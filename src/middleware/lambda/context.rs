@@ -39,180 +39,70 @@ impl<T: Into<StringValue>> From<Option<T>> for OptionalValue {
     }
 }
 
-// Generic lambda
+macro_rules! lambda_service {
+    ($trigger: ident, $kind: ident, $service:ident {$($key:ident: $type:ty,)*}) => {
+        #[allow(non_snake_case)]
+        pub struct $service {
+            $($key: $type,)*
+        }
 
-pub struct GenericLambdaService {}
+        impl OtelLambdaLayer<$service> {
+            #[inline]
+            #[allow(non_snake_case)]
+            pub fn $trigger(
+                provider: TracerProvider,
+                $($key: impl Into<$type>,)*
+            ) -> Self {
+                let context = $service {
+                    $($key: $key.into(),)*
+                };
+                Self::with_context(context, provider)
+            }
+        }
+
+        impl LambdaServiceContext for $service {
+            #[inline]
+            fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span {
+                tracing::trace_span!(
+                    target: TRACING_TARGET,
+                    "Lambda function invocation",
+                    "otel.kind" = ?SpanKind::$kind,
+                    "otel.name" = req.context.env_config.function_name,
+                    { semconv::FAAS_TRIGGER } = stringify!($trigger),
+                    { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
+                    { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
+                    { semconv::FAAS_COLDSTART } = coldstart,
+                    $({ semconv::$key } = self.$key.as_str(),)*
+                )
+            }
+        }
+    };
+}
+
+lambda_service!(other, Server, GenericLambdaService {});
+lambda_service!(http, Server, HttpLambdaService {});
+lambda_service!(pubsub, Consumer, PubSubLambdaService {
+    MESSAGING_SYSTEM: Value,
+    MESSAGING_DESTINATION_NAME: OptionalValue,
+});
+lambda_service!(datasource, Consumer, DatasourceLambdaService {
+    FAAS_DOCUMENT_COLLECTION: Value,
+    FAAS_DOCUMENT_OPERATION: Value,
+    FAAS_DOCUMENT_NAME: OptionalValue,
+});
+lambda_service!(timer, Consumer, TimerLambdaService {
+    FAAS_CRON: OptionalValue,
+});
 
 impl OtelLambdaLayer<GenericLambdaService> {
     #[inline]
     pub fn new(provider: TracerProvider) -> Self {
-        Self::with_context(GenericLambdaService {}, provider)
-    }
-}
-
-impl LambdaServiceContext for GenericLambdaService {
-    #[inline]
-    fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span {
-        tracing::trace_span!(
-            target: TRACING_TARGET,
-            "Lambda function invocation",
-            "otel.kind" = ?SpanKind::Server,
-            "otel.name" = req.context.env_config.function_name,
-            { semconv::FAAS_TRIGGER } = "other",
-            { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
-            { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
-            { semconv::FAAS_COLDSTART } = coldstart,
-        )
-    }
-}
-
-// PubSub lambda
-
-pub struct PubSubLambdaService {
-    system: Value,
-    destination: OptionalValue,
-}
-
-impl OtelLambdaLayer<PubSubLambdaService> {
-    pub fn pubsub(
-        provider: TracerProvider,
-        system: impl Into<Value>,
-        destination: impl Into<OptionalValue>,
-    ) -> Self {
-        let context = PubSubLambdaService {
-            system: system.into(),
-            destination: destination.into(),
-        };
-        Self::with_context(context, provider)
+        Self::other(provider)
     }
 }
 
 impl OtelLambdaLayer<PubSubLambdaService> {
     pub fn sqs(provider: TracerProvider, topic_arn: impl Into<StringValue>) -> Self {
         Self::pubsub(provider, "AmazonSQS", Some(topic_arn))
-    }
-}
-
-impl LambdaServiceContext for PubSubLambdaService {
-    #[inline]
-    fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span {
-        tracing::trace_span!(
-            target: TRACING_TARGET,
-            "Lambda function invocation",
-            "otel.kind" = ?SpanKind::Consumer,
-            "otel.name" = req.context.env_config.function_name,
-            { semconv::FAAS_TRIGGER } = "pubsub",
-            { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
-            { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
-            { semconv::FAAS_COLDSTART } = coldstart,
-            { semconv::MESSAGING_OPERATION } = "process",
-            { semconv::MESSAGING_SYSTEM } = self.system.as_str(),
-            { semconv::MESSAGING_DESTINATION_NAME } = self.destination.as_str(),
-        )
-    }
-}
-
-// Datasource lambda
-
-pub struct DatasourceLambdaService {
-    collection: Value,
-    operation: Value,
-    document_name: OptionalValue,
-}
-
-impl OtelLambdaLayer<DatasourceLambdaService> {
-    pub fn datasource(
-        provider: TracerProvider,
-        collection: impl Into<Value>,
-        operation: impl Into<Value>,
-        document_name: impl Into<OptionalValue>,
-    ) -> Self {
-        let context = DatasourceLambdaService {
-            collection: collection.into(),
-            operation: operation.into(),
-            document_name: document_name.into(),
-        };
-        Self::with_context(context, provider)
-    }
-}
-
-impl LambdaServiceContext for DatasourceLambdaService {
-    #[inline]
-    fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span {
-        tracing::trace_span!(
-            target: TRACING_TARGET,
-            "Lambda function invocation",
-            "otel.kind" = ?SpanKind::Consumer,
-            "otel.name" = req.context.env_config.function_name,
-            { semconv::FAAS_TRIGGER } = "datasource",
-            { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
-            { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
-            { semconv::FAAS_COLDSTART } = coldstart,
-            { semconv::FAAS_DOCUMENT_COLLECTION } = self.collection.as_str(),
-            { semconv::FAAS_DOCUMENT_OPERATION } = self.operation.as_str(),
-            { semconv::FAAS_DOCUMENT_NAME } = self.document_name.as_str(),
-        )
-    }
-}
-
-// Timer lambda
-
-pub struct TimerLambdaService {
-    cron: OptionalValue,
-}
-
-impl OtelLambdaLayer<TimerLambdaService> {
-    pub fn timer(
-        provider: TracerProvider,
-        cron: impl Into<OptionalValue>,
-    ) -> Self {
-        let context = TimerLambdaService {
-            cron: cron.into(),
-        };
-        Self::with_context(context, provider)
-    }
-}
-
-impl LambdaServiceContext for TimerLambdaService {
-    #[inline]
-    fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span {
-        tracing::trace_span!(
-            target: TRACING_TARGET,
-            "Lambda function invocation",
-            "otel.kind" = ?SpanKind::Consumer,
-            "otel.name" = req.context.env_config.function_name,
-            { semconv::FAAS_TRIGGER } = "timer",
-            { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
-            { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
-            { semconv::FAAS_COLDSTART } = coldstart,
-            { semconv::FAAS_CRON } = self.cron.as_str(),
-        )
-    }
-}
-
-// HTTP lambda
-
-pub struct HttpLambdaService {}
-
-impl OtelLambdaLayer<HttpLambdaService> {
-    #[inline]
-    pub fn new(provider: TracerProvider) -> Self {
-        Self::with_context(HttpLambdaService {}, provider)
-    }
-}
-
-impl LambdaServiceContext for HttpLambdaService {
-    #[inline]
-    fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span {
-        tracing::trace_span!(
-            target: TRACING_TARGET,
-            "Lambda function invocation",
-            "otel.kind" = ?SpanKind::Server,
-            "otel.name" = req.context.env_config.function_name,
-            { semconv::FAAS_TRIGGER } = "http",
-            { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
-            { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
-            { semconv::FAAS_COLDSTART } = coldstart,
-        )
     }
 }

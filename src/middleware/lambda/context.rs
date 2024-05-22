@@ -62,7 +62,7 @@ pub struct PubSubLambdaService {
 }
 
 impl OtelLambdaLayer<PubSubLambdaService> {
-    pub fn pub_sub(
+    pub fn pubsub(
         provider: TracerProvider,
         system: impl Into<StringValue>,
         destination: Option<impl Into<StringValue>>,
@@ -77,7 +77,7 @@ impl OtelLambdaLayer<PubSubLambdaService> {
 
 impl OtelLambdaLayer<PubSubLambdaService> {
     pub fn sqs(provider: TracerProvider, topic_arn: impl Into<StringValue>) -> Self {
-        Self::pub_sub(provider, "AmazonSQS", Some(topic_arn))
+        Self::pubsub(provider, "AmazonSQS", Some(topic_arn))
     }
 }
 
@@ -109,7 +109,7 @@ pub struct DatasourceLambdaService {
 }
 
 impl OtelLambdaLayer<DatasourceLambdaService> {
-    pub fn pub_sub(
+    pub fn datasource(
         provider: TracerProvider,
         collection: impl Into<StringValue>,
         operation: impl Into<StringValue>,
@@ -150,7 +150,7 @@ pub struct TimerLambdaService {
 }
 
 impl OtelLambdaLayer<TimerLambdaService> {
-    pub fn pub_sub(
+    pub fn timer(
         provider: TracerProvider,
         cron: Option<impl Into<StringValue>>,
     ) -> Self {

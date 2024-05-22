@@ -11,19 +11,31 @@ pub trait LambdaServiceContext {
     fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span;
 }
 
-trait AsValue {
-    fn as_value(&self) -> Option<&str>;
-}
+pub struct Value(StringValue);
 
-impl AsValue for StringValue {
-    fn as_value(&self) -> Option<&str> {
-        Some(self.as_str())
+impl Value {
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
     }
 }
 
-impl AsValue for Option<StringValue> {
-    fn as_value(&self) -> Option<&str> {
-        self.as_ref().map(|value| value.as_str())
+impl<T: Into<StringValue>> From<T> for Value {
+    fn from(inner: T) -> Self {
+        Self(inner.into())
+    }
+}
+
+pub struct OptionalValue(Option<StringValue>);
+
+impl OptionalValue {
+    pub fn as_str(&self) -> Option<&str> {
+        self.0.as_ref().map(|value| value.as_str())
+    }
+}
+
+impl<T: Into<StringValue>> From<Option<T>> for OptionalValue {
+    fn from(inner: Option<T>) -> Self {
+        Self(inner.map(|value| value.into()))
     }
 }
 
@@ -57,19 +69,19 @@ impl LambdaServiceContext for GenericLambdaService {
 // PubSub lambda
 
 pub struct PubSubLambdaService {
-    system: StringValue,
-    destination: Option<StringValue>,
+    system: Value,
+    destination: OptionalValue,
 }
 
 impl OtelLambdaLayer<PubSubLambdaService> {
     pub fn pubsub(
         provider: TracerProvider,
-        system: impl Into<StringValue>,
-        destination: Option<impl Into<StringValue>>,
+        system: impl Into<Value>,
+        destination: impl Into<OptionalValue>,
     ) -> Self {
         let context = PubSubLambdaService {
             system: system.into(),
-            destination: destination.map(|value| value.into()),
+            destination: destination.into(),
         };
         Self::with_context(context, provider)
     }
@@ -94,8 +106,8 @@ impl LambdaServiceContext for PubSubLambdaService {
             { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
             { semconv::FAAS_COLDSTART } = coldstart,
             { semconv::MESSAGING_OPERATION } = "process",
-            { semconv::MESSAGING_SYSTEM } = self.system.as_value(),
-            { semconv::MESSAGING_DESTINATION_NAME } = self.destination.as_value(),
+            { semconv::MESSAGING_SYSTEM } = self.system.as_str(),
+            { semconv::MESSAGING_DESTINATION_NAME } = self.destination.as_str(),
         )
     }
 }
@@ -103,22 +115,22 @@ impl LambdaServiceContext for PubSubLambdaService {
 // Datasource lambda
 
 pub struct DatasourceLambdaService {
-    collection: StringValue,
-    operation: StringValue,
-    document_name: Option<StringValue>,
+    collection: Value,
+    operation: Value,
+    document_name: OptionalValue,
 }
 
 impl OtelLambdaLayer<DatasourceLambdaService> {
     pub fn datasource(
         provider: TracerProvider,
-        collection: impl Into<StringValue>,
-        operation: impl Into<StringValue>,
-        document_name: Option<impl Into<StringValue>>,
+        collection: impl Into<Value>,
+        operation: impl Into<Value>,
+        document_name: impl Into<OptionalValue>,
     ) -> Self {
         let context = DatasourceLambdaService {
             collection: collection.into(),
             operation: operation.into(),
-            document_name: document_name.map(|value| value.into()),
+            document_name: document_name.into(),
         };
         Self::with_context(context, provider)
     }
@@ -136,9 +148,9 @@ impl LambdaServiceContext for DatasourceLambdaService {
             { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
             { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
             { semconv::FAAS_COLDSTART } = coldstart,
-            { semconv::FAAS_DOCUMENT_COLLECTION } = self.collection.as_value(),
-            { semconv::FAAS_DOCUMENT_OPERATION } = self.operation.as_value(),
-            { semconv::FAAS_DOCUMENT_NAME } = self.document_name.as_value(),
+            { semconv::FAAS_DOCUMENT_COLLECTION } = self.collection.as_str(),
+            { semconv::FAAS_DOCUMENT_OPERATION } = self.operation.as_str(),
+            { semconv::FAAS_DOCUMENT_NAME } = self.document_name.as_str(),
         )
     }
 }
@@ -146,16 +158,16 @@ impl LambdaServiceContext for DatasourceLambdaService {
 // Timer lambda
 
 pub struct TimerLambdaService {
-    cron: Option<StringValue>,
+    cron: OptionalValue,
 }
 
 impl OtelLambdaLayer<TimerLambdaService> {
     pub fn timer(
         provider: TracerProvider,
-        cron: Option<impl Into<StringValue>>,
+        cron: impl Into<OptionalValue>,
     ) -> Self {
         let context = TimerLambdaService {
-            cron: cron.map(|value| value.into()),
+            cron: cron.into(),
         };
         Self::with_context(context, provider)
     }
@@ -173,7 +185,7 @@ impl LambdaServiceContext for TimerLambdaService {
             { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
             { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
             { semconv::FAAS_COLDSTART } = coldstart,
-            { semconv::FAAS_CRON } = self.cron.as_value(),
+            { semconv::FAAS_CRON } = self.cron.as_str(),
         )
     }
 }

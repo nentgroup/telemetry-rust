@@ -164,3 +164,30 @@ impl LambdaServiceContext for TimerLambdaService {
         )
     }
 }
+
+// HTTP lambda
+
+pub struct HttpLambdaService {}
+
+impl OtelLambdaLayer<HttpLambdaService> {
+    #[inline]
+    pub fn new(provider: TracerProvider) -> Self {
+        Self::with_context(HttpLambdaService {}, provider)
+    }
+}
+
+impl LambdaServiceContext for HttpLambdaService {
+    #[inline]
+    fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span {
+        tracing::trace_span!(
+            target: TRACING_TARGET,
+            "Lambda function invocation",
+            "otel.kind" = ?SpanKind::Server,
+            "otel.name" = req.context.env_config.function_name,
+            { semconv::FAAS_TRIGGER } = "http",
+            { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
+            { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
+            { semconv::FAAS_COLDSTART } = coldstart,
+        )
+    }
+}

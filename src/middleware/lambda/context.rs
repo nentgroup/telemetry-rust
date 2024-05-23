@@ -42,6 +42,7 @@ impl<T: Into<StringValue>> From<Option<T>> for OptionalValue {
 macro_rules! lambda_service {
     ($trigger: ident, $kind: ident, $service:ident {
         $($prop:ident: $type:ty,)*
+        $({ $key:path } = $value:literal,)*
     }) => {
         #[allow(non_snake_case)]
         pub struct $service {
@@ -75,6 +76,7 @@ macro_rules! lambda_service {
                     { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
                     { semconv::FAAS_COLDSTART } = coldstart,
                     $({ semconv::$prop } = self.$prop.as_str(),)*
+                    $({ $key } = $value,)*
                 )
             }
         }
@@ -86,6 +88,7 @@ lambda_service!(http, Server, HttpLambdaService {});
 lambda_service!(pubsub, Consumer, PubSubLambdaService {
     MESSAGING_SYSTEM: Value,
     MESSAGING_DESTINATION_NAME: OptionalValue,
+    { semconv::MESSAGING_OPERATION } = "process",
 });
 lambda_service!(datasource, Consumer, DatasourceLambdaService {
     FAAS_DOCUMENT_COLLECTION: Value,

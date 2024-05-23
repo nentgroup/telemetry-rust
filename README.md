@@ -104,7 +104,7 @@ let s3_span = AwsSpanBuilder::client(
 
 ## AWS Lambda instrumentation
 
-### Generic layer
+### [Generic](https://opentelemetry.io/docs/specs/semconv/faas/faas-spans/#other) layer
 
 Generic lambda layer could be created using either `OtelLambdaLayer::new` or `OtelLambdaLayer::other` factory functions.
 
@@ -132,7 +132,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
 
 Generic layer could be used for all kinds of lambdas, but it is recommended to use a dedicated layer when possible.
 
-### PubSub layer
+### [PubSub](https://opentelemetry.io/docs/specs/semconv/faas/faas-spans/#pubsub) layer
 
 PubSub layer could be used when the lambda is triggered by some event, i.e. when it's subscribed to Kinesis Data Streams or DynamoDB Streams.
 
@@ -146,7 +146,7 @@ let pubsub_telemetry_layer = OtelLambdaLayer::pubsub(
 );
 ```
 
-SQS and SNS layers could be created using their own factory functions for convenience:
+[SQS](https://opentelemetry.io/docs/specs/semconv/faas/aws-lambda/#sqs) and SNS layers could be created using their own factory functions for convenience:
 
 ```rust
 let sqs_telemetry_layer = OtelLambdaLayer::sqs(
@@ -159,7 +159,7 @@ let sns_telemetry_layer = OtelLambdaLayer::sns(
 );
 ```
 
-### Datasource layer
+### [Datasource](https://opentelemetry.io/docs/specs/semconv/faas/faas-spans/#datasource) layer
 
 Datasource layer could be used when the lambda is invoked in response to some data source operation such as a database or filesystem read/write.
 
@@ -179,7 +179,7 @@ let s3_telemetry_layer = OtelLambdaLayer::datasource(
 
 Even though DynamoDB is a data source, it's recommended to use a `pubsub` layer when processing DynamoDB Streams events.
 
-### Timer layer
+### [Timer](https://opentelemetry.io/docs/specs/semconv/faas/faas-spans/#timer) layer
 
 Timer layer could be used when the lambda is invoked periodically by the Amazon EventBridge Scheduler.
 
@@ -191,9 +191,9 @@ let cron_telemetry_layer = OtelLambdaLayer::timer(
 );
 ```
 
-### HTTP layer
+### [HTTP](https://opentelemetry.io/docs/specs/semconv/faas/faas-spans/#http) layer
 
-Tracing for API Gateway events is not fully supported since that would require extracting tracking metadata from the event payload, but parsing event body is not supported by the `OtelLambdaLayer` implementation.
+Tracing for [API Gateway](https://opentelemetry.io/docs/specs/semconv/faas/aws-lambda/#api-gateway) events is not fully supported since that would require extracting tracking metadata from the event payload, but parsing event body is not supported by the `OtelLambdaLayer` implementation.
 
 Though it's still possible to create a simple HTTP layer to report the correct trigger type:
 

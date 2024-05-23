@@ -151,11 +151,11 @@ let pubsub_telemetry_layer = OtelLambdaLayer::pubsub(
 ```rust
 let sqs_telemetry_layer = OtelLambdaLayer::sqs(
     provider,
-    "arn:aws:sqs:us-east-2:123456789012:MyQueue",
+    Some("arn:aws:sqs:us-east-2:123456789012:MyQueue"),
 );
 let sns_telemetry_layer = OtelLambdaLayer::sns(
     provider,
-    "arn:aws:sns:us-east-2:123456789012:MyTopic",
+    Some("arn:aws:sns:us-east-2:123456789012:MyTopic"),
 );
 ```
 

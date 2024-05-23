@@ -40,10 +40,7 @@ impl<T: Into<StringValue>> From<Option<T>> for OptionalValue {
 }
 
 macro_rules! lambda_service {
-    ($trigger: ident, $kind: ident, $service:ident {
-        $($prop:ident: $type:ty,)*
-        $({ $key:path } = $value:literal,)*
-    }) => {
+    ($trigger: ident, $kind: ident, $service:ident { $($prop:ident: $type:ty,)* }$(, $($field:tt)*)?) => {
         #[allow(non_snake_case)]
         pub struct $service {
             $($prop: $type,)*
@@ -76,7 +73,7 @@ macro_rules! lambda_service {
                     { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
                     { semconv::FAAS_COLDSTART } = coldstart,
                     $({ semconv::$prop } = self.$prop.as_str(),)*
-                    $({ $key } = $value,)*
+                    $($($field)*)?
                 )
             }
         }
@@ -85,19 +82,31 @@ macro_rules! lambda_service {
 
 lambda_service!(other, Server, GenericLambdaService {});
 lambda_service!(http, Server, HttpLambdaService {});
-lambda_service!(pubsub, Consumer, PubSubLambdaService {
-    MESSAGING_SYSTEM: Value,
-    MESSAGING_DESTINATION_NAME: OptionalValue,
+lambda_service!(
+    pubsub,
+    Consumer,
+    PubSubLambdaService {
+        MESSAGING_SYSTEM: Value,
+        MESSAGING_DESTINATION_NAME: OptionalValue,
+    },
     { semconv::MESSAGING_OPERATION } = "process",
-});
-lambda_service!(datasource, Consumer, DatasourceLambdaService {
-    FAAS_DOCUMENT_COLLECTION: Value,
-    FAAS_DOCUMENT_OPERATION: Value,
-    FAAS_DOCUMENT_NAME: OptionalValue,
-});
-lambda_service!(timer, Consumer, TimerLambdaService {
-    FAAS_CRON: OptionalValue,
-});
+);
+lambda_service!(
+    datasource,
+    Consumer,
+    DatasourceLambdaService {
+        FAAS_DOCUMENT_COLLECTION: Value,
+        FAAS_DOCUMENT_OPERATION: Value,
+        FAAS_DOCUMENT_NAME: OptionalValue,
+    },
+);
+lambda_service!(
+    timer,
+    Consumer,
+    TimerLambdaService {
+        FAAS_CRON: OptionalValue,
+    },
+);
 
 impl OtelLambdaLayer<GenericLambdaService> {
     #[inline]

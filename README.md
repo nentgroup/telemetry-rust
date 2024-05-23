@@ -104,6 +104,10 @@ let s3_span = AwsSpanBuilder::client(
 
 ## AWS Lambda instrumentation
 
+### Generic layer
+
+Generic lambda layer could be created using either `OtelLambdaLayer::new` or `OtelLambdaLayer::other` factory functions.
+
 ```rust
 #[tokio::main]
 async fn main() -> Result<(), lambda_runtime::Error> {
@@ -124,4 +128,75 @@ async fn main() -> Result<(), lambda_runtime::Error> {
 
     Ok(())
 }
+```
+
+Generic layer could be used for all kinds of lambdas, but it is recommended to use a dedicated layer when possible.
+
+### PubSub layer
+
+PubSub layer could be used when the lambda is triggered by some event, i.e. when it's subscribed to Kinesis Data Streams or DynamoDB Streams.
+
+```rust
+let pubsub_telemetry_layer = OtelLambdaLayer::pubsub(
+    provider,
+    // The messaging system
+    "AmazonKinesis",
+    // The message destination arn or unique name
+    Some("arn:aws:kinesis:us-east-2:123456789012:stream/mystream"),
+);
+```
+
+SQS and SNS layers could be created using their own factory functions for convenience:
+
+```rust
+let sqs_telemetry_layer = OtelLambdaLayer::sqs(
+    provider,
+    "arn:aws:sqs:us-east-2:123456789012:MyQueue",
+);
+let sns_telemetry_layer = OtelLambdaLayer::sns(
+    provider,
+    "arn:aws:sns:us-east-2:123456789012:MyTopic",
+);
+```
+
+### Datasource layer
+
+Datasource layer could be used when the lambda is invoked in response to some data source operation such as a database or filesystem read/write.
+
+It's recommended to use Datasource layer when processing Amazon Simple Storage Service event notifications.
+
+```rust
+let s3_telemetry_layer = OtelLambdaLayer::datasource(
+    provider,
+    // The name of the source on which the triggering operation was performed
+    "myBucketName",
+    // The type of the operation that was performed on the data (usually "insert", "edit" or "delete")
+    "edit",
+    // The document name/table subjected to the operation
+    Some("/myFolder/myFile.txt"),
+);
+```
+
+Even though DynamoDB is a data source, it's recommended to use a `pubsub` layer when processing DynamoDB Streams events.
+
+### Timer layer
+
+Timer layer could be used when the lambda is invoked periodically by the Amazon EventBridge Scheduler.
+
+```rust
+let cron_telemetry_layer = OtelLambdaLayer::timer(
+    provider,
+    // The schedule period as Cron Expression
+    Some("0/5 * * * ? *"),
+);
+```
+
+### HTTP layer
+
+Tracing for API Gateway events is not fully supported since that would require extracting tracking metadata from the event payload, but parsing event body is not supported by the `OtelLambdaLayer` implementation.
+
+Though it's still possible to create a simple HTTP layer to report the correct trigger type:
+
+```rust
+let http_telemetry_layer = OtelLambdaLayer::http(provider);
 ```

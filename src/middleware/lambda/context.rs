@@ -40,10 +40,12 @@ impl<T: Into<StringValue>> From<Option<T>> for OptionalValue {
 }
 
 macro_rules! lambda_service {
-    ($trigger: ident, $kind: ident, $service:ident {$($key:ident: $type:ty,)*}) => {
+    ($trigger: ident, $kind: ident, $service:ident {
+        $($prop:ident: $type:ty,)*
+    }) => {
         #[allow(non_snake_case)]
         pub struct $service {
-            $($key: $type,)*
+            $($prop: $type,)*
         }
 
         impl OtelLambdaLayer<$service> {
@@ -51,10 +53,10 @@ macro_rules! lambda_service {
             #[allow(non_snake_case)]
             pub fn $trigger(
                 provider: TracerProvider,
-                $($key: impl Into<$type>,)*
+                $($prop: impl Into<$type>,)*
             ) -> Self {
                 let context = $service {
-                    $($key: $key.into(),)*
+                    $($prop: $prop.into(),)*
                 };
                 Self::with_context(context, provider)
             }
@@ -72,7 +74,7 @@ macro_rules! lambda_service {
                     { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
                     { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
                     { semconv::FAAS_COLDSTART } = coldstart,
-                    $({ semconv::$key } = self.$key.as_str(),)*
+                    $({ semconv::$prop } = self.$prop.as_str(),)*
                 )
             }
         }

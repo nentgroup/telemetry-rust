@@ -89,7 +89,7 @@ lambda_service!(
         MESSAGING_SYSTEM: Value,
         MESSAGING_DESTINATION_NAME: OptionalValue,
     },
-    { semconv::MESSAGING_OPERATION } = "process",
+    { semconv::MESSAGING_OPERATION } = "receive",
 );
 lambda_service!(
     datasource,

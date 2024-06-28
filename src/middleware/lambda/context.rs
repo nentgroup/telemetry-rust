@@ -117,12 +117,12 @@ impl OtelLambdaLayer<GenericLambdaService> {
 
 impl OtelLambdaLayer<PubSubLambdaService> {
     pub fn sqs(provider: TracerProvider, queue_arn: impl Into<OptionalValue>) -> Self {
-        Self::pubsub(provider, "AmazonSQS", queue_arn)
+        Self::pubsub(provider, "aws_sqs", queue_arn)
     }
 }
 
 impl OtelLambdaLayer<PubSubLambdaService> {
     pub fn sns(provider: TracerProvider, topic_arn: impl Into<OptionalValue>) -> Self {
-        Self::pubsub(provider, "AmazonSNS", topic_arn)
+        Self::pubsub(provider, "aws_sns", topic_arn)
     }
 }

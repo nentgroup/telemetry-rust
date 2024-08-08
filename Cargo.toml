@@ -43,7 +43,7 @@ paste = { version = "1.0.14", optional = true }
 
 [dev-dependencies]
 assert2 = "0.3"
-rstest = "0.19"
+rstest = "0.22"
 tokio = "1.35.1"
 
 [features]

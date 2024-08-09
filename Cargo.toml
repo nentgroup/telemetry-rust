@@ -19,7 +19,7 @@ opentelemetry_sdk = { version = "0.24", default-features = false, features = [
 ] }
 opentelemetry-resource-detectors = "0.3.0"
 opentelemetry-semantic-conventions = "0.16"
-tracing-opentelemetry-instrumentation-sdk = { version = "0.18", features = ["http"] }
+tracing-opentelemetry-instrumentation-sdk = { version = "0.19", features = ["http"] }
 tracing = { version = "0.1.40", default-features = false }
 tracing-subscriber = { version = "0.3.18", default-features = false, features = [
   "env-filter",

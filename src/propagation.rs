@@ -137,7 +137,6 @@ fn propagator_from_string(v: &str) -> Result<Propagator, TraceError> {
 }
 
 #[cfg(test)]
-#[cfg(feature = "tracer")]
 mod tests {
     use assert2::let_assert;
 

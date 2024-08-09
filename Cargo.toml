@@ -7,14 +7,14 @@ description = "Open Telemetry fox Axum and Tracing"
 
 [dependencies]
 http = "1.1.0"
-opentelemetry = { version = "0.24", default-features = false, features = [
+opentelemetry = { version = "0.23", default-features = false, features = [
   "trace",
 ] }
-tracing-opentelemetry = "0.25"
-opentelemetry-http = { version = "0.13", features = ["hyper", "tokio"] }
-opentelemetry-otlp = { version = "0.17", features = ["http-proto"] }
-opentelemetry-zipkin = { version = "0.22", features = [], optional = true }
-opentelemetry_sdk = { version = "0.24", default-features = false, features = [
+tracing-opentelemetry = "0.24"
+opentelemetry-http = { version = "0.12", features = ["hyper", "tokio"] }
+opentelemetry-otlp = { version = "0.16", features = ["http-proto"] }
+opentelemetry-zipkin = { version = "0.21", features = [], optional = true }
+opentelemetry_sdk = { version = "0.23", default-features = false, features = [
   "rt-tokio",
 ] }
 opentelemetry-semantic-conventions = "0.16"

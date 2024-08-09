@@ -1145,7 +1145,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5cd98b7277913e22e95b6fd3a5f7413438005471a6e33e8a4ae7b9a20be36ad"
 dependencies = [
  "opentelemetry",
- "opentelemetry-semantic-conventions 0.15.0",
+ "opentelemetry-semantic-conventions",
  "opentelemetry_sdk",
 ]
 
@@ -1154,12 +1154,6 @@ name = "opentelemetry-semantic-conventions"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1869fb4bb9b35c5ba8a1e40c9b128a7b4c010d07091e864a29da19e4fe2ca4d7"
-
-[[package]]
-name = "opentelemetry-semantic-conventions"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cefe0543875379e47eb5f1e68ff83f45cc41366a92dfd0d073d513bf68e9a05"
 
 [[package]]
 name = "opentelemetry-zipkin"
@@ -1173,7 +1167,7 @@ dependencies = [
  "once_cell",
  "opentelemetry",
  "opentelemetry-http",
- "opentelemetry-semantic-conventions 0.15.0",
+ "opentelemetry-semantic-conventions",
  "opentelemetry_sdk",
  "reqwest",
  "serde",
@@ -1753,7 +1747,7 @@ dependencies = [
  "opentelemetry-http",
  "opentelemetry-otlp",
  "opentelemetry-resource-detectors",
- "opentelemetry-semantic-conventions 0.16.0",
+ "opentelemetry-semantic-conventions",
  "opentelemetry-zipkin",
  "opentelemetry_api",
  "opentelemetry_sdk",

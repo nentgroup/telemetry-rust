@@ -125,3 +125,11 @@ async fn main() -> Result<(), lambda_runtime::Error> {
     Ok(())
 }
 ```
+
+## Publishing new version
+
+New version could be published using [cargo-release](https://github.com/crate-ci/cargo-release?tab=readme-ov-file#install):
+
+```sh
+cargo release -x <level>
+```

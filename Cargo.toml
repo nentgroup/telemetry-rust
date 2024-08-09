@@ -60,6 +60,10 @@ aws-lambda = ["dep:tower", "dep:lambda_runtime", "future"]
 aws = ["aws-span", "aws-instrumentation"]
 aws-full = ["aws", "aws-lambda"]
 
+[package.metadata.release]
+allow-branch = ["main"]
+publish = false
+
 [profile.dev]
 lto = false
 split-debuginfo = "unpacked"

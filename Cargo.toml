@@ -17,6 +17,7 @@ opentelemetry-zipkin = { version = "0.22", features = [], optional = true }
 opentelemetry_sdk = { version = "0.24", default-features = false, features = [
   "rt-tokio",
 ] }
+opentelemetry-resource-detectors = "0.3.0"
 opentelemetry-semantic-conventions = "0.16"
 tracing-opentelemetry-instrumentation-sdk = { version = "0.18", features = ["http"] }
 tracing = { version = "0.1.40", default-features = false }

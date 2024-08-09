@@ -1115,6 +1115,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "opentelemetry-resource-detectors"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00a7e965924ad5234917f135243605ef6f2ae3f4da8d3363065d679b2c150f2a"
+dependencies = [
+ "opentelemetry 0.24.0",
+ "opentelemetry-semantic-conventions",
+ "opentelemetry_sdk 0.24.1",
+]
+
+[[package]]
 name = "opentelemetry-semantic-conventions"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1713,6 +1724,7 @@ dependencies = [
  "opentelemetry 0.24.0",
  "opentelemetry-http",
  "opentelemetry-otlp",
+ "opentelemetry-resource-detectors",
  "opentelemetry-semantic-conventions",
  "opentelemetry-zipkin",
  "opentelemetry_api",

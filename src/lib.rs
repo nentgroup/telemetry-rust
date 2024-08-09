@@ -2,8 +2,9 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
+use opentelemetry_resource_detectors::OsResourceDetector;
 use opentelemetry_sdk::{
-    resource::{EnvResourceDetector, OsResourceDetector, ResourceDetector},
+    resource::{EnvResourceDetector, ResourceDetector},
     Resource,
 };
 use tracing::level_filters::LevelFilter;

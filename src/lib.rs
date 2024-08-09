@@ -2,8 +2,9 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
+use opentelemetry_resource_detectors::OsResourceDetector;
 use opentelemetry_sdk::{
-    resource::{EnvResourceDetector, OsResourceDetector, ResourceDetector},
+    resource::{EnvResourceDetector, ResourceDetector},
     Resource,
 };
 use tracing::level_filters::LevelFilter;
@@ -13,7 +14,7 @@ use tracing_subscriber::layer::SubscriberExt;
 
 pub use opentelemetry::{Array, Context, Key, KeyValue, StringValue, Value};
 pub use opentelemetry_sdk::trace::TracerProvider;
-pub use opentelemetry_semantic_conventions::{resource, trace as semconv};
+pub use opentelemetry_semantic_conventions::attribute as semconv;
 pub use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 pub mod middleware;
@@ -95,12 +96,12 @@ impl ResourceDetector for ServiceInfoDetector {
             .or_else(|| util::env_var("SERVICE_NAME"))
             .or_else(|| util::env_var("APP_NAME"))
             .or_else(|| Some(self.fallback_service_name.to_string()))
-            .map(|v| KeyValue::new(resource::SERVICE_NAME, v));
+            .map(|v| KeyValue::new(semconv::SERVICE_NAME, v));
         let service_version = util::env_var("OTEL_SERVICE_VERSION")
             .or_else(|| util::env_var("SERVICE_VERSION"))
             .or_else(|| util::env_var("APP_VERSION"))
             .or_else(|| Some(self.fallback_service_version.to_string()))
-            .map(|v| KeyValue::new(resource::SERVICE_VERSION, v));
+            .map(|v| KeyValue::new(semconv::SERVICE_VERSION, v));
         Resource::new(vec![service_name, service_version].into_iter().flatten())
     }
 }

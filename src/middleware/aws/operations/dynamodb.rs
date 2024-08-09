@@ -14,13 +14,13 @@ impl<'a> AwsSpanBuilder<'a> {
             table_names.into_iter().map(|item| item.into()).collect();
         let mut attributes = vec![
             KeyValue::new(semconv::DB_SYSTEM, "dynamodb"),
-            KeyValue::new(semconv::DB_OPERATION, method.clone()),
+            KeyValue::new(semconv::DB_OPERATION_NAME, method.clone()),
         ];
         match table_names.len() {
             0 => {}
             1 => {
                 attributes.extend([
-                    KeyValue::new(semconv::DB_NAME, table_names[0].clone()),
+                    KeyValue::new(semconv::DB_NAMESPACE, table_names[0].clone()),
                     Key::new(semconv::AWS_DYNAMODB_TABLE_NAMES).array(table_names),
                 ]);
             }
@@ -68,7 +68,7 @@ macro_rules! dynamodb_table_arn_operation {
                     stringify_camel!($op),
                     std::iter::empty::<StringValue>(),
                 )
-                .attribute(KeyValue::new(semconv::DB_NAME, table_arn.into()))
+                .attribute(KeyValue::new(semconv::DB_NAMESPACE, table_arn.into()))
             }
         }
     };

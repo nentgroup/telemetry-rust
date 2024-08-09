@@ -11,7 +11,7 @@ opentelemetry = { version = "0.24", default-features = false, features = [
   "trace",
 ] }
 tracing-opentelemetry = "0.23"
-opentelemetry-http = { version = "0.13", features = ["hyper", "tokio"] }
+opentelemetry-http = { version = "0.13", features = ["hyper"] }
 opentelemetry-otlp = { version = "0.17", features = ["http-proto"] }
 opentelemetry-zipkin = { version = "0.22", features = [], optional = true }
 opentelemetry_sdk = { version = "0.24", default-features = false, features = [

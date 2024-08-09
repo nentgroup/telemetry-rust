@@ -2,8 +2,23 @@
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
         "config:recommended",
-        "github>Turbo87/renovate-config//rust/updateToolchain",
         "schedule:monthly"
+    ],
+    "customManagers": [
+        {
+            "customType": "regex",
+            "fileMatch": [
+                "(^|/)rust-toolchain$",
+                "(^|/)rust-toolchain\\.toml?$"
+            ],
+            "matchStrings": [
+                "^(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\\s*$",
+                "channel\\s*=\\s*\"(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\""
+            ],
+            "depNameTemplate": "rust",
+            "packageNameTemplate": "rust-lang/rust",
+            "datasourceTemplate": "github-releases"
+        }
     ],
     "packageRules": [
         {

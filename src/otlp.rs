@@ -53,6 +53,7 @@ where
             .tonic()
             .with_export_config(export_config)
             .into(),
+        Protocol::HttpJson => unreachable!("HttpJson protocol is not supported"),
     };
 
     let mut pipeline = opentelemetry_otlp::new_pipeline()
@@ -155,6 +156,7 @@ fn infer_export_config(
     let endpoint = match protocol {
         Protocol::HttpBinary => maybe_endpoint.unwrap_or("http://localhost:4318"),
         Protocol::Grpc => maybe_endpoint.unwrap_or("http://localhost:4317"),
+        Protocol::HttpJson => unreachable!("HttpJson protocol is not supported"),
     };
 
     let timeout = match maybe_timeout {

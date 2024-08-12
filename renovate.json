@@ -36,6 +36,7 @@
             "groupName": "opentelemetry",
             "matchSourceUrls": [
                 "https://github.com/tokio-rs/tracing-opentelemetry",
+                "https://github.com/open-telemetry/opentelemetry-rust-contrib",
                 "https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk"
             ]
         }

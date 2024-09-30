@@ -12,6 +12,7 @@ impl<'a> AwsSpanBuilder<'a> {
     ) -> Self {
         let mut attributes = vec![
             KeyValue::new(semconv::MESSAGING_SYSTEM, "aws_firehose"),
+            #[allow(deprecated)]
             KeyValue::new(semconv::MESSAGING_OPERATION, operation_kind.as_str()),
         ];
         if let Some(stream_name) = stream_name {

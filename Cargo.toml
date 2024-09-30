@@ -7,18 +7,18 @@ description = "Open Telemetry fox Axum and Tracing"
 
 [dependencies]
 http = "1.1.0"
-opentelemetry = { version = "0.23", default-features = false, features = [
+opentelemetry = { version = "0.25", default-features = false, features = [
   "trace",
 ] }
-tracing-opentelemetry = "0.24"
-opentelemetry-http = { version = "0.12", features = ["hyper", "tokio"] }
-opentelemetry-otlp = { version = "0.16", features = ["http-proto"] }
-opentelemetry-zipkin = { version = "0.21", features = [], optional = true }
-opentelemetry_sdk = { version = "0.23", default-features = false, features = [
+tracing-opentelemetry = "0.26"
+opentelemetry-http = { version = "0.25", features = ["hyper", "tokio"] }
+opentelemetry-otlp = { version = "0.25", features = ["http-proto"] }
+opentelemetry-zipkin = { version = "0.25", features = [], optional = true }
+opentelemetry_sdk = { version = "0.25", default-features = false, features = [
   "rt-tokio",
 ] }
-opentelemetry-semantic-conventions = "0.15"
-tracing-opentelemetry-instrumentation-sdk = { version = "0.19", features = ["http"] }
+opentelemetry-semantic-conventions = "0.25"
+tracing-opentelemetry-instrumentation-sdk = { version = "0.21", features = ["http"] }
 tracing = { version = "0.1.40", default-features = false }
 tracing-subscriber = { version = "0.3.18", default-features = false, features = [
   "env-filter",
@@ -40,7 +40,7 @@ http-body-util = { version = "0.1.1", optional = true }
 aws-types =  { version = "1", optional = true }
 lambda_runtime = { version = "0", optional = true }
 paste = { version = "1.0.14", optional = true }
-opentelemetry-resource-detectors = "0.2.0"
+opentelemetry-resource-detectors = "0.3.0"
 
 [dev-dependencies]
 assert2 = "0.3"

@@ -1,19 +1,12 @@
 pub mod jaegar;
 
-#[cfg(feature = "hyper-v1")]
 use http_body_util::BodyExt;
-#[cfg(not(feature = "hyper-v1"))]
-use hyper::{body::Bytes, header::HeaderValue, HeaderMap, Result};
-#[cfg(feature = "hyper-v1")]
-use hyper_v1::{header::HeaderValue, HeaderMap, Result};
+use hyper::{header::HeaderValue, HeaderMap, Result};
 
 pub use opentelemetry_api::trace::{SpanId, TraceId};
 use rand::Rng;
 
-#[cfg(feature = "hyper-v1")]
-type Response = hyper_v1::Response<hyper_v1::body::Incoming>;
-#[cfg(not(feature = "hyper-v1"))]
-type Response = hyper::Response<hyper::Body>;
+type Response = hyper::Response<hyper::body::Incoming>;
 
 #[derive(Debug)]
 pub struct TracedResponse {
@@ -31,17 +24,7 @@ impl TracedResponse {
         }
     }
 
-    #[cfg(not(feature = "hyper-v1"))]
-    pub async fn get_bytes(&mut self) -> Result<Bytes> {
-        hyper::body::to_bytes(self.body_mut()).await
-    }
-
-    #[cfg(not(feature = "hyper-v1"))]
-    pub async fn into_bytes(self) -> Result<Bytes> {
-        hyper::body::to_bytes(self.resp).await
-    }
-
-    #[cfg(all(feature = "axum", feature = "hyper-v1"))]
+    #[cfg(feature = "axum")]
     pub async fn into_axum_bytes(self) -> Result<axum::body::Bytes> {
         Ok(self.resp.into_body().collect().await?.to_bytes())
     }

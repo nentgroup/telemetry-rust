@@ -4,11 +4,12 @@
 
 use std::{collections::HashMap, str::FromStr};
 
+use hyper_util::{client::legacy::Client, rt::TokioExecutor};
 use opentelemetry::trace::TraceError;
 use opentelemetry_http::hyper::HyperClient;
 use opentelemetry_otlp::{ExportConfig, Protocol, SpanExporterBuilder};
 use opentelemetry_sdk::{
-    trace::{Sampler, Tracer},
+    trace::{Sampler, TracerProvider},
     Resource,
 };
 use std::time::Duration;
@@ -24,7 +25,10 @@ pub fn identity(
 }
 
 // see https://opentelemetry.io/docs/reference/specification/protocol/exporter/
-pub fn init_tracer<F>(resource: Resource, transform: F) -> Result<Tracer, TraceError>
+pub fn init_tracer<F>(
+    resource: Resource,
+    transform: F,
+) -> Result<TracerProvider, TraceError>
 where
     F: FnOnce(
         opentelemetry_otlp::OtlpTracePipeline<SpanExporterBuilder>,
@@ -43,7 +47,7 @@ where
         Protocol::HttpBinary => opentelemetry_otlp::new_exporter()
             .http()
             .with_http_client(HyperClient::new_with_timeout(
-                hyper::Client::new(),
+                Client::builder(TokioExecutor::new()).build_http(),
                 export_config.timeout,
             ))
             .with_headers(read_headers_from_env())
@@ -60,7 +64,7 @@ where
         .tracing()
         .with_exporter(exporter)
         .with_trace_config(
-            opentelemetry_sdk::trace::config()
+            opentelemetry_sdk::trace::Config::default()
                 .with_resource(resource)
                 .with_sampler(read_sampler_from_env()),
         );

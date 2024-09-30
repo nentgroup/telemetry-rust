@@ -2,7 +2,6 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
-use opentelemetry_resource_detectors::OsResourceDetector;
 use opentelemetry_sdk::{
     resource::{EnvResourceDetector, ResourceDetector},
     Resource,
@@ -12,10 +11,11 @@ use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 
+use opentelemetry::trace::TracerProvider as _;
 pub use opentelemetry::{Array, Context, Key, KeyValue, StringValue, Value};
 pub use opentelemetry_sdk::trace::TracerProvider;
 pub use opentelemetry_semantic_conventions::{resource, trace as semconv};
-pub use tracing_opentelemetry::OpenTelemetrySpanExt;
+pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};
 
 pub mod middleware;
 pub mod propagation;
@@ -69,7 +69,6 @@ impl DetectResource {
                     fallback_service_name: self.fallback_service_name,
                     fallback_service_version: self.fallback_service_version,
                 }),
-                Box::new(OsResourceDetector),
                 Box::new(EnvResourceDetector::new()),
             ],
         );
@@ -137,16 +136,14 @@ pub fn init_tracing_with_fallbacks(
 
     let otel_rsrc =
         DetectResource::new(fallback_service_name, fallback_service_version).build();
-    let otel_tracer =
+    let tracer_provider =
         otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
-
-    let tracer_provider = otel_tracer.provider().unwrap();
 
     opentelemetry::global::set_text_map_propagator(
         propagation::TextMapSplitPropagator::from_env().expect("setup of Propagation"),
     );
 
-    let otel_layer = tracing_opentelemetry::layer().with_tracer(otel_tracer);
+    let otel_layer = OpenTelemetryLayer::new(tracer_provider.tracer("otlp"));
     let subscriber = tracing_subscriber::registry()
         .with(Into::<filter::TracingFilter>::into(log_level))
         .with(fmt_layer!())

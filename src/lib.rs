@@ -137,11 +137,11 @@ pub fn init_tracing_with_fallbacks(
     let otel_rsrc =
         DetectResource::new(fallback_service_name, fallback_service_version).build();
     let tracer_provider =
-        otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
+        otlp::init_tracer(otel_rsrc, otlp::identity).expect("TracerProvider setup");
 
     global::set_tracer_provider(tracer_provider.clone());
     global::set_text_map_propagator(
-        propagation::TextMapSplitPropagator::from_env().expect("setup of Propagation"),
+        propagation::TextMapSplitPropagator::from_env().expect("TextMapPropagator setup"),
     );
 
     let otel_layer =

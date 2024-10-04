@@ -12,7 +12,7 @@ use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 
 use opentelemetry::trace::TracerProvider as _;
-pub use opentelemetry::{Array, Context, Key, KeyValue, StringValue, Value};
+pub use opentelemetry::{global, Array, Context, Key, KeyValue, StringValue, Value};
 pub use opentelemetry_sdk::trace::TracerProvider;
 pub use opentelemetry_semantic_conventions::attribute as semconv;
 pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};
@@ -139,7 +139,8 @@ pub fn init_tracing_with_fallbacks(
     let tracer_provider =
         otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
 
-    opentelemetry::global::set_text_map_propagator(
+    global::set_tracer_provider(tracer_provider.clone());
+    global::set_text_map_propagator(
         propagation::TextMapSplitPropagator::from_env().expect("setup of Propagation"),
     );
 
@@ -166,7 +167,7 @@ macro_rules! init_tracing {
 
 #[inline]
 pub fn shutdown_signal() {
-    std::thread::spawn(opentelemetry::global::shutdown_tracer_provider)
+    std::thread::spawn(global::shutdown_tracer_provider)
         .join()
         .unwrap();
 }

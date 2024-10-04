@@ -14,18 +14,16 @@ use tracing_subscriber::layer::SubscriberExt;
 use opentelemetry::trace::TracerProvider as _;
 pub use opentelemetry::{global, Array, Context, Key, KeyValue, StringValue, Value};
 pub use opentelemetry_sdk::trace::TracerProvider;
-pub use opentelemetry_semantic_conventions::attribute as semconv;
 pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};
 
-pub mod middleware;
-pub mod propagation;
-
 pub mod http;
+pub mod middleware;
+pub mod otlp;
+pub mod propagation;
+pub mod semconv;
 
 #[cfg(feature = "axum")]
 pub use tracing_opentelemetry_instrumentation_sdk;
-
-pub mod otlp;
 
 #[cfg(feature = "test")]
 pub mod test;

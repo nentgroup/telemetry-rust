@@ -144,7 +144,8 @@ pub fn init_tracing_with_fallbacks(
         propagation::TextMapSplitPropagator::from_env().expect("setup of Propagation"),
     );
 
-    let otel_layer = OpenTelemetryLayer::new(tracer_provider.tracer("otlp"));
+    let otel_layer =
+        OpenTelemetryLayer::new(tracer_provider.tracer(env!("CARGO_PKG_NAME")));
     let subscriber = tracing_subscriber::registry()
         .with(Into::<filter::TracingFilter>::into(log_level))
         .with(fmt_layer!())

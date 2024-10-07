@@ -2,6 +2,9 @@ use crate::{semconv, Key, KeyValue, StringValue};
 
 use super::*;
 
+#[allow(deprecated)]
+pub const LEGACY_DB_NAME: &str = semconv::DB_NAME;
+
 pub enum DynamodbSpanBuilder {}
 
 impl<'a> AwsSpanBuilder<'a> {
@@ -15,14 +18,13 @@ impl<'a> AwsSpanBuilder<'a> {
         let mut attributes = vec![
             KeyValue::new(semconv::DB_SYSTEM, "dynamodb"),
             KeyValue::new(semconv::DB_OPERATION_NAME, method.clone()),
-            KeyValue::new(semconv::legacy::DB_OPERATION, method.clone()),
         ];
         match table_names.len() {
             0 => {}
             1 => {
                 attributes.extend([
+                    KeyValue::new(LEGACY_DB_NAME, table_names[0].clone()),
                     KeyValue::new(semconv::DB_NAMESPACE, table_names[0].clone()),
-                    KeyValue::new(semconv::legacy::DB_NAME, table_names[0].clone()),
                     Key::new(semconv::AWS_DYNAMODB_TABLE_NAMES).array(table_names),
                 ]);
             }
@@ -72,8 +74,8 @@ macro_rules! dynamodb_table_arn_operation {
                     std::iter::empty::<StringValue>(),
                 )
                 .attributes(vec![
-                    KeyValue::new(semconv::DB_NAMESPACE, table_arn.clone()),
-                    KeyValue::new(semconv::legacy::DB_NAME, table_arn),
+                    KeyValue::new(LEGACY_DB_NAME, table_arn.clone()),
+                    KeyValue::new(semconv::DB_NAMESPACE, table_arn),
                 ])
             }
         }

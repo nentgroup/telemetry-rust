@@ -2,7 +2,6 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
-use opentelemetry_resource_detectors::OsResourceDetector;
 use opentelemetry_sdk::{
     resource::{EnvResourceDetector, ResourceDetector},
     Resource,
@@ -12,20 +11,19 @@ use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 
-pub use opentelemetry::{Array, Context, Key, KeyValue, StringValue, Value};
+use opentelemetry::trace::TracerProvider as _;
+pub use opentelemetry::{global, Array, Context, Key, KeyValue, StringValue, Value};
 pub use opentelemetry_sdk::trace::TracerProvider;
-pub use opentelemetry_semantic_conventions::{resource, trace as semconv};
-pub use tracing_opentelemetry::OpenTelemetrySpanExt;
-
-pub mod middleware;
-pub mod propagation;
+pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};
 
 pub mod http;
+pub mod middleware;
+pub mod otlp;
+pub mod propagation;
+pub mod semconv;
 
 #[cfg(feature = "axum")]
 pub use tracing_opentelemetry_instrumentation_sdk;
-
-pub mod otlp;
 
 #[cfg(feature = "test")]
 pub mod test;
@@ -69,7 +67,6 @@ impl DetectResource {
                     fallback_service_name: self.fallback_service_name,
                     fallback_service_version: self.fallback_service_version,
                 }),
-                Box::new(OsResourceDetector),
                 Box::new(EnvResourceDetector::new()),
             ],
         );
@@ -96,12 +93,12 @@ impl ResourceDetector for ServiceInfoDetector {
             .or_else(|| util::env_var("SERVICE_NAME"))
             .or_else(|| util::env_var("APP_NAME"))
             .or_else(|| Some(self.fallback_service_name.to_string()))
-            .map(|v| KeyValue::new(resource::SERVICE_NAME, v));
+            .map(|v| KeyValue::new(semconv::SERVICE_NAME, v));
         let service_version = util::env_var("OTEL_SERVICE_VERSION")
             .or_else(|| util::env_var("SERVICE_VERSION"))
             .or_else(|| util::env_var("APP_VERSION"))
             .or_else(|| Some(self.fallback_service_version.to_string()))
-            .map(|v| KeyValue::new(resource::SERVICE_VERSION, v));
+            .map(|v| KeyValue::new(semconv::SERVICE_VERSION, v));
         Resource::new(vec![service_name, service_version].into_iter().flatten())
     }
 }
@@ -137,16 +134,16 @@ pub fn init_tracing_with_fallbacks(
 
     let otel_rsrc =
         DetectResource::new(fallback_service_name, fallback_service_version).build();
-    let otel_tracer =
-        otlp::init_tracer(otel_rsrc, otlp::identity).expect("setup of Tracer");
+    let tracer_provider =
+        otlp::init_tracer(otel_rsrc, otlp::identity).expect("TracerProvider setup");
 
-    let tracer_provider = otel_tracer.provider().unwrap();
-
-    opentelemetry::global::set_text_map_propagator(
-        propagation::TextMapSplitPropagator::from_env().expect("setup of Propagation"),
+    global::set_tracer_provider(tracer_provider.clone());
+    global::set_text_map_propagator(
+        propagation::TextMapSplitPropagator::from_env().expect("TextMapPropagator setup"),
     );
 
-    let otel_layer = tracing_opentelemetry::layer().with_tracer(otel_tracer);
+    let otel_layer =
+        OpenTelemetryLayer::new(tracer_provider.tracer(env!("CARGO_PKG_NAME")));
     let subscriber = tracing_subscriber::registry()
         .with(Into::<filter::TracingFilter>::into(log_level))
         .with(fmt_layer!())
@@ -169,7 +166,7 @@ macro_rules! init_tracing {
 
 #[inline]
 pub fn shutdown_signal() {
-    std::thread::spawn(opentelemetry::global::shutdown_tracer_provider)
+    std::thread::spawn(global::shutdown_tracer_provider)
         .join()
         .unwrap();
 }

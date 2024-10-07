@@ -43,7 +43,7 @@ hyper-util = "0.1.9"
 
 [dev-dependencies]
 assert2 = "0.3"
-rstest = "0.22"
+rstest = "0.23"
 tokio = "1.38"
 
 [features]

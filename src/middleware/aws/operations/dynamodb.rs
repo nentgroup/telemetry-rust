@@ -1,4 +1,4 @@
-use crate::{semconv, Key, KeyValue, StringValue};
+use crate::{semconv, KeyValue, StringValue, Value};
 
 use super::*;
 
@@ -25,12 +25,17 @@ impl<'a> AwsSpanBuilder<'a> {
                 attributes.extend([
                     KeyValue::new(LEGACY_DB_NAME, table_names[0].clone()),
                     KeyValue::new(semconv::DB_NAMESPACE, table_names[0].clone()),
-                    Key::new(semconv::AWS_DYNAMODB_TABLE_NAMES).array(table_names),
+                    KeyValue::new(
+                        semconv::AWS_DYNAMODB_TABLE_NAMES,
+                        Value::Array(table_names.into()),
+                    ),
                 ]);
             }
             _ => {
-                attributes
-                    .push(Key::new(semconv::AWS_DYNAMODB_TABLE_NAMES).array(table_names));
+                attributes.push(KeyValue::new(
+                    semconv::AWS_DYNAMODB_TABLE_NAMES,
+                    Value::Array(table_names.into()),
+                ));
             }
         }
         Self::client("DynamoDB", method, attributes)

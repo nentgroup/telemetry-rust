@@ -1788,7 +1788,6 @@ dependencies = [
  "http 1.1.0",
  "http-body-util",
  "hyper",
- "hyper-util",
  "lambda_runtime",
  "opentelemetry",
  "opentelemetry-http",

@@ -44,10 +44,6 @@ impl DetectResource {
     /// `service.name` is first extracted from environment variables
     /// (in this order) `OTEL_SERVICE_NAME`, `SERVICE_NAME`, `APP_NAME`.
     /// But a default value can be provided with this method.
-
-    /// `service.name` is first extracted from environment variables
-    /// (in this order) `SERVICE_VERSION`, `APP_VERSION`.
-    /// But a default value can be provided with this method.
     pub fn new(
         fallback_service_name: &'static str,
         fallback_service_version: &'static str,

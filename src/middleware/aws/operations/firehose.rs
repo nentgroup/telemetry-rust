@@ -4,7 +4,7 @@ use super::*;
 
 pub enum FirehoseSpanBuilder {}
 
-impl<'a> AwsSpanBuilder<'a> {
+impl AwsSpanBuilder<'_> {
     pub fn firehose(
         operation_kind: MessagingOperationKind,
         method: impl Into<StringValue>,

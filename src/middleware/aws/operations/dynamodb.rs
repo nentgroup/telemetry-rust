@@ -7,7 +7,7 @@ pub const LEGACY_DB_NAME: &str = semconv::DB_NAME;
 
 pub enum DynamodbSpanBuilder {}
 
-impl<'a> AwsSpanBuilder<'a> {
+impl AwsSpanBuilder<'_> {
     pub fn dynamodb(
         method: impl Into<StringValue>,
         table_names: impl IntoIterator<Item = impl Into<StringValue>>,

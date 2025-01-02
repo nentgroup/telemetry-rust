@@ -4,7 +4,7 @@ use super::*;
 
 pub enum SnsSpanBuilder {}
 
-impl<'a> AwsSpanBuilder<'a> {
+impl AwsSpanBuilder<'_> {
     pub fn sns(
         operation_kind: MessagingOperationKind,
         method: impl Into<StringValue>,

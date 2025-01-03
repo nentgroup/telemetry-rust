@@ -11,7 +11,7 @@ use opentelemetry_otlp::{
 };
 use opentelemetry_sdk::{
     runtime,
-    trace::{Config as TraceConfig, Sampler, TracerProvider},
+    trace::{Sampler, TracerProvider},
     Resource,
 };
 use std::time::Duration;
@@ -60,11 +60,8 @@ where
 
     let tracer_provider_builder = TracerProvider::builder()
         .with_batch_exporter(exporter, runtime::Tokio)
-        .with_config(
-            TraceConfig::default()
-                .with_resource(resource)
-                .with_sampler(read_sampler_from_env()),
-        );
+        .with_resource(resource)
+        .with_sampler(read_sampler_from_env());
 
     Ok(transform(tracer_provider_builder).build())
 }

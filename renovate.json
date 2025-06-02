@@ -7,9 +7,9 @@
     "customManagers": [
         {
             "customType": "regex",
-            "fileMatch": [
-                "(^|/)rust-toolchain$",
-                "(^|/)rust-toolchain\\.toml?$"
+            "managerFilePatterns": [
+                "/(^|/)rust-toolchain$/",
+                "/(^|/)rust-toolchain\\.toml?$/"
             ],
             "matchStrings": [
                 "^(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\\s*$",

@@ -169,21 +169,18 @@ mod tests {
     use super::*;
     use Protocol::*;
 
-    const TIMEOUT: Duration =
-        Duration::from_secs(opentelemetry_otlp::OTEL_EXPORTER_OTLP_TIMEOUT_DEFAULT);
-
     #[rstest]
-    #[case(None, None, None, HttpBinary, None, TIMEOUT)]
-    #[case(Some("http/protobuf"), None, None, HttpBinary, None, TIMEOUT)]
-    #[case(Some("http"), None, None, HttpBinary, None, TIMEOUT)]
-    #[case(Some("grpc"), None, None, Grpc, None, TIMEOUT)]
+    #[case(None, None, None, HttpBinary, None, None)]
+    #[case(Some("http/protobuf"), None, None, HttpBinary, None, None)]
+    #[case(Some("http"), None, None, HttpBinary, None, None)]
+    #[case(Some("grpc"), None, None, Grpc, None, None)]
     #[case(
         None,
         Some("http://localhost:4317"),
         None,
         Grpc,
         Some("http://localhost:4317"),
-        TIMEOUT
+        None
     )]
     #[case(
         Some("http/protobuf"),
@@ -191,7 +188,7 @@ mod tests {
         None,
         HttpBinary,
         Some("http://localhost:4318"),
-        TIMEOUT
+        None
     )]
     #[case(
         Some("http/protobuf"),
@@ -199,7 +196,7 @@ mod tests {
         None,
         HttpBinary,
         Some("https://examples.com:4318"),
-        TIMEOUT
+        None
     )]
     #[case(
         Some("http/protobuf"),
@@ -207,7 +204,7 @@ mod tests {
         Some("12345"),
         HttpBinary,
         Some("https://examples.com:4317"),
-        Duration::from_millis(12345)
+        Some(Duration::from_millis(12345))
     )]
     fn test_infer_export_config(
         #[case] traces_protocol: Option<&str>,
@@ -215,7 +212,7 @@ mod tests {
         #[case] traces_timeout: Option<&str>,
         #[case] expected_protocol: Protocol,
         #[case] expected_endpoint: Option<&str>,
-        #[case] expected_timeout: Duration,
+        #[case] expected_timeout: Option<Duration>,
     ) {
         let ExportConfig {
             protocol,

@@ -11,7 +11,7 @@ use opentelemetry_otlp::{
 };
 use opentelemetry_sdk::{
     runtime,
-    trace::{Sampler, TracerProvider},
+    trace::{Sampler, SdkTracerProvider as TracerProvider},
     Resource,
 };
 use std::time::Duration;

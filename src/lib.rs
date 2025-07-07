@@ -13,7 +13,7 @@ use tracing_subscriber::layer::SubscriberExt;
 
 use opentelemetry::trace::TracerProvider as _;
 pub use opentelemetry::{global, Array, Context, Key, KeyValue, StringValue, Value};
-pub use opentelemetry_sdk::trace::TracerProvider;
+pub use opentelemetry_sdk::trace::SdkTracerProvider as TracerProvider;
 pub use opentelemetry_semantic_conventions::attribute as semconv;
 pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};
 

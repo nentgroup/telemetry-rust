@@ -57,9 +57,9 @@ pub struct Traceparent {
 
 impl Traceparent {
     pub fn generate() -> Self {
-        let mut rng = rand::thread_rng();
-        let trace_id = TraceId::from_u128(rng.gen());
-        let span_id = SpanId::from_u64(rng.gen());
+        let mut rng = rand::rng();
+        let trace_id = TraceId::from_u128(rng.random());
+        let span_id = SpanId::from_u64(rng.random());
         Self { trace_id, span_id }
     }
 

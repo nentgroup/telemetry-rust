@@ -5,6 +5,9 @@ use super::*;
 #[allow(deprecated)]
 pub const LEGACY_DB_NAME: &str = semconv::DB_NAME;
 
+#[allow(deprecated)]
+pub const LEGACY_DB_SYSTEM: &str = semconv::DB_SYSTEM;
+
 pub enum DynamodbSpanBuilder {}
 
 impl AwsSpanBuilder<'_> {
@@ -16,7 +19,7 @@ impl AwsSpanBuilder<'_> {
         let table_names: Vec<StringValue> =
             table_names.into_iter().map(|item| item.into()).collect();
         let mut attributes = vec![
-            KeyValue::new(semconv::DB_SYSTEM, "dynamodb"),
+            KeyValue::new(LEGACY_DB_SYSTEM, "dynamodb"),
             KeyValue::new(semconv::DB_OPERATION_NAME, method.clone()),
         ];
         match table_names.len() {

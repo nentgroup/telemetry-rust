@@ -34,7 +34,7 @@ impl<S> Layer<S> for OtelLambdaLayer {
 
 impl<T> InstrumentedFutureContext<T> for TracerProvider {
     fn on_result(self, _: &T) {
-        self.force_flush();
+        let _ = self.force_flush();
     }
 }
 

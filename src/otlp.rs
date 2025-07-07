@@ -4,14 +4,13 @@
 
 use std::{collections::HashMap, str::FromStr};
 
-use opentelemetry::trace::TraceError;
 use opentelemetry_http::hyper::HyperClient;
 use opentelemetry_otlp::{
     ExportConfig, Protocol, SpanExporter, WithExportConfig, WithHttpConfig,
 };
 use opentelemetry_sdk::{
     runtime,
-    trace::{Sampler, SdkTracerProvider as TracerProvider},
+    trace::{Sampler, SdkTracerProvider as TracerProvider, TraceError},
     Resource,
 };
 use std::time::Duration;

@@ -4,13 +4,12 @@
 
 use std::{collections::HashMap, str::FromStr};
 
-use opentelemetry_http::hyper::HyperClient;
 use opentelemetry_otlp::{
-    ExportConfig, Protocol, SpanExporter, WithExportConfig, WithHttpConfig,
+    ExportConfig, ExporterBuildError, Protocol, SpanExporter, WithExportConfig,
+    WithHttpConfig,
 };
 use opentelemetry_sdk::{
-    runtime,
-    trace::{Sampler, SdkTracerProvider as TracerProvider, TraceError},
+    trace::{Sampler, SdkTracerProvider as TracerProvider, TracerProviderBuilder},
     Resource,
 };
 use std::time::Duration;
@@ -19,9 +18,7 @@ pub use crate::filter::read_tracing_level_from_env as read_otel_log_level_from_e
 use crate::util;
 
 #[must_use]
-pub fn identity(
-    v: opentelemetry_sdk::trace::Builder,
-) -> opentelemetry_sdk::trace::Builder {
+pub fn identity(v: TracerProviderBuilder) -> TracerProviderBuilder {
     v
 }
 
@@ -29,9 +26,9 @@ pub fn identity(
 pub fn init_tracer<F>(
     resource: Resource,
     transform: F,
-) -> Result<TracerProvider, TraceError>
+) -> Result<TracerProvider, ExporterBuildError>
 where
-    F: FnOnce(opentelemetry_sdk::trace::Builder) -> opentelemetry_sdk::trace::Builder,
+    F: FnOnce(TracerProviderBuilder) -> TracerProviderBuilder,
 {
     let (maybe_protocol, maybe_endpoint, maybe_timeout) = read_export_config_from_env();
     let export_config = infer_export_config(
@@ -43,10 +40,6 @@ where
     let exporter: SpanExporter = match export_config.protocol {
         Protocol::HttpBinary => SpanExporter::builder()
             .with_http()
-            .with_http_client(HyperClient::with_default_connector(
-                export_config.timeout,
-                None,
-            ))
             .with_headers(read_headers_from_env())
             .with_export_config(export_config)
             .build()?,
@@ -58,7 +51,7 @@ where
     };
 
     let tracer_provider_builder = TracerProvider::builder()
-        .with_batch_exporter(exporter, runtime::Tokio)
+        .with_batch_exporter(exporter)
         .with_resource(resource)
         .with_sampler(read_sampler_from_env());
 
@@ -135,12 +128,12 @@ fn infer_export_config(
     maybe_protocol: Option<&str>,
     maybe_endpoint: Option<&str>,
     maybe_timeout: Option<&str>,
-) -> Result<ExportConfig, TraceError> {
+) -> Result<ExportConfig, ExporterBuildError> {
     let protocol = match maybe_protocol {
         Some("grpc") => Protocol::Grpc,
         Some("http") | Some("http/protobuf") => Protocol::HttpBinary,
         Some(other) => {
-            return Err(TraceError::from(format!(
+            return Err(ExporterBuildError::InternalFailure(format!(
                 "unsupported protocol {other:?} form env"
             )))
         }
@@ -150,14 +143,16 @@ fn infer_export_config(
         },
     };
 
-    let timeout = match maybe_timeout {
-        Some(millis) => Duration::from_millis(millis.parse::<u64>().map_err(|err| {
-            TraceError::from(format!("invalid timeout {millis:?} form env: {err}"))
-        })?),
-        None => {
-            Duration::from_secs(opentelemetry_otlp::OTEL_EXPORTER_OTLP_TIMEOUT_DEFAULT)
-        }
-    };
+    let timeout = maybe_timeout
+        .map(|millis| {
+            millis.parse::<u64>().map_err(|err| {
+                ExporterBuildError::InternalFailure(format!(
+                    "invalid timeout {millis:?} form env: {err}"
+                ))
+            })
+        })
+        .transpose()?
+        .map(Duration::from_millis);
 
     Ok(ExportConfig {
         endpoint: maybe_endpoint.map(ToOwned::to_owned),

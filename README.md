@@ -34,9 +34,9 @@ async fn main() {
     // ...
 }
 
-async fn graceful_shutdown(provider: &mut TracerProvider) {
+async fn graceful_shutdown(provider: TracerProvider) {
     // ...
-    shutdown_tracer_provider(provider);
+    shutdown_tracer_provider(&provider);
 }
 ```
 

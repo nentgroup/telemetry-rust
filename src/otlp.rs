@@ -2,8 +2,6 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
-use std::{collections::HashMap, str::FromStr};
-
 use opentelemetry_otlp::{
     ExportConfig, ExporterBuildError, Protocol, SpanExporter, WithExportConfig,
     WithHttpConfig,
@@ -12,10 +10,22 @@ use opentelemetry_sdk::{
     trace::{Sampler, SdkTracerProvider as TracerProvider, TracerProviderBuilder},
     Resource,
 };
-use std::time::Duration;
+use std::{collections::HashMap, num::ParseIntError, str::FromStr, time::Duration};
 
 pub use crate::filter::read_tracing_level_from_env as read_otel_log_level_from_env;
 use crate::util;
+
+#[derive(thiserror::Error, Debug)]
+pub enum InitTracerError {
+    #[error("unsupported protocol {0:?} form env")]
+    UnsupportedEnvProtocol(String),
+
+    #[error("invalid timeout {0:?} form env: {1:?}")]
+    InvalidEnvTimeout(String, #[source] ParseIntError),
+
+    #[error(transparent)]
+    ExporterBuildError(#[from] ExporterBuildError),
+}
 
 #[must_use]
 pub fn identity(v: TracerProviderBuilder) -> TracerProviderBuilder {
@@ -26,7 +36,7 @@ pub fn identity(v: TracerProviderBuilder) -> TracerProviderBuilder {
 pub fn init_tracer<F>(
     resource: Resource,
     transform: F,
-) -> Result<TracerProvider, ExporterBuildError>
+) -> Result<TracerProvider, InitTracerError>
 where
     F: FnOnce(TracerProviderBuilder) -> TracerProviderBuilder,
 {
@@ -128,14 +138,12 @@ fn infer_export_config(
     maybe_protocol: Option<&str>,
     maybe_endpoint: Option<&str>,
     maybe_timeout: Option<&str>,
-) -> Result<ExportConfig, ExporterBuildError> {
+) -> Result<ExportConfig, InitTracerError> {
     let protocol = match maybe_protocol {
         Some("grpc") => Protocol::Grpc,
         Some("http") | Some("http/protobuf") => Protocol::HttpBinary,
         Some(other) => {
-            return Err(ExporterBuildError::InternalFailure(format!(
-                "unsupported protocol {other:?} form env"
-            )))
+            return Err(InitTracerError::UnsupportedEnvProtocol(other.to_owned()))
         }
         None => match maybe_endpoint {
             Some(e) if e.contains(":4317") => Protocol::Grpc,
@@ -145,11 +153,9 @@ fn infer_export_config(
 
     let timeout = maybe_timeout
         .map(|millis| {
-            millis.parse::<u64>().map_err(|err| {
-                ExporterBuildError::InternalFailure(format!(
-                    "invalid timeout {millis:?} form env: {err}"
-                ))
-            })
+            millis
+                .parse::<u64>()
+                .map_err(|err| InitTracerError::InvalidEnvTimeout(millis.to_owned(), err))
         })
         .transpose()?
         .map(Duration::from_millis);

@@ -126,7 +126,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         .run()
         .await?;
 
-    // Tracer provider will be automatically shutdown when the layer is dropped
+    // Tracer provider will be automatically shutdown when the runtime is dropped
 
     Ok(())
 }

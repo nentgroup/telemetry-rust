@@ -20,12 +20,6 @@ impl OtelLambdaLayer {
     }
 }
 
-impl Drop for OtelLambdaLayer {
-    fn drop(&mut self) {
-        crate::shutdown_tracer_provider(&self.provider)
-    }
-}
-
 impl<S> Layer<S> for OtelLambdaLayer {
     type Service = OtelLambdaService<S>;
 
@@ -50,6 +44,12 @@ pub struct OtelLambdaService<S> {
     inner: S,
     provider: TracerProvider,
     coldstart: bool,
+}
+
+impl<S> Drop for OtelLambdaService<S> {
+    fn drop(&mut self) {
+        crate::shutdown_tracer_provider(&self.provider)
+    }
 }
 
 impl<S, R> Service<LambdaInvocation> for OtelLambdaService<S>

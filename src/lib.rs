@@ -2,10 +2,6 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
-use opentelemetry_sdk::{
-    resource::{EnvResourceDetector, ResourceDetector},
-    Resource,
-};
 use tracing::level_filters::LevelFilter;
 #[cfg(debug_assertions)]
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -13,7 +9,7 @@ use tracing_subscriber::layer::SubscriberExt;
 
 use opentelemetry::trace::TracerProvider as _;
 pub use opentelemetry::{global, Array, Context, Key, KeyValue, StringValue, Value};
-pub use opentelemetry_sdk::trace::SdkTracerProvider as TracerProvider;
+pub use opentelemetry_sdk::{trace::SdkTracerProvider as TracerProvider, Resource};
 pub use opentelemetry_semantic_conventions::attribute as semconv;
 pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};
 
@@ -55,36 +51,6 @@ impl DetectResource {
     }
 
     pub fn build(self) -> Resource {
-        let base = Resource::default();
-        let fallback = Resource::from_detectors(
-            std::time::Duration::from_secs(0),
-            vec![
-                Box::new(ServiceInfoDetector {
-                    fallback_service_name: self.fallback_service_name,
-                    fallback_service_version: self.fallback_service_version,
-                }),
-                Box::new(EnvResourceDetector::new()),
-            ],
-        );
-        let rsrc = base.merge(&fallback); // base has lower priority
-
-        // Debug
-        rsrc.iter().for_each(
-            |kv| tracing::debug!(target: "otel::setup::resource", key = %kv.0, value = %kv.1),
-        );
-
-        rsrc
-    }
-}
-
-#[derive(Debug)]
-pub struct ServiceInfoDetector {
-    fallback_service_name: &'static str,
-    fallback_service_version: &'static str,
-}
-
-impl ResourceDetector for ServiceInfoDetector {
-    fn detect(&self, _timeout: std::time::Duration) -> Resource {
         let service_name = util::env_var("OTEL_SERVICE_NAME")
             .or_else(|| util::env_var("SERVICE_NAME"))
             .or_else(|| util::env_var("APP_NAME"))
@@ -95,7 +61,17 @@ impl ResourceDetector for ServiceInfoDetector {
             .or_else(|| util::env_var("APP_VERSION"))
             .or_else(|| Some(self.fallback_service_version.to_string()))
             .map(|v| KeyValue::new(semconv::SERVICE_VERSION, v));
-        Resource::new(vec![service_name, service_version].into_iter().flatten())
+
+        let rsrc = Resource::builder()
+            .with_attributes([service_name, service_version].into_iter().flatten())
+            .build();
+
+        // Debug
+        rsrc.iter().for_each(
+            |kv| tracing::debug!(target: "otel::setup::resource", key = %kv.0, value = %kv.1),
+        );
+
+        rsrc
     }
 }
 

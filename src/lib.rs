@@ -137,3 +137,13 @@ macro_rules! init_tracing {
         )
     };
 }
+
+#[inline]
+pub fn shutdown_tracer_provider(provider: &TracerProvider) {
+    if let Err(err) = provider.force_flush() {
+        tracing::warn!("failed to flush otel provider: {err:?}");
+    }
+    if let Err(err) = provider.shutdown() {
+        tracing::warn!("failed to shutdown otel provider: {err:?}");
+    }
+}

@@ -20,7 +20,7 @@ pub enum InitTracerError {
     #[error("unsupported protocol {0:?} form env")]
     UnsupportedEnvProtocol(String),
 
-    #[error("invalid timeout {0:?} form env: {1:?}")]
+    #[error("invalid timeout {0:?} form env: {1}")]
     InvalidEnvTimeout(String, #[source] ParseIntError),
 
     #[error(transparent)]
@@ -169,7 +169,7 @@ fn infer_export_config(
 
 #[cfg(test)]
 mod tests {
-    use assert2::assert;
+    use assert2::{assert, let_assert};
     use rstest::rstest;
 
     use super::*;
@@ -230,5 +230,24 @@ mod tests {
         assert!(protocol == expected_protocol);
         assert!(endpoint.as_deref() == expected_endpoint);
         assert!(timeout == expected_timeout);
+    }
+
+    #[rstest]
+    #[case(Some("tonic"), None, r#"unsupported protocol "tonic" form env"#)]
+    #[case(
+        Some("http/protobuf"),
+        Some("-1"),
+        r#"invalid timeout "-1" form env: invalid digit found in string"#
+    )]
+    fn test_infer_export_config_error(
+        #[case] traces_protocol: Option<&str>,
+        #[case] traces_timeout: Option<&str>,
+        #[case] expected_error: &str,
+    ) {
+        let result = infer_export_config(traces_protocol, None, traces_timeout);
+
+        let_assert!(Err(err) = result);
+
+        assert!(format!("{}", err) == expected_error);
     }
 }

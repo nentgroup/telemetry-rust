@@ -9,7 +9,9 @@ use tracing_subscriber::layer::SubscriberExt;
 
 use opentelemetry::trace::TracerProvider as _;
 pub use opentelemetry::{global, Array, Context, Key, KeyValue, StringValue, Value};
-pub use opentelemetry_sdk::{trace::SdkTracerProvider as TracerProvider, Resource};
+pub use opentelemetry_sdk::{
+    error::OTelSdkError, trace::SdkTracerProvider as TracerProvider, Resource,
+};
 pub use opentelemetry_semantic_conventions::attribute as semconv;
 pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};
 
@@ -134,11 +136,4 @@ macro_rules! init_tracing {
             env!("CARGO_PKG_VERSION"),
         )
     };
-}
-
-#[inline]
-pub fn shutdown_signal() {
-    std::thread::spawn(global::shutdown_tracer_provider)
-        .join()
-        .unwrap();
 }

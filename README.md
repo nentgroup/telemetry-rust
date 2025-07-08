@@ -4,8 +4,9 @@
 use tracing::Level::INFO;
 // middleware::axum is available if feature flag axum is on
 use telemetry_rust::{
-    init_tracing,
+    TracerProvider, init_tracing,
     middleware::axum::{OtelAxumLayer, OtelInResponseLayer},
+    shutdown_tracer_provider,
 };
 
 #[tracing::instrument]
@@ -18,7 +19,7 @@ async fn route_otel() -> impl axum::response::IntoResponse {
 
 #[tokio::main]
 async fn main() {
-    init_tracing!(INFO);
+    let provider: TracerProvider = init_tracing!(INFO);
 
     // ...
 
@@ -31,6 +32,12 @@ async fn main() {
         .layer(OtelAxumLayer::default());
 
     // ...
+}
+
+async fn graceful_shutdown(provider: TracerProvider) {
+    // ...
+    shutdown_tracer_provider(&provider);
+}
 ```
 
 ## AWS SDK instrumentation
@@ -119,8 +126,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         .run()
         .await?;
 
-    // Shutdown tracer provider before exiting
-    telemetry_rust::shutdown_signal();
+    // Tracer provider will be automatically shutdown when the runtime is dropped
 
     Ok(())
 }

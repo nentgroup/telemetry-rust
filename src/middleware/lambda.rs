@@ -4,7 +4,7 @@ use crate::{
 };
 use lambda_runtime::LambdaInvocation;
 use opentelemetry::trace::SpanKind;
-use opentelemetry_sdk::trace::TracerProvider;
+use opentelemetry_sdk::trace::SdkTracerProvider as TracerProvider;
 use std::task::{Context as TaskContext, Poll};
 use tower::{Layer, Service};
 use tracing::{instrument::Instrumented, Instrument};
@@ -34,7 +34,9 @@ impl<S> Layer<S> for OtelLambdaLayer {
 
 impl<T> InstrumentedFutureContext<T> for TracerProvider {
     fn on_result(self, _: &T) {
-        self.force_flush();
+        if let Err(err) = self.force_flush() {
+            tracing::warn!("failed to flush tracer provider: {err:?}");
+        }
     }
 }
 
@@ -42,6 +44,12 @@ pub struct OtelLambdaService<S> {
     inner: S,
     provider: TracerProvider,
     coldstart: bool,
+}
+
+impl<S> Drop for OtelLambdaService<S> {
+    fn drop(&mut self) {
+        crate::shutdown_tracer_provider(&self.provider)
+    }
 }
 
 impl<S, R> Service<LambdaInvocation> for OtelLambdaService<S>

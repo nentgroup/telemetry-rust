@@ -2,27 +2,33 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
-use std::{collections::HashMap, str::FromStr};
-
-use opentelemetry::trace::TraceError;
-use opentelemetry_http::hyper::HyperClient;
 use opentelemetry_otlp::{
-    ExportConfig, Protocol, SpanExporter, WithExportConfig, WithHttpConfig,
+    ExportConfig, ExporterBuildError, Protocol, SpanExporter, WithExportConfig,
+    WithHttpConfig,
 };
 use opentelemetry_sdk::{
-    runtime,
-    trace::{Sampler, TracerProvider},
+    trace::{Sampler, SdkTracerProvider as TracerProvider, TracerProviderBuilder},
     Resource,
 };
-use std::time::Duration;
+use std::{collections::HashMap, num::ParseIntError, str::FromStr, time::Duration};
 
 pub use crate::filter::read_tracing_level_from_env as read_otel_log_level_from_env;
 use crate::util;
 
+#[derive(thiserror::Error, Debug)]
+pub enum InitTracerError {
+    #[error("unsupported protocol {0:?} form env")]
+    UnsupportedEnvProtocol(String),
+
+    #[error("invalid timeout {0:?} form env: {1}")]
+    InvalidEnvTimeout(String, #[source] ParseIntError),
+
+    #[error(transparent)]
+    ExporterBuildError(#[from] ExporterBuildError),
+}
+
 #[must_use]
-pub fn identity(
-    v: opentelemetry_sdk::trace::Builder,
-) -> opentelemetry_sdk::trace::Builder {
+pub fn identity(v: TracerProviderBuilder) -> TracerProviderBuilder {
     v
 }
 
@@ -30,9 +36,9 @@ pub fn identity(
 pub fn init_tracer<F>(
     resource: Resource,
     transform: F,
-) -> Result<TracerProvider, TraceError>
+) -> Result<TracerProvider, InitTracerError>
 where
-    F: FnOnce(opentelemetry_sdk::trace::Builder) -> opentelemetry_sdk::trace::Builder,
+    F: FnOnce(TracerProviderBuilder) -> TracerProviderBuilder,
 {
     let (maybe_protocol, maybe_endpoint, maybe_timeout) = read_export_config_from_env();
     let export_config = infer_export_config(
@@ -44,10 +50,6 @@ where
     let exporter: SpanExporter = match export_config.protocol {
         Protocol::HttpBinary => SpanExporter::builder()
             .with_http()
-            .with_http_client(HyperClient::with_default_connector(
-                export_config.timeout,
-                None,
-            ))
             .with_headers(read_headers_from_env())
             .with_export_config(export_config)
             .build()?,
@@ -59,7 +61,7 @@ where
     };
 
     let tracer_provider_builder = TracerProvider::builder()
-        .with_batch_exporter(exporter, runtime::Tokio)
+        .with_batch_exporter(exporter)
         .with_resource(resource)
         .with_sampler(read_sampler_from_env());
 
@@ -136,14 +138,12 @@ fn infer_export_config(
     maybe_protocol: Option<&str>,
     maybe_endpoint: Option<&str>,
     maybe_timeout: Option<&str>,
-) -> Result<ExportConfig, TraceError> {
+) -> Result<ExportConfig, InitTracerError> {
     let protocol = match maybe_protocol {
         Some("grpc") => Protocol::Grpc,
         Some("http") | Some("http/protobuf") => Protocol::HttpBinary,
         Some(other) => {
-            return Err(TraceError::from(format!(
-                "unsupported protocol {other:?} form env"
-            )))
+            return Err(InitTracerError::UnsupportedEnvProtocol(other.to_owned()))
         }
         None => match maybe_endpoint {
             Some(e) if e.contains(":4317") => Protocol::Grpc,
@@ -151,14 +151,14 @@ fn infer_export_config(
         },
     };
 
-    let timeout = match maybe_timeout {
-        Some(millis) => Duration::from_millis(millis.parse::<u64>().map_err(|err| {
-            TraceError::from(format!("invalid timeout {millis:?} form env: {err}"))
-        })?),
-        None => {
-            Duration::from_secs(opentelemetry_otlp::OTEL_EXPORTER_OTLP_TIMEOUT_DEFAULT)
-        }
-    };
+    let timeout = maybe_timeout
+        .map(|millis| {
+            millis
+                .parse::<u64>()
+                .map_err(|err| InitTracerError::InvalidEnvTimeout(millis.to_owned(), err))
+        })
+        .transpose()?
+        .map(Duration::from_millis);
 
     Ok(ExportConfig {
         endpoint: maybe_endpoint.map(ToOwned::to_owned),
@@ -169,27 +169,24 @@ fn infer_export_config(
 
 #[cfg(test)]
 mod tests {
-    use assert2::assert;
+    use assert2::{assert, let_assert};
     use rstest::rstest;
 
     use super::*;
     use Protocol::*;
 
-    const TIMEOUT: Duration =
-        Duration::from_secs(opentelemetry_otlp::OTEL_EXPORTER_OTLP_TIMEOUT_DEFAULT);
-
     #[rstest]
-    #[case(None, None, None, HttpBinary, None, TIMEOUT)]
-    #[case(Some("http/protobuf"), None, None, HttpBinary, None, TIMEOUT)]
-    #[case(Some("http"), None, None, HttpBinary, None, TIMEOUT)]
-    #[case(Some("grpc"), None, None, Grpc, None, TIMEOUT)]
+    #[case(None, None, None, HttpBinary, None, None)]
+    #[case(Some("http/protobuf"), None, None, HttpBinary, None, None)]
+    #[case(Some("http"), None, None, HttpBinary, None, None)]
+    #[case(Some("grpc"), None, None, Grpc, None, None)]
     #[case(
         None,
         Some("http://localhost:4317"),
         None,
         Grpc,
         Some("http://localhost:4317"),
-        TIMEOUT
+        None
     )]
     #[case(
         Some("http/protobuf"),
@@ -197,7 +194,7 @@ mod tests {
         None,
         HttpBinary,
         Some("http://localhost:4318"),
-        TIMEOUT
+        None
     )]
     #[case(
         Some("http/protobuf"),
@@ -205,7 +202,7 @@ mod tests {
         None,
         HttpBinary,
         Some("https://examples.com:4318"),
-        TIMEOUT
+        None
     )]
     #[case(
         Some("http/protobuf"),
@@ -213,7 +210,7 @@ mod tests {
         Some("12345"),
         HttpBinary,
         Some("https://examples.com:4317"),
-        Duration::from_millis(12345)
+        Some(Duration::from_millis(12345))
     )]
     fn test_infer_export_config(
         #[case] traces_protocol: Option<&str>,
@@ -221,7 +218,7 @@ mod tests {
         #[case] traces_timeout: Option<&str>,
         #[case] expected_protocol: Protocol,
         #[case] expected_endpoint: Option<&str>,
-        #[case] expected_timeout: Duration,
+        #[case] expected_timeout: Option<Duration>,
     ) {
         let ExportConfig {
             protocol,
@@ -233,5 +230,24 @@ mod tests {
         assert!(protocol == expected_protocol);
         assert!(endpoint.as_deref() == expected_endpoint);
         assert!(timeout == expected_timeout);
+    }
+
+    #[rstest]
+    #[case(Some("tonic"), None, r#"unsupported protocol "tonic" form env"#)]
+    #[case(
+        Some("http/protobuf"),
+        Some("-1"),
+        r#"invalid timeout "-1" form env: invalid digit found in string"#
+    )]
+    fn test_infer_export_config_error(
+        #[case] traces_protocol: Option<&str>,
+        #[case] traces_timeout: Option<&str>,
+        #[case] expected_error: &str,
+    ) {
+        let result = infer_export_config(traces_protocol, None, traces_timeout);
+
+        let_assert!(Err(err) = result);
+
+        assert!(format!("{}", err) == expected_error);
     }
 }

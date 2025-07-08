@@ -3,10 +3,12 @@ use opentelemetry::{
         text_map_propagator::FieldIter, Extractor, Injector, TextMapCompositePropagator,
         TextMapPropagator,
     },
-    trace::TraceError,
     Context,
 };
-use opentelemetry_sdk::propagation::{BaggagePropagator, TraceContextPropagator};
+use opentelemetry_sdk::{
+    propagation::{BaggagePropagator, TraceContextPropagator},
+    trace::TraceError,
+};
 #[cfg(feature = "zipkin")]
 use opentelemetry_zipkin::{B3Encoding, Propagator as B3Propagator};
 use std::collections::BTreeSet;

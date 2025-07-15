@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.7.0
+
+- Update `opentelemetry` to `0.30` https://github.com/nentgroup/telemetry-rust/pull/109
+
+## v3.6.0
+
+- Update `opentelemetry` to `0.27` https://github.com/nentgroup/telemetry-rust/pull/77 & https://github.com/nentgroup/telemetry-rust/pull/91
+
+## v3.5.0
+
+- Update `opentelemetry` to `0.26` https://github.com/nentgroup/telemetry-rust/pull/63
+
 ## v3.4.0
 
 - Follow latest Semantic Conventions https://github.com/nentgroup/telemetry-rust/pull/66

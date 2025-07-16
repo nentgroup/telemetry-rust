@@ -36,8 +36,8 @@ impl<P> OtelAxumLayer<P> {
 
     pub fn filter(self, filter: Filter) -> Self {
         OtelAxumLayer {
-            matched_path_as_str: self.matched_path_as_str,
             filter: Some(filter),
+            ..self
         }
     }
 }

@@ -6,7 +6,7 @@ use opentelemetry::{
 use std::error::Error;
 use tracing::Span;
 
-use crate::{semconv, Context, KeyValue, OpenTelemetrySpanExt, StringValue};
+use crate::{Context, KeyValue, OpenTelemetrySpanExt, StringValue, semconv};
 
 #[cfg(feature = "aws-instrumentation")]
 mod instrumentation;

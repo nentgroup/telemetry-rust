@@ -2,7 +2,7 @@ use pin_project_lite::pin_project;
 use std::{
     future::Future,
     pin::Pin,
-    task::{ready, Context as TaskContext, Poll},
+    task::{Context as TaskContext, Poll, ready},
 };
 
 pub trait InstrumentedFutureContext<T> {

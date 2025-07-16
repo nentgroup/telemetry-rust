@@ -1,7 +1,7 @@
 pub mod jaegar;
 
 use http_body_util::BodyExt;
-use hyper::{header::HeaderValue, HeaderMap, Result};
+use hyper::{HeaderMap, Result, header::HeaderValue};
 
 pub use opentelemetry_api::trace::{SpanId, TraceId};
 use rand::Rng;

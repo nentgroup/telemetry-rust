@@ -17,7 +17,7 @@ use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::http as otel_http;
 
 pub type Filter = fn(&str) -> bool;
-pub type GetMatchedPath<T> = fn(&T) -> &str;
+pub type GetMatchedPath<MatchedPath> = fn(&MatchedPath) -> &str;
 
 #[derive(Debug, Clone)]
 pub struct OtelAxumLayer<T> {

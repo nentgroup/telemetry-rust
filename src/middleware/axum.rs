@@ -17,57 +17,57 @@ use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::http as otel_http;
 
 pub type Filter = fn(&str) -> bool;
-pub type GetMatchedPath<MatchedPath> = fn(&MatchedPath) -> &str;
+pub type AsStr<T> = fn(&T) -> &str;
 
 #[derive(Debug, Clone)]
-pub struct OtelAxumLayer<T> {
-    get_matched_path: GetMatchedPath<T>,
+pub struct OtelAxumLayer<P> {
+    matched_path_as_str: AsStr<P>,
     filter: Option<Filter>,
 }
 
 // add a builder like api
-impl<T> OtelAxumLayer<T> {
-    pub fn new(get_matched_path: GetMatchedPath<T>) -> Self {
+impl<P> OtelAxumLayer<P> {
+    pub fn new(matched_path_as_str: AsStr<P>) -> Self {
         OtelAxumLayer {
-            get_matched_path,
+            matched_path_as_str,
             filter: None,
         }
     }
 
     pub fn filter(self, filter: Filter) -> Self {
         OtelAxumLayer {
-            get_matched_path: self.get_matched_path,
+            matched_path_as_str: self.matched_path_as_str,
             filter: Some(filter),
         }
     }
 }
 
-impl<S, T> Layer<S> for OtelAxumLayer<T> {
+impl<S, P> Layer<S> for OtelAxumLayer<P> {
     /// The wrapped service
-    type Service = OtelAxumService<S, T>;
+    type Service = OtelAxumService<S, P>;
     fn layer(&self, inner: S) -> Self::Service {
         OtelAxumService {
             inner,
-            get_matched_path: self.get_matched_path,
+            matched_path_as_str: self.matched_path_as_str,
             filter: self.filter,
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct OtelAxumService<S, T> {
+pub struct OtelAxumService<S, P> {
     inner: S,
-    get_matched_path: GetMatchedPath<T>,
+    matched_path_as_str: AsStr<P>,
     filter: Option<Filter>,
 }
 
-impl<S, B, B2, T> Service<Request<B>> for OtelAxumService<S, T>
+impl<S, B, B2, P> Service<Request<B>> for OtelAxumService<S, P>
 where
     S: Service<Request<B>, Response = Response<B2>> + Clone + Send + 'static,
     S::Error: Error + 'static, //fmt::Display + 'static,
     S::Future: Send + 'static,
     B: Send + 'static,
-    T: Send + Sync + 'static,
+    P: Send + Sync + 'static,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -85,8 +85,8 @@ where
             let span = otel_http::http_server::make_span_from_request(&req);
             let route = req
                 .extensions()
-                .get::<T>()
-                .map(self.get_matched_path)
+                .get::<P>()
+                .map(self.matched_path_as_str)
                 .unwrap_or_default();
             let method = otel_http::http_method(req.method());
             // let client_ip = parse_x_forwarded_for(req.headers())

@@ -1,16 +1,20 @@
 # Changelog
 
+## v4.0.0
+
+- **breaking:** Update `axum` to `0.8` https://github.com/nentgroup/telemetry-rust/pull/100
+
 ## v3.7.0
 
-- Update `opentelemetry` to `0.30` https://github.com/nentgroup/telemetry-rust/pull/109
+- Update opentelemetry SDK to `0.30` https://github.com/nentgroup/telemetry-rust/pull/109
 
 ## v3.6.0
 
-- Update `opentelemetry` to `0.27` https://github.com/nentgroup/telemetry-rust/pull/77 & https://github.com/nentgroup/telemetry-rust/pull/91
+- Update opentelemetry SDK to `0.27` https://github.com/nentgroup/telemetry-rust/pull/77 & https://github.com/nentgroup/telemetry-rust/pull/91
 
 ## v3.5.0
 
-- Update `opentelemetry` to `0.26` https://github.com/nentgroup/telemetry-rust/pull/63
+- Update opentelemetry SDK to `0.26` https://github.com/nentgroup/telemetry-rust/pull/63
 
 ## v3.4.0
 
@@ -18,11 +22,11 @@
 
 ## v3.3.0
 
-- Update `opentelemetry` to `0.25` https://github.com/nentgroup/telemetry-rust/pull/54
+- Update opentelemetry SDK to `0.25` https://github.com/nentgroup/telemetry-rust/pull/54
 
 ## v3.2.0
 
-- Update `opentelemetry` to `0.24` https://github.com/nentgroup/telemetry-rust/pull/51
+- Update opentelemetry SDK to `0.24` https://github.com/nentgroup/telemetry-rust/pull/51
 
 ## v3.1.1
 

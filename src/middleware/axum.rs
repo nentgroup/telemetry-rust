@@ -83,11 +83,8 @@ where
         use tracing_opentelemetry::OpenTelemetrySpanExt;
         let span = if self.filter.is_none_or(|f| f(req.uri().path())) {
             let span = otel_http::http_server::make_span_from_request(&req);
-            let route = req
-                .extensions()
-                .get::<P>()
-                .map(self.matched_path_as_str)
-                .unwrap_or_default();
+            let matched_path = req.extensions().get::<P>();
+            let route = matched_path.map_or("", self.matched_path_as_str);
             let method = otel_http::http_method(req.method());
             // let client_ip = parse_x_forwarded_for(req.headers())
             //     .or_else(|| {

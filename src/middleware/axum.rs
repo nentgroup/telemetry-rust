@@ -3,7 +3,6 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
-use futures_util::future::BoxFuture;
 use http::{Request, Response};
 use pin_project_lite::pin_project;
 use std::{
@@ -23,6 +22,7 @@ pub type AsStr<T> = fn(&T) -> &str;
 pub struct OtelAxumLayer<P> {
     matched_path_as_str: AsStr<P>,
     filter: Option<Filter>,
+    inject_context: bool,
 }
 
 // add a builder like api
@@ -31,12 +31,20 @@ impl<P> OtelAxumLayer<P> {
         OtelAxumLayer {
             matched_path_as_str,
             filter: None,
+            inject_context: false,
         }
     }
 
     pub fn filter(self, filter: Filter) -> Self {
         OtelAxumLayer {
             filter: Some(filter),
+            ..self
+        }
+    }
+
+    pub fn inject_context(self, inject_context: bool) -> Self {
+        OtelAxumLayer {
+            inject_context,
             ..self
         }
     }
@@ -50,6 +58,7 @@ impl<S, P> Layer<S> for OtelAxumLayer<P> {
             inner,
             matched_path_as_str: self.matched_path_as_str,
             filter: self.filter,
+            inject_context: self.inject_context,
         }
     }
 }
@@ -59,6 +68,7 @@ pub struct OtelAxumService<S, P> {
     inner: S,
     matched_path_as_str: AsStr<P>,
     filter: Option<Filter>,
+    inject_context: bool,
 }
 
 impl<S, B, B2, P> Service<Request<B>> for OtelAxumService<S, P>
@@ -108,6 +118,7 @@ where
         };
         ResponseFuture {
             inner: future,
+            inject_context: self.inject_context,
             span,
         }
     }
@@ -120,6 +131,7 @@ pin_project! {
     pub struct ResponseFuture<F> {
         #[pin]
         pub(crate) inner: F,
+        pub(crate) inject_context: bool,
         pub(crate) span: Span,
         // pub(crate) start: Instant,
     }
@@ -135,54 +147,16 @@ where
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
         let _guard = this.span.enter();
-        let result = futures_util::ready!(this.inner.poll(cx));
+        let mut result = futures_util::ready!(this.inner.poll(cx));
         otel_http::http_server::update_span_from_response_or_error(this.span, &result);
+        if *this.inject_context {
+            if let Ok(response) = result.as_mut() {
+                otel_http::inject_context(
+                    &tracing_opentelemetry_instrumentation_sdk::find_current_context(),
+                    response.headers_mut(),
+                );
+            }
+        }
         Poll::Ready(result)
-    }
-}
-
-#[derive(Default, Debug, Clone)]
-pub struct OtelInResponseLayer;
-
-impl<S> Layer<S> for OtelInResponseLayer {
-    type Service = OtelInResponseService<S>;
-
-    fn layer(&self, inner: S) -> Self::Service {
-        OtelInResponseService { inner }
-    }
-}
-
-#[derive(Default, Debug, Clone)]
-pub struct OtelInResponseService<S> {
-    inner: S,
-}
-
-impl<S, B, B2> Service<Request<B>> for OtelInResponseService<S>
-where
-    S: Service<Request<B>, Response = Response<B2>> + Send + 'static,
-    S::Future: Send + 'static,
-{
-    type Response = S::Response;
-    type Error = S::Error;
-    // `BoxFuture` is a type alias for `Pin<Box<dyn Future + Send + 'a>>`
-    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
-
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
-    }
-
-    #[allow(unused_mut)]
-    fn call(&mut self, mut request: Request<B>) -> Self::Future {
-        let future = self.inner.call(request);
-
-        Box::pin(async move {
-            let mut response = future.await?;
-            // inject the trace context into the response (optional but useful for debugging and client)
-            otel_http::inject_context(
-                &tracing_opentelemetry_instrumentation_sdk::find_current_context(),
-                response.headers_mut(),
-            );
-            Ok(response)
-        })
     }
 }

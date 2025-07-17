@@ -190,20 +190,24 @@ mod tests {
 
     #[rstest]
     // Normal strings should be parsed as &str
-    #[case("Hello worlds!", Value::Str("Hello worlds!"))]
+    #[case("Hello worlds!", Value::Str)]
     // But escape sequences make it impossible to reference original data
-    #[case("Qwe\\rty", Value::String(String::from("Qwe\\rty")))]
-    #[case(true, Value::Bool(true))]
-    #[case(false, Value::Bool(false))]
-    #[case(123.456, Value::F64(123.456))]
-    #[case(i64::MIN, Value::I64(i64::MIN))]
-    #[case(u64::MAX, Value::U64(u64::MAX))]
-    #[case((), Value::Null)]
-    fn test_parse_value<T: Serialize>(#[case] value: T, #[case] expected: Value) {
+    #[case(String::from("Qwe\\rty"), Value::String)]
+    #[case(true, Value::Bool)]
+    #[case(false, Value::Bool)]
+    #[case(123.456, Value::F64)]
+    #[case(i64::MIN, Value::I64)]
+    #[case(u64::MAX, Value::U64)]
+    #[case((), |_| Value::Null)]
+    fn test_parse_value<T, F>(#[case] value: T, #[case] expected: F)
+    where
+        T: Serialize,
+        F: FnOnce(T) -> Value<'static>,
+    {
         let json = serde_json::to_string(&value).unwrap();
         let actual = serde_json::from_str::<Value>(&json)
             .map_err(|err| format!("Error parsing {json:?}: {err:?}"))
             .unwrap();
-        assert!(actual == expected);
+        assert!(actual == expected(value));
     }
 }

@@ -152,10 +152,12 @@ where
 enum Value<'a> {
     Null,
     Bool(bool),
-    PosInt(u64),
-    NegInt(i64),
-    Float(f64),
-    String(&'a str),
+    U64(u64),
+    I64(i64),
+    U128(u128),
+    I128(i128),
+    F64(f64),
+    Str(&'a str),
 }
 
 struct SerializerVisior<'a, S: SerializeMap>(&'a mut S);

@@ -1,8 +1,10 @@
 use opentelemetry::trace::TraceContextExt;
 use serde::{
-    de::{Error, MapAccess, Visitor as DeVisitor}, ser::{SerializeMap, SerializeSeq}, Deserialize, Deserializer as _, Serialize, Serializer as _
+    Deserialize, Deserializer as _, Serialize, Serializer as _,
+    de::{Error, MapAccess, Visitor as DeVisitor},
+    ser::{SerializeMap, SerializeSeq},
 };
-use serde_json::{Deserializer, Serializer, Value};
+use serde_json::{Deserializer, Serializer};
 use std::{fmt, io, marker::PhantomData, ops::Deref, str};
 use tracing::{Event, Span, Subscriber};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
@@ -145,6 +147,20 @@ where
         }
         serializer.end()
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+enum Value<'a> {
+    Null,
+    Bool(bool),
+    U64(u64),
+    I64(i64),
+    U128(u128),
+    I128(i128),
+    F64(f64),
+    Str(&'a str),
+    String(String),
 }
 
 struct SerializerVisior<'a, S: SerializeMap>(&'a mut S);

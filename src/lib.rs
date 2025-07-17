@@ -113,11 +113,18 @@ pub fn init_tracing_with_fallbacks(
         propagation::TextMapSplitPropagator::from_env().expect("TextMapPropagator setup"),
     );
 
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .json()
+        .event_format(fmt::JsonFormat)
+        // .flatten_event(true)
+        // .with_current_span(false)
+        // .with_span_list(true)
+        .with_writer(std::io::stdout);
     let otel_layer =
         OpenTelemetryLayer::new(tracer_provider.tracer(env!("CARGO_PKG_NAME")));
     let subscriber = tracing_subscriber::registry()
         .with(Into::<filter::TracingFilter>::into(log_level))
-        .with(fmt_layer!())
+        .with(fmt_layer)
         .with(otel_layer);
     tracing::subscriber::set_global_default(subscriber).unwrap();
 

@@ -29,7 +29,7 @@ async fn main() {
         // include trace context as header into the response
         .layer(OtelInResponseLayer::default())
         // start OpenTelemetry trace on incoming request
-        .layer(OtelAxumLayer::default());
+        .layer(OtelAxumLayer::new(axum::extract::MatchedPath::as_str));
 
     // ...
 }

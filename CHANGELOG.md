@@ -1,5 +1,21 @@
 # Changelog
 
+## v5.0.0
+
+- **breaking:** New axum version agnostic way to construct `OtelAxumLayer` https://github.com/nentgroup/telemetry-rust/pull/123
+
+Use
+
+```rust
+OtelAxumLayer::new(axum::extract::MatchedPath::as_str)
+```
+
+instead of
+
+```rust
+OtelAxumLayer::default()
+```
+
 ## v4.0.0
 
 - **breaking:** Update `axum` to `0.8` https://github.com/nentgroup/telemetry-rust/pull/100

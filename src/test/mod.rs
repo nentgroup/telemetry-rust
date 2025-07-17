@@ -24,8 +24,7 @@ impl TracedResponse {
         }
     }
 
-    #[cfg(feature = "axum")]
-    pub async fn into_axum_bytes(self) -> Result<axum::body::Bytes> {
+    pub async fn into_bytes(self) -> Result<bytes::Bytes> {
         Ok(self.resp.into_body().collect().await?.to_bytes())
     }
 }

@@ -1,7 +1,11 @@
 use opentelemetry::trace::TraceContextExt;
-use serde::ser::{Serialize, SerializeMap, SerializeSeq, Serializer as _};
-use serde_json::Serializer;
-use std::{collections::HashMap, fmt, io, marker::PhantomData, ops::Deref, str};
+use serde::{
+    Deserializer as _, Serialize, Serializer as _,
+    de::{Error, MapAccess, Visitor as DeVisitor},
+    ser::{SerializeMap, SerializeSeq},
+};
+use serde_json::{Deserializer, Serializer};
+use std::{fmt, io, marker::PhantomData, ops::Deref, str};
 use tracing::{Event, Span, Subscriber};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use tracing_serde::{AsSerde, SerdeMapVisitor};
@@ -107,28 +111,17 @@ where
         S: serde::Serializer,
     {
         let mut serializer = serializer.serialize_map(None)?;
+        serializer.serialize_entry("name", self.0.name())?;
 
         let extensions = self.0.extensions();
-        let mut name = self.0.name();
-
         if let Some(fields) = extensions.get::<FormattedFields<N>>() {
-            match serde_json::from_str::<HashMap<&str, &str>>(fields) {
-                Ok(data) => {
-                    for (key, value) in data.into_iter() {
-                        if key == "name" {
-                            name = value;
-                        } else {
-                            serializer.serialize_entry(key, value)?;
-                        }
-                    }
-                }
-                Err(err) => {
-                    serializer.serialize_entry("raw_fields", fields.deref())?;
-                    serializer.serialize_entry("fields_error", &format!("{err:?}"))?;
-                }
+            let mut deserializer = Deserializer::from_str(fields);
+            let visitor = SerializerVisior(&mut serializer);
+            if let Err(error) = deserializer.deserialize_map(visitor) {
+                serializer.serialize_entry("raw_fields", fields.deref())?;
+                serializer.serialize_entry("fields_error", &format!("{error:?}"))?;
             }
         }
-        serializer.serialize_entry("name", name)?;
 
         serializer.end()
     }
@@ -153,5 +146,24 @@ where
             serializer.serialize_element(&SpanData(span, self.1))?;
         }
         serializer.end()
+    }
+}
+
+struct SerializerVisior<'a, S: SerializeMap>(&'a mut S);
+
+impl<'de, S: SerializeMap> DeVisitor<'de> for SerializerVisior<'_, S> {
+    type Value = ();
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "a map of strings")
+    }
+
+    fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+        while let Some((key, value)) = map.next_entry::<&str, &str>()? {
+            self.0
+                .serialize_entry(key, value)
+                .map_err(A::Error::custom)?;
+        }
+        Ok(())
     }
 }

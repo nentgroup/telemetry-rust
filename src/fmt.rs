@@ -149,15 +149,13 @@ where
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 enum Value<'a> {
     Null,
     Bool(bool),
     U64(u64),
     I64(i64),
-    U128(u128),
-    I128(i128),
     F64(f64),
     Str(&'a str),
     String(String),
@@ -179,5 +177,33 @@ impl<'de, S: SerializeMap> DeVisitor<'de> for SerializerVisior<'_, S> {
                 .map_err(A::Error::custom)?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use assert2::assert;
+    use rstest::rstest;
+    use serde::Serialize;
+
+    use super::Value;
+
+    #[rstest]
+    // Normal strings should be parsed as &str
+    #[case("Hello worlds!", Value::Str("Hello worlds!"))]
+    // But escape sequences make it impossible to reference original data
+    #[case("Qwe\\rty", Value::String(String::from("Qwe\\rty")))]
+    #[case(true, Value::Bool(true))]
+    #[case(false, Value::Bool(false))]
+    #[case(123.456, Value::F64(123.456))]
+    #[case(i64::MIN, Value::I64(i64::MIN))]
+    #[case(u64::MAX, Value::U64(u64::MAX))]
+    #[case((), Value::Null)]
+    fn test_parse_value<T: Serialize>(#[case] value: T, #[case] expected: Value) {
+        let json = serde_json::to_string(&value).unwrap();
+        let actual = serde_json::from_str::<Value>(&json)
+            .map_err(|err| format!("Error parsing {json:?}: {err:?}"))
+            .unwrap();
+        assert!(actual == expected);
     }
 }

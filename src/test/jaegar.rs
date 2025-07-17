@@ -1,6 +1,6 @@
 use opentelemetry_api::trace::{SpanId, TraceId};
 use serde::{
-    de::Error as DeserializationError, Deserialize, Deserializer, Serialize, Serializer,
+    Deserialize, Deserializer, Serialize, Serializer, de::Error as DeserializationError,
 };
 use serde_json::Value;
 use std::collections::HashMap;

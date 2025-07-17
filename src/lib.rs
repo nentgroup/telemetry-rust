@@ -15,6 +15,7 @@ pub use opentelemetry_sdk::{
 pub use opentelemetry_semantic_conventions::attribute as semconv;
 pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};
 
+pub mod fmt;
 pub mod http;
 pub mod middleware;
 pub mod otlp;
@@ -84,11 +85,7 @@ macro_rules! fmt_layer {
         #[cfg(debug_assertions)]
         let layer = layer.compact().with_span_events(FmtSpan::CLOSE);
         #[cfg(not(debug_assertions))]
-        let layer = layer
-            .json()
-            .flatten_event(true)
-            .with_current_span(false)
-            .with_span_list(true);
+        let layer = layer.json().event_format(fmt::JsonFormat);
 
         layer.with_writer(std::io::stdout)
     }};

@@ -7,8 +7,8 @@ use opentelemetry_otlp::{
     WithHttpConfig,
 };
 use opentelemetry_sdk::{
-    trace::{Sampler, SdkTracerProvider as TracerProvider, TracerProviderBuilder},
     Resource,
+    trace::{Sampler, SdkTracerProvider as TracerProvider, TracerProviderBuilder},
 };
 use std::{collections::HashMap, num::ParseIntError, str::FromStr, time::Duration};
 
@@ -71,10 +71,8 @@ where
 /// turn a string of "k1=v1,k2=v2,..." into an iterator of (key, value) tuples
 fn parse_headers(val: &str) -> impl Iterator<Item = (String, String)> + '_ {
     val.split(',').filter_map(|kv| {
-        let s = kv
-            .split_once('=')
-            .map(|(k, v)| (k.to_owned(), v.to_owned()));
-        s
+        kv.split_once('=')
+            .map(|(k, v)| (k.to_owned(), v.to_owned()))
     })
 }
 fn read_headers_from_env() -> HashMap<String, String> {
@@ -143,7 +141,7 @@ fn infer_export_config(
         Some("grpc") => Protocol::Grpc,
         Some("http") | Some("http/protobuf") => Protocol::HttpBinary,
         Some(other) => {
-            return Err(InitTracerError::UnsupportedEnvProtocol(other.to_owned()))
+            return Err(InitTracerError::UnsupportedEnvProtocol(other.to_owned()));
         }
         None => match maybe_endpoint {
             Some(e) if e.contains(":4317") => Protocol::Grpc,

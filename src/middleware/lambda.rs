@@ -7,7 +7,7 @@ use opentelemetry::trace::SpanKind;
 use opentelemetry_sdk::trace::SdkTracerProvider as TracerProvider;
 use std::task::{Context as TaskContext, Poll};
 use tower::{Layer, Service};
-use tracing::{instrument::Instrumented, Instrument};
+use tracing::{Instrument, instrument::Instrumented};
 use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 
 pub struct OtelLambdaLayer {

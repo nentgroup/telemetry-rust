@@ -1,4 +1,4 @@
-use tracing::{subscriber::Interest, Level, Metadata, Subscriber};
+use tracing::{Level, Metadata, Subscriber, subscriber::Interest};
 use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 use tracing_subscriber::layer::{Context, Filter, Layer};
 

@@ -1,9 +1,9 @@
 use opentelemetry::{
-    propagation::{
-        text_map_propagator::FieldIter, Extractor, Injector, TextMapCompositePropagator,
-        TextMapPropagator,
-    },
     Context,
+    propagation::{
+        Extractor, Injector, TextMapCompositePropagator, TextMapPropagator,
+        text_map_propagator::FieldIter,
+    },
 };
 use opentelemetry_sdk::{
     propagation::{BaggagePropagator, TraceContextPropagator},
@@ -122,7 +122,7 @@ fn propagator_from_string(v: &str) -> Result<Propagator, TraceError> {
         ))),
         #[cfg(not(feature = "zipkin"))]
         "b3" => Err(TraceError::from(
-            "unsupported propagator form env OTEL_PROPAGATORS: 'b3', try to enable compile feature 'zipkin'"
+            "unsupported propagator form env OTEL_PROPAGATORS: 'b3', try to enable compile feature 'zipkin'",
         )),
         #[cfg(feature = "zipkin")]
         "b3multi" => Ok(Box::new(B3Propagator::with_encoding(
@@ -130,7 +130,7 @@ fn propagator_from_string(v: &str) -> Result<Propagator, TraceError> {
         ))),
         #[cfg(not(feature = "zipkin"))]
         "b3multi" => Err(TraceError::from(
-            "unsupported propagator form env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'"
+            "unsupported propagator form env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'",
         )),
         unknown => Err(TraceError::from(format!(
             "unsupported propagator form env OTEL_PROPAGATORS: {unknown:?}"

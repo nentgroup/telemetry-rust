@@ -1,4 +1,4 @@
-use crate::{semconv, KeyValue, StringValue};
+use crate::{KeyValue, StringValue, semconv};
 
 use super::*;
 

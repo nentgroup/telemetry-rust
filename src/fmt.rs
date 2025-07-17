@@ -1,8 +1,6 @@
 use opentelemetry::trace::TraceContextExt;
 use serde::{
-    Deserializer as _, Serialize, Serializer as _,
-    de::{Error, MapAccess, Visitor as DeVisitor},
-    ser::{SerializeMap, SerializeSeq},
+    de::{Error, MapAccess, Visitor as DeVisitor}, ser::{SerializeMap, SerializeSeq}, Deserialize, Deserializer as _, Serialize, Serializer as _
 };
 use serde_json::{Deserializer, Serializer};
 use std::{fmt, io, marker::PhantomData, ops::Deref, str};
@@ -149,19 +147,30 @@ where
     }
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+enum Value<'a> {
+    Null,
+    Bool(bool),
+    PosInt(u64),
+    NegInt(i64),
+    Float(f64),
+    String(&'a str),
+}
+
 struct SerializerVisior<'a, S: SerializeMap>(&'a mut S);
 
 impl<'de, S: SerializeMap> DeVisitor<'de> for SerializerVisior<'_, S> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "a map of strings")
+        write!(formatter, "a map of values")
     }
 
     fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
-        while let Some((key, value)) = map.next_entry::<&str, &str>()? {
+        while let Some((key, value)) = map.next_entry::<&str, Value>()? {
             self.0
-                .serialize_entry(key, value)
+                .serialize_entry(key, &value)
                 .map_err(A::Error::custom)?;
         }
         Ok(())

@@ -58,10 +58,8 @@ where
                 let span_context = span_ref.span_context();
 
                 if let Some(leaf_span) = ctx.span(&id).or_else(|| ctx.lookup_current()) {
-                    serializer.serialize_entry(
-                        "spans",
-                        &SpanScope(leaf_span, PhantomData::<N>),
-                    )?;
+                    let spans = SpanScope(leaf_span, PhantomData::<N>);
+                    serializer.serialize_entry("spans", &spans)?;
                 }
 
                 let trace_id = span_context.trace_id().to_string();
@@ -106,10 +104,7 @@ where
     R: for<'lookup> LookupSpan<'lookup>,
     N: for<'writer> FormatFields<'writer> + 'static,
 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut serializer = serializer.serialize_map(None)?;
         serializer.serialize_entry("name", self.0.name())?;
 
@@ -137,10 +132,7 @@ where
     R: Subscriber + for<'lookup> LookupSpan<'lookup>,
     N: for<'writer> FormatFields<'writer> + 'static,
 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let mut serializer = serializer.serialize_seq(None)?;
         for span in self.0.scope().from_root() {
             serializer.serialize_element(&SpanData(span, self.1))?;

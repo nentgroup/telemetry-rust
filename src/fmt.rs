@@ -191,7 +191,7 @@ mod tests {
     #[case("null")]
     #[case("42")]
     fn test_borrowed_field_value(#[case] value: &str) {
-        let json = serde_json::to_string(value).unwrap();
+        let json = format!("\"{value}\"");
         let actual = serde_json::from_str::<FieldValue>(&json)
             .map_err(|err| format!("Error parsing {json:?}: {err:?}"))
             .unwrap();

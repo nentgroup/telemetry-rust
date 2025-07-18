@@ -1757,6 +1757,7 @@ dependencies = [
  "tracing",
  "tracing-opentelemetry",
  "tracing-opentelemetry-instrumentation-sdk",
+ "tracing-serde",
  "tracing-subscriber",
 ]
 

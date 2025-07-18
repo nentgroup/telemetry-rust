@@ -4,7 +4,7 @@ use serde::{
     de::{Error, MapAccess, Visitor as DeVisitor},
     ser::{SerializeMap, SerializeSeq},
 };
-use serde_json::{Deserializer, Serializer};
+use serde_json::{Deserializer, Serializer, Value};
 use std::{fmt, io, marker::PhantomData, ops::Deref, str};
 use tracing::{Event, Span, Subscriber};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
@@ -151,14 +151,9 @@ where
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-enum Value<'a> {
-    Null,
-    Bool(bool),
-    U64(u64),
-    I64(i64),
-    F64(f64),
-    Str(&'a str),
-    String(String),
+enum FieldValue<'a> {
+    Borrowed(&'a str),
+    Owned(Value),
 }
 
 struct SerializerVisior<'a, S: SerializeMap>(&'a mut S);
@@ -186,28 +181,38 @@ mod tests {
     use rstest::rstest;
     use serde::Serialize;
 
-    use super::Value;
+    use super::*;
 
+    // Normal strings should be parsed as borrowed &str
     #[rstest]
-    // Normal strings should be parsed as &str
-    #[case("Hello worlds!", Value::Str)]
-    // But escape sequences make it impossible to reference original data
-    #[case(String::from("Qwe\\rty"), Value::String)]
-    #[case(true, Value::Bool)]
-    #[case(false, Value::Bool)]
-    #[case(123.456, Value::F64)]
-    #[case(i64::MIN, Value::I64)]
-    #[case(u64::MAX, Value::U64)]
-    #[case((), |_| Value::Null)]
-    fn test_parse_value<T, F>(#[case] value: T, #[case] expected: F)
-    where
-        T: Serialize,
-        F: FnOnce(T) -> Value<'static>,
-    {
-        let json = serde_json::to_string(&value).unwrap();
-        let actual = serde_json::from_str::<Value>(&json)
+    #[case("Hello worlds!")]
+    #[case("123.456")]
+    #[case("true")]
+    #[case("null")]
+    #[case("42")]
+    fn test_borrowed_field_value(#[case] value: &str) {
+        let json = serde_json::to_string(value).unwrap();
+        let actual = serde_json::from_str::<FieldValue>(&json)
             .map_err(|err| format!("Error parsing {json:?}: {err:?}"))
             .unwrap();
-        assert!(actual == expected(value));
+        assert!(actual == FieldValue::Borrowed(value));
+    }
+
+    // Strings containeng escape sequences and non-string values should be parsed as owned values
+    #[rstest]
+    #[case("Qwe\\rty")]
+    #[case("\"\"")]
+    #[case(true)]
+    #[case(false)]
+    #[case(123.456)]
+    #[case(i64::MIN)]
+    #[case(u64::MAX)]
+    #[case(())]
+    fn test_owned_field_value<T: Serialize + Into<Value>>(#[case] value: T) {
+        let json = serde_json::to_string(&value).unwrap();
+        let actual = serde_json::from_str::<FieldValue>(&json)
+            .map_err(|err| format!("Error parsing {json:?}: {err:?}"))
+            .unwrap();
+        assert!(actual == FieldValue::Owned(value.into()));
     }
 }

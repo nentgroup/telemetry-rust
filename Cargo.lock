@@ -1728,7 +1728,7 @@ dependencies = [
 
 [[package]]
 name = "telemetry-rust"
-version = "4.0.0"
+version = "4.1.0"
 dependencies = [
  "assert2",
  "aws-types",
@@ -1758,6 +1758,7 @@ dependencies = [
  "tracing",
  "tracing-opentelemetry",
  "tracing-opentelemetry-instrumentation-sdk",
+ "tracing-serde",
  "tracing-subscriber",
 ]
 

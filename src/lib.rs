@@ -302,5 +302,3 @@ pub fn shutdown_tracer_provider(provider: &TracerProvider) {
         tracing::info!("tracer provider is shutdown")
     }
 }
-
-pub use filter::read_tracing_level_from_env;

@@ -85,7 +85,7 @@ pub enum TracingHeaderKind {
 /// A container for OpenTelemetry trace parent information used in testing.
 ///
 /// This struct holds a trace ID and span ID pair that represents a trace context
-/// relationship. It's commonly used for generating test trace headers and 
+/// relationship. It's commonly used for generating test trace headers and
 /// validating trace propagation in integration tests.
 pub struct Traceparent {
     /// The OpenTelemetry trace ID

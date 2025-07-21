@@ -95,9 +95,9 @@ impl From<Level> for TracingFilter {
 /// ```
 ///
 /// ```rust
-/// use telemetry_rust::read_tracing_level_from_env;
+/// use telemetry_rust::otlp::read_otel_log_level_from_env;
 ///
-/// let level = read_tracing_level_from_env();
+/// let level = read_otel_log_level_from_env();
 /// ```
 pub fn read_tracing_level_from_env() -> Level {
     if let Some(level_str) = util::env_var("OTEL_LOG_LEVEL") {

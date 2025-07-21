@@ -43,7 +43,7 @@ use tracing_subscriber::{
 /// - `trace_id`: OpenTelemetry trace ID (if available)
 /// - `span_id`: OpenTelemetry span ID (if available)
 /// - `spans`: Array of parent spans with their fields
-/// - Additional fields from the log event
+/// - Additional fields from the log event, including `message`
 pub struct JsonFormat;
 
 impl<S, N> FormatEvent<S, N> for JsonFormat

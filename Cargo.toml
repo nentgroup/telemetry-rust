@@ -4,6 +4,7 @@ version = "5.0.0"
 edition = "2024"
 license = "MIT"
 description = "Open Telemetry fox Axum and Tracing"
+repository = "https://github.com/nentgroup/telemetry-rust"
 
 [dependencies]
 http = "1.1.0"

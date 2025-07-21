@@ -29,25 +29,34 @@ pin_project! {
     /// # State Management
     ///
     /// The future maintains two states:
-    /// - `Pending`: The wrapped future is still executing
+    /// - `Pending`: The wrapped future is still executing and contains the future and context
     /// - `Complete`: The future has completed and the context has been invoked
     ///
     /// # Generic Parameters
     ///
     /// - `F`: The wrapped future type
     /// - `C`: The context type that implements [`InstrumentedFutureContext`]
+    ///
+    /// # Fields
+    ///
+    /// The `Pending` variant contains the future being instrumented and the context
+    /// that will be called when it completes. Field documentation is not possible
+    /// within pin_project macros.
     #[project = InstrumentedFutureProj]
     #[project_replace = InstrumentedFutureOwn]
+    #[allow(missing_docs)]
     pub enum InstrumentedFuture<F, C>
     where
         F: Future,
         C: InstrumentedFutureContext<F::Output>,
     {
+        /// Future is currently executing and waiting for completion
         Pending {
             #[pin]
             future: F,
             context: C,
         },
+        /// Future has completed and context has been invoked
         Complete,
     }
 }

@@ -10,14 +10,26 @@ pub use dynamodb::DynamodbSpanBuilder;
 pub use firehose::FirehoseSpanBuilder;
 pub use sns::SnsSpanBuilder;
 
+/// Messaging operation kinds for AWS services.
+///
+/// Defines the different types of messaging operations that can be performed
+/// with AWS messaging services like SQS, SNS, etc. Each operation kind maps
+/// to an appropriate OpenTelemetry span kind.
 pub enum MessagingOperationKind {
+    /// Publishing or sending messages to a messaging service
     Publish,
+    /// Creating messaging resources (queues, topics, etc.)
     Create,
+    /// Receiving or consuming messages from a messaging service
     Receive,
+    /// Control operations (delete, update, list resources, etc.)
     Control,
 }
 
 impl MessagingOperationKind {
+    /// Returns the string representation of the operation kind.
+    ///
+    /// This follows OpenTelemetry semantic conventions for messaging operations.
     pub fn as_str(&self) -> &'static str {
         match self {
             MessagingOperationKind::Publish => "publish",

@@ -2,9 +2,24 @@ use crate::{KeyValue, StringValue, semconv};
 
 use super::*;
 
+/// Builder for SNS-specific OpenTelemetry spans.
+///
+/// This enum serves as a namespace for SNS operation span builders.
+/// Each operation provides a specific method to create properly configured
+/// spans with SNS-specific messaging attributes.
 pub enum SnsSpanBuilder {}
 
 impl AwsSpanBuilder<'_> {
+    /// Creates an SNS operation span builder.
+    ///
+    /// This method creates a span builder configured for SNS operations with
+    /// appropriate messaging semantic attributes.
+    ///
+    /// # Arguments
+    ///
+    /// * `operation_kind` - The type of messaging operation being performed
+    /// * `method` - The SNS operation method name
+    /// * `topic_arn` - Optional topic ARN for operations that target specific topics
     pub fn sns(
         operation_kind: MessagingOperationKind,
         method: impl Into<StringValue>,
@@ -27,6 +42,7 @@ impl AwsSpanBuilder<'_> {
 macro_rules! sns_global_operation {
     ($op: ident) => {
         impl SnsSpanBuilder {
+            #[doc = concat!("Creates a span builder for the SNS ", stringify!($op), " global operation.")]
             #[inline]
             pub fn $op<'a>() -> AwsSpanBuilder<'a> {
                 AwsSpanBuilder::sns(
@@ -42,6 +58,11 @@ macro_rules! sns_global_operation {
 macro_rules! sns_publish_operation {
     ($op: ident, $kind: expr) => {
         impl SnsSpanBuilder {
+            #[doc = concat!("Creates a span builder for the SNS ", stringify!($op), " operation.")]
+            ///
+            /// # Arguments
+            ///
+            /// * `topic_arn` - The ARN of the SNS topic
             pub fn $op<'a>(topic_arn: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
                 AwsSpanBuilder::sns($kind, stringify_camel!($op), Some(topic_arn))
             }
@@ -52,6 +73,11 @@ macro_rules! sns_publish_operation {
 macro_rules! sns_topic_operation {
     ($op: ident) => {
         impl SnsSpanBuilder {
+            #[doc = concat!("Creates a span builder for the SNS ", stringify!($op), " topic operation.")]
+            ///
+            /// # Arguments
+            ///
+            /// * `topic_arn` - The ARN of the SNS topic
             pub fn $op<'a>(topic_arn: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
                 AwsSpanBuilder::sns(
                     MessagingOperationKind::Control,

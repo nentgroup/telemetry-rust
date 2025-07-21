@@ -15,9 +15,20 @@ use tower::{Layer, Service};
 use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::http as otel_http;
 
+/// Function type for filtering HTTP requests by path.
+///
+/// Takes a path string and returns true if the request should be traced.
 pub type Filter = fn(&str) -> bool;
+
+/// Function type for extracting string representation from a matched path type.
+///
+/// Used to convert Axum's matched path type to a string for span attributes.
 pub type AsStr<T> = fn(&T) -> &str;
 
+/// OpenTelemetry layer for Axum applications.
+///
+/// This layer provides automatic tracing instrumentation for Axum web applications,
+/// creating spans for HTTP requests with appropriate semantic attributes.
 #[derive(Debug, Clone)]
 pub struct OtelAxumLayer<P> {
     matched_path_as_str: AsStr<P>,
@@ -27,6 +38,11 @@ pub struct OtelAxumLayer<P> {
 
 // add a builder like api
 impl<P> OtelAxumLayer<P> {
+    /// Creates a new OpenTelemetry layer for Axum.
+    ///
+    /// # Arguments
+    ///
+    /// * `matched_path_as_str` - Function to extract the matched path as a string
     pub fn new(matched_path_as_str: AsStr<P>) -> Self {
         OtelAxumLayer {
             matched_path_as_str,
@@ -35,6 +51,11 @@ impl<P> OtelAxumLayer<P> {
         }
     }
 
+    /// Sets a filter function to selectively trace requests.
+    ///
+    /// # Arguments
+    ///
+    /// * `filter` - Function that returns true for paths that should be traced
     pub fn filter(self, filter: Filter) -> Self {
         OtelAxumLayer {
             filter: Some(filter),
@@ -42,6 +63,11 @@ impl<P> OtelAxumLayer<P> {
         }
     }
 
+    /// Configures whether to inject OpenTelemetry context into responses.
+    ///
+    /// # Arguments
+    ///
+    /// * `inject_context` - Whether to inject trace context into response headers
     pub fn inject_context(self, inject_context: bool) -> Self {
         OtelAxumLayer {
             inject_context,
@@ -63,6 +89,10 @@ impl<S, P> Layer<S> for OtelAxumLayer<P> {
     }
 }
 
+/// OpenTelemetry service wrapper for Axum applications.
+///
+/// This service wraps Axum services to provide automatic HTTP request tracing
+/// with OpenTelemetry spans and context propagation.
 #[derive(Debug, Clone)]
 pub struct OtelAxumService<S, P> {
     inner: S,

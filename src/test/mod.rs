@@ -1,3 +1,14 @@
+/// Testing utilities for OpenTelemetry integration testing and validation.
+///
+/// This module provides utilities for testing OpenTelemetry instrumentation,
+/// including trace header manipulation, Jaeger trace data structures for
+/// validation, and HTTP response testing helpers.
+///
+/// The module contains tools for:
+/// - Parsing and generating trace headers (traceparent, tracestate)
+/// - Deserializing Jaeger trace data for validation
+/// - Testing HTTP responses with trace context
+/// - Generating test trace IDs and span IDs
 pub mod jaegar;
 
 use http_body_util::BodyExt;

@@ -10,11 +10,20 @@ use tower::{Layer, Service};
 use tracing::{Instrument, instrument::Instrumented};
 use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 
+/// OpenTelemetry layer for AWS Lambda functions.
+///
+/// This layer provides automatic tracing instrumentation for AWS Lambda functions,
+/// creating spans for each invocation with appropriate FaaS semantic attributes.
 pub struct OtelLambdaLayer {
     provider: TracerProvider,
 }
 
 impl OtelLambdaLayer {
+    /// Creates a new OpenTelemetry layer for Lambda functions.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The tracer provider to use for creating spans
     pub fn new(provider: TracerProvider) -> Self {
         Self { provider }
     }
@@ -40,6 +49,10 @@ impl<T> InstrumentedFutureContext<T> for TracerProvider {
     }
 }
 
+/// OpenTelemetry service wrapper for AWS Lambda functions.
+///
+/// This service wraps Lambda services to provide automatic invocation tracing
+/// with proper span lifecycle management and cold start detection.
 pub struct OtelLambdaService<S> {
     inner: S,
     provider: TracerProvider,

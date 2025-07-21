@@ -16,6 +16,14 @@ instead of
 OtelAxumLayer::default()
 ```
 
+- **breaking:** Deprecate `OtelInResponseLayer` https://github.com/nentgroup/telemetry-rust/pull/124
+
+Instead use `OtelAxumLayer` with `inject_context` set to `true`
+
+```rust
+OtelAxumLayer::new(MatchedPath::as_str).inject_context(true)
+```
+
 ## v4.1.0
 
 - Add `trace_id` and `span_id` to json logs https://github.com/nentgroup/telemetry-rust/pull/126

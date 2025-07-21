@@ -144,10 +144,10 @@ pub enum TracingHeaderKind {
 /// let headers = traceparent.get_headers(TracingHeaderKind::Traceparent);
 ///
 /// // Use in HTTP request testing
+/// let mut req = hyper::Request::new(());
 /// for (key, value) in headers {
 ///     if let Some(header_name) = key {
-///         // Add header to request
-///         println!("Header: {}: {:?}", header_name, value);
+///         req.headers_mut().insert(header_name, value);
 ///     }
 /// }
 /// ```

@@ -1,3 +1,5 @@
+//! OpenTelemetry Protocol (OTLP) configuration and initialization utilities.
+
 // Originally retired from davidB/tracing-opentelemetry-instrumentation-sdk
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE

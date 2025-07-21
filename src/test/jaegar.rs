@@ -1,3 +1,5 @@
+//! Data structures for deserializing and traversing Jaeger API responses.
+
 use opentelemetry_api::trace::{SpanId, TraceId};
 use serde::{
     Deserialize, Deserializer, Serialize, Serializer, de::Error as DeserializationError,

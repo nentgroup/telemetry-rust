@@ -1,3 +1,7 @@
+//! AWS Lambda instrumentation utilities.
+//!
+//! This module provides instrumentation layer for AWS Lambda functions.
+
 use crate::{
     future::{InstrumentedFuture, InstrumentedFutureContext},
     semconv,

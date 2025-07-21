@@ -1,3 +1,9 @@
+//! Future instrumentation utilities for async operation monitoring.
+//!
+//! This module provides wrapper types and traits for instrumenting async operations
+//! with callbacks that execute when futures complete, enabling monitoring and
+//! metrics collection for async workloads.
+
 use pin_project_lite::pin_project;
 use std::{
     future::Future,

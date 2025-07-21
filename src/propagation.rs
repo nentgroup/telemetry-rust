@@ -1,3 +1,5 @@
+//! Context propagation utilities for distributed tracing across service boundaries.
+
 use opentelemetry::{
     Context,
     propagation::{
@@ -93,7 +95,7 @@ impl TextMapSplitPropagator {
     ///
     /// The `OTEL_PROPAGATORS` variable should contain a comma-separated list of propagator names:
     /// - `tracecontext`: W3C Trace Context propagator
-    /// - `baggage`: W3C Baggage propagator  
+    /// - `baggage`: W3C Baggage propagator
     /// - `b3`: B3 single header propagator (requires "zipkin" feature)
     /// - `b3multi`: B3 multiple header propagator (requires "zipkin" feature)
     /// - `none`: No-op propagator

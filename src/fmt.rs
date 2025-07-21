@@ -1,3 +1,5 @@
+//! JSON formatting utilities for structured logging with OpenTelemetry.
+
 use opentelemetry::trace::TraceContextExt;
 use serde::{
     Deserialize, Deserializer as _, Serialize, Serializer as _,

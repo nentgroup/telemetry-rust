@@ -1,3 +1,8 @@
+//! Instrumentation utilities for AWS SDK operations.
+//!
+//! This module provides instrumentation for AWS services,
+//! including span creation and context propagation for AWS SDK operations.
+
 use aws_types::request_id::RequestId;
 use opentelemetry::{
     global::{self, BoxedSpan, BoxedTracer},

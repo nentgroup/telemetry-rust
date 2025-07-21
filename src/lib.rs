@@ -44,37 +44,18 @@ pub use opentelemetry_sdk::{
 pub use opentelemetry_semantic_conventions::attribute as semconv;
 pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};
 
-/// JSON formatting utilities for structured logging with OpenTelemetry.
 pub mod fmt;
-
-/// HTTP utilities for OpenTelemetry context propagation through headers.
 pub mod http;
-
-/// Middleware integrations for popular web frameworks and platforms.
 pub mod middleware;
-
-/// OpenTelemetry Protocol (OTLP) configuration and initialization utilities.
 pub mod otlp;
-
-/// Context propagation utilities for distributed tracing across service boundaries.
 pub mod propagation;
 
 #[cfg(feature = "axum")]
 pub use tracing_opentelemetry_instrumentation_sdk;
 
-/// Testing utilities for OpenTelemetry integration testing and validation.
-///
-/// This module provides utilities for testing distributed tracing scenarios,
-/// including trace context generation, HTTP header manipulation, and response
-/// validation with trace information.
 #[cfg(feature = "test")]
 pub mod test;
 
-/// Future instrumentation utilities for async operation monitoring.
-///
-/// This module provides wrapper types and traits for instrumenting async operations
-/// with callbacks that execute when futures complete, enabling monitoring and
-/// metrics collection for async workloads.
 #[cfg(feature = "future")]
 pub mod future;
 

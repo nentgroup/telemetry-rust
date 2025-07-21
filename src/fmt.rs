@@ -113,8 +113,8 @@ where
             let mut deserializer = Deserializer::from_str(fields);
             let visitor = SerializerVisior(&mut serializer);
             if let Err(error) = deserializer.deserialize_map(visitor) {
-                serializer.serialize_entry("raw_fields", fields.deref())?;
-                serializer.serialize_entry("fields_error", &format!("{error:?}"))?;
+                serializer.serialize_entry("formatted_fields", fields.deref())?;
+                serializer.serialize_entry("parsing_error", &format!("{error:?}"))?;
             }
         }
 

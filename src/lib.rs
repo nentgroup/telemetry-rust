@@ -62,9 +62,6 @@ pub mod future;
 mod filter;
 mod util;
 
-// Re-export the tracing level function for public use
-pub use filter::read_tracing_level_from_env;
-
 /// Resource detection utility for automatically configuring OpenTelemetry service metadata.
 ///
 /// This struct helps detect and configure service information from environment variables

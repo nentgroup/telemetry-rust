@@ -1,5 +1,21 @@
 # Changelog
 
+## v5.0.0
+
+- **breaking:** New axum version agnostic way to construct `OtelAxumLayer` https://github.com/nentgroup/telemetry-rust/pull/123
+
+Use
+
+```rust
+OtelAxumLayer::new(axum::extract::MatchedPath::as_str)
+```
+
+instead of
+
+```rust
+OtelAxumLayer::default()
+```
+
 ## v4.1.0
 
 - Add `trace_id` and `span_id` to json logs https://github.com/nentgroup/telemetry-rust/pull/126

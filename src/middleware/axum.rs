@@ -3,7 +3,6 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
-use axum::extract::MatchedPath;
 use futures_util::future::BoxFuture;
 use http::{Request, Response};
 use pin_project_lite::pin_project;
@@ -18,45 +17,57 @@ use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::http as otel_http;
 
 pub type Filter = fn(&str) -> bool;
+pub type AsStr<T> = fn(&T) -> &str;
 
-#[derive(Default, Debug, Clone)]
-pub struct OtelAxumLayer {
+#[derive(Debug, Clone)]
+pub struct OtelAxumLayer<P> {
+    matched_path_as_str: AsStr<P>,
     filter: Option<Filter>,
 }
 
 // add a builder like api
-impl OtelAxumLayer {
-    #[must_use]
+impl<P> OtelAxumLayer<P> {
+    pub fn new(matched_path_as_str: AsStr<P>) -> Self {
+        OtelAxumLayer {
+            matched_path_as_str,
+            filter: None,
+        }
+    }
+
     pub fn filter(self, filter: Filter) -> Self {
         OtelAxumLayer {
             filter: Some(filter),
+            ..self
         }
     }
 }
 
-impl<S> Layer<S> for OtelAxumLayer {
+impl<S, P> Layer<S> for OtelAxumLayer<P> {
     /// The wrapped service
-    type Service = OtelAxumService<S>;
+    type Service = OtelAxumService<S, P>;
     fn layer(&self, inner: S) -> Self::Service {
         OtelAxumService {
             inner,
+            matched_path_as_str: self.matched_path_as_str,
             filter: self.filter,
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct OtelAxumService<S> {
+pub struct OtelAxumService<S, P> {
     inner: S,
+    matched_path_as_str: AsStr<P>,
     filter: Option<Filter>,
 }
 
-impl<S, B, B2> Service<Request<B>> for OtelAxumService<S>
+impl<S, B, B2, P> Service<Request<B>> for OtelAxumService<S, P>
 where
     S: Service<Request<B>, Response = Response<B2>> + Clone + Send + 'static,
     S::Error: Error + 'static, //fmt::Display + 'static,
     S::Future: Send + 'static,
     B: Send + 'static,
+    P: Send + Sync + 'static,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -72,7 +83,8 @@ where
         use tracing_opentelemetry::OpenTelemetrySpanExt;
         let span = if self.filter.is_none_or(|f| f(req.uri().path())) {
             let span = otel_http::http_server::make_span_from_request(&req);
-            let route = http_route(&req);
+            let matched_path = req.extensions().get::<P>();
+            let route = matched_path.map_or("", self.matched_path_as_str);
             let method = otel_http::http_method(req.method());
             // let client_ip = parse_x_forwarded_for(req.headers())
             //     .or_else(|| {
@@ -127,13 +139,6 @@ where
         otel_http::http_server::update_span_from_response_or_error(this.span, &result);
         Poll::Ready(result)
     }
-}
-
-#[inline]
-fn http_route<B>(req: &Request<B>) -> &str {
-    req.extensions()
-        .get::<MatchedPath>()
-        .map_or_else(|| "", |mp| mp.as_str())
 }
 
 #[derive(Default, Debug, Clone)]

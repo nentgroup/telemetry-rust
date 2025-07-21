@@ -1,3 +1,5 @@
+#![warn(missing_docs, clippy::missing_panics_doc)]
+
 //! A comprehensive OpenTelemetry telemetry library for Rust applications.
 //!
 //! This crate provides easy-to-use telemetry integration for Rust applications, with support for
@@ -7,10 +9,26 @@
 //! # Features
 //!
 //! - **OTLP Integration**: Built-in support for OpenTelemetry Protocol (OTLP) exporters
-//! - **Framework Middleware**: Ready-to-use middleware for Axum and AWS Lambda
+//! - **Framework Middleware**: Ready-to-use middleware for Axum and AWS Lambda (feature-gated)
+//! - **AWS SDK Instrumentation**: Automatic instrumentation for AWS SDK operations (feature-gated)
 //! - **Context Propagation**: HTTP header-based context propagation for distributed tracing
+//! - **Future Instrumentation**: Async operation monitoring utilities (feature-gated)
+//! - **Testing Utilities**: Integration testing tools for OpenTelemetry validation (feature-gated)
 //! - **Flexible Configuration**: Environment-based configuration with sensible defaults
 //! - **Multiple Backends**: Support for Zipkin, Jaeger, and other OpenTelemetry collectors
+//!
+//! # Available Feature Flags
+//!
+//! - `axum`: Axum web framework middleware support
+//! - `aws-span`: AWS SDK span creation utilities
+//! - `aws-instrumentation`: AWS SDK automatic instrumentation
+//! - `aws-lambda`: AWS Lambda runtime middleware
+//! - `aws`: All AWS features (span + instrumentation)
+//! - `aws-full`: All AWS features including Lambda
+//! - `future`: Future instrumentation utilities
+//! - `test`: Testing utilities for OpenTelemetry validation
+//! - `zipkin`: Zipkin exporter support (enabled by default)
+//! - `full`: All features enabled
 //!
 //! # Quick Start
 //!
@@ -175,6 +193,12 @@ macro_rules! fmt_layer {
 ///
 /// shutdown_tracer_provider(&tracer_provider);
 /// ```
+///
+/// # Panics
+///
+/// This function will panic if:
+/// - The OTLP tracer provider cannot be initialized
+/// - The text map propagator cannot be configured
 pub fn init_tracing_with_fallbacks(
     log_level: tracing::Level,
     fallback_service_name: &'static str,
@@ -278,3 +302,5 @@ pub fn shutdown_tracer_provider(provider: &TracerProvider) {
         tracing::info!("tracer provider is shutdown")
     }
 }
+
+pub use filter::read_tracing_level_from_env;

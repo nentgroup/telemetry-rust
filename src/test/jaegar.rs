@@ -110,6 +110,36 @@ impl TraceData {
     /// # Returns
     ///
     /// The first span found with the matching operation name, or `None` if not found
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use telemetry_rust::test::jaegar::{TraceData, Span};
+    /// use telemetry_rust::test::{TraceId, SpanId};
+    ///
+    /// fn verify_span<'td>(
+    ///     trace_data: &'td TraceData,
+    ///     operation_name: &str,
+    ///     trace_id: TraceId,
+    ///     parent_span_id: SpanId,
+    ///     service_name: &str,
+    /// ) -> Option<&'td Span> {
+    ///     let span = trace_data.find_span(operation_name)?;
+    ///
+    ///     assert_eq!(span.trace_id, trace_id);
+    ///
+    ///     let parent_reference = span.get_parent_reference().unwrap();
+    ///     let process_id = &span.process_id;
+    ///
+    ///     assert_eq!(parent_reference.trace_id, trace_id);
+    ///     assert_eq!(parent_reference.span_id, parent_span_id);
+    ///
+    ///     let main_process = trace_data.processes.get(process_id).unwrap();
+    ///     assert_eq!(main_process.service_name, service_name);
+    ///
+    ///     Some(span)
+    /// }
+    /// ```
     pub fn find_span(&self, operation_name: &str) -> Option<&Span> {
         self.spans
             .iter()
@@ -182,6 +212,20 @@ impl Span {
     /// # Returns
     ///
     /// The parent reference if this span has one, or `None` if this is a root span
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use telemetry_rust::test::jaegar::Span;
+    /// use telemetry_rust::test::{TraceId, SpanId};
+    ///
+    /// // Example of using get_parent_reference in span verification:
+    /// fn verify_parent_relationship(span: &Span, expected_trace_id: TraceId, expected_parent_span_id: SpanId) {
+    ///     let parent_reference = span.get_parent_reference().unwrap();
+    ///     assert_eq!(parent_reference.trace_id, expected_trace_id);
+    ///     assert_eq!(parent_reference.span_id, expected_parent_span_id);
+    /// }
+    /// ```
     pub fn get_parent_reference(&self) -> Option<&Reference> {
         self.find_reference("CHILD_OF")
     }

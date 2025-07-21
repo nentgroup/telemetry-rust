@@ -18,6 +18,36 @@ use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 ///
 /// This layer provides automatic tracing instrumentation for AWS Lambda functions,
 /// creating spans for each invocation with appropriate FaaS semantic attributes.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use telemetry_rust::middleware::lambda::OtelLambdaLayer;
+/// use lambda_runtime::{LambdaEvent, Context};
+/// use serde_json::Value;
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), lambda_runtime::Error> {
+///     // Grab TracerProvider after telemetry initialisation
+///     let provider = telemetry_rust::init_tracing!(tracing::Level::WARN);
+///
+///     // Create lambda telemetry layer
+///     let telemetry_layer = OtelLambdaLayer::new(provider);
+///
+///     // Run lambda runtime with telemetry layer
+///     lambda_runtime::Runtime::new(tower::service_fn(|event: LambdaEvent<Value>| async {
+///         // Your handler logic here
+///         Ok::<String, lambda_runtime::Error>("Hello".to_string())
+///     }))
+///         .layer(telemetry_layer)
+///         .run()
+///         .await?;
+///
+///     // Tracer provider will be automatically shutdown when the runtime is dropped
+///
+///     Ok(())
+/// }
+/// ```
 pub struct OtelLambdaLayer {
     provider: TracerProvider,
 }

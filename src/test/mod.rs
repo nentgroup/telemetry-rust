@@ -25,6 +25,38 @@ type Response = hyper::Response<hyper::body::Incoming>;
 /// This struct wraps an HTTP response and provides easy access to the associated
 /// trace ID and span ID for testing and debugging purposes. It's particularly
 /// useful in integration tests where you need to verify trace propagation.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use telemetry_rust::test::{TracedResponse, Traceparent, TracingHeaderKind};
+/// use hyper::{Request, Method};
+/// use http_body_util::Full;
+/// use bytes::Bytes;
+///
+/// async fn send_traced_request(method: Method, resource: &str) -> TracedResponse {
+///     let traceparent = Traceparent::generate();
+///
+///     let mut req = Request::builder()
+///         .method(method)
+///         .uri(format!("http://localhost:8080{}", resource))
+///         .header("content-type", "application/json")
+///         .body(Full::new(Bytes::new()))
+///         .unwrap();
+///
+///     let headers_to_insert = traceparent.get_headers(TracingHeaderKind::Traceparent);
+///     for (key, value) in headers_to_insert {
+///         if let Some(header_name) = key {
+///             req.headers_mut().insert(header_name, value);
+///         }
+///     }
+///
+///     // Send request and get response (implementation dependent)
+///     // let resp = send_request(req).await;
+///     // TracedResponse::new(resp, traceparent)
+///     todo!("Implementation depends on HTTP client")
+/// }
+/// ```
 #[derive(Debug)]
 pub struct TracedResponse {
     resp: Response,
@@ -99,6 +131,26 @@ pub enum TracingHeaderKind {
 /// This struct holds a trace ID and span ID pair that represents a trace context
 /// relationship. It's commonly used for generating test trace headers and
 /// validating trace propagation in integration tests.
+///
+/// # Example
+///
+/// ```rust
+/// use telemetry_rust::test::{Traceparent, TracingHeaderKind};
+///
+/// // Generate a new trace parent for testing
+/// let traceparent = Traceparent::generate();
+///
+/// // Create HTTP headers for trace propagation
+/// let headers = traceparent.get_headers(TracingHeaderKind::Traceparent);
+///
+/// // Use in HTTP request testing
+/// for (key, value) in headers {
+///     if let Some(header_name) = key {
+///         // Add header to request
+///         println!("Header: {}: {:?}", header_name, value);
+///     }
+/// }
+/// ```
 pub struct Traceparent {
     /// The OpenTelemetry trace ID
     pub trace_id: TraceId,
@@ -153,6 +205,11 @@ impl Traceparent {
     /// let traceparent = Traceparent::generate();
     /// let headers = traceparent.get_headers(TracingHeaderKind::Traceparent);
     /// ```
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the trace ID or span ID cannot be converted
+    /// to a valid HTTP header value format.
     pub fn get_headers(&self, kind: TracingHeaderKind) -> HeaderMap {
         let mut map = HeaderMap::new();
 

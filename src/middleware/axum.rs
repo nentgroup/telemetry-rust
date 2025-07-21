@@ -34,6 +34,19 @@ pub type AsStr<T> = fn(&T) -> &str;
 ///
 /// This layer provides automatic tracing instrumentation for Axum web applications,
 /// creating spans for HTTP requests with appropriate semantic attributes.
+/// The layer is generic over `MatchedPath` struct from the axum framework used by the service,
+/// making it compatible with different versions of axum without being tied to a specific version.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// # use axum::{Router, routing};
+/// use telemetry_rust::middleware::axum::OtelAxumLayer;
+///
+/// let app: Router = axum::Router::new()
+///     .nest("/api", Router::new()) // api_routes would be your actual routes
+///     .layer(OtelAxumLayer::new(axum::extract::MatchedPath::as_str));
+/// ```
 #[derive(Debug, Clone)]
 pub struct OtelAxumLayer<P> {
     matched_path_as_str: AsStr<P>,
@@ -47,7 +60,7 @@ impl<P> OtelAxumLayer<P> {
     ///
     /// # Arguments
     ///
-    /// * `matched_path_as_str` - Function to extract the matched path as a string
+    /// * `matched_path_as_str` - `axum::extract::MatchedPath::as_str` or any function to convert `MatchedPath` to a string
     pub fn new(matched_path_as_str: AsStr<P>) -> Self {
         OtelAxumLayer {
             matched_path_as_str,

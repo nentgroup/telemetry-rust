@@ -16,9 +16,9 @@ pub use sns::SnsSpanBuilder;
 /// with AWS messaging services like SQS, SNS, etc. Each operation kind maps
 /// to an appropriate OpenTelemetry span kind.
 pub enum MessagingOperationKind {
-    /// Publishing or sending messages to a messaging service
+    /// Publishing one or mpde messages to a messaging service
     Publish,
-    /// Creating messaging resources (queues, topics, etc.)
+    /// Creating a single message
     Create,
     /// Receiving or consuming messages from a messaging service
     Receive,

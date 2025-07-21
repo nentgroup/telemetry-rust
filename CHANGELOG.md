@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.1.0
+
+- Add `trace_id` and `span_id` to json logs https://github.com/nentgroup/telemetry-rust/pull/126
+
 ## v4.0.0
 
 - **breaking:** Update `axum` to `0.8` https://github.com/nentgroup/telemetry-rust/pull/100

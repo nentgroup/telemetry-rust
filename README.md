@@ -26,10 +26,8 @@ async fn main() {
     let app = axum::Router::new()
         // request processed inside span
         .route("/otel", axum::routing::get(route_otel))
-        // include trace context as header into the response
-        .layer(OtelInResponseLayer::default())
-        // start OpenTelemetry trace on incoming request
-        .layer(OtelAxumLayer::new(axum::extract::MatchedPath::as_str));
+        // start OpenTelemetry trace on incoming request + include trace context as header into the response
+        .layer(OtelAxumLayer::new(axum::extract::MatchedPath::as_str).inject_context(true));
 
     // ...
 }

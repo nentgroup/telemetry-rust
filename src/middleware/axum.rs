@@ -149,14 +149,15 @@ where
         let _guard = this.span.enter();
         let mut result = futures_util::ready!(this.inner.poll(cx));
         otel_http::http_server::update_span_from_response_or_error(this.span, &result);
-        if *this.inject_context {
-            if let Ok(response) = result.as_mut() {
-                otel_http::inject_context(
-                    &tracing_opentelemetry_instrumentation_sdk::find_current_context(),
-                    response.headers_mut(),
-                );
-            }
+        if *this.inject_context
+            && let Ok(response) = result.as_mut()
+        {
+            otel_http::inject_context(
+                &tracing_opentelemetry_instrumentation_sdk::find_current_context(),
+                response.headers_mut(),
+            );
         }
+
         Poll::Ready(result)
     }
 }

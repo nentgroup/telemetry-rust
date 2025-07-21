@@ -10,19 +10,26 @@ pub use dynamodb::DynamodbSpanBuilder;
 pub use firehose::FirehoseSpanBuilder;
 pub use sns::SnsSpanBuilder;
 
-/// Messaging operation kinds for AWS services.
+/// Messaging operation type
 ///
-/// Defines the different types of messaging operations that can be performed
-/// with AWS messaging services like SQS, SNS, etc. Each operation kind maps
-/// to an appropriate OpenTelemetry span kind.
+/// Represents well-known `messaging.operation.type` values from
+/// [Semantic conventions specification](https://opentelemetry.io/docs/specs/semconv/registry/attributes/messaging/).
 pub enum MessagingOperationKind {
-    /// Publishing one or mpde messages to a messaging service
-    Publish,
-    /// Creating a single message
+    /// A message is created. “Create” spans always refer to a single message
+    /// and are used to provide a unique creation context for messages in batch sending scenarios.
     Create,
-    /// Receiving or consuming messages from a messaging service
+    /// One or more messages are processed by a consumer.
+    Process,
+    /// One or more messages are requested by a consumer. This operation refers to pull-based scenarios,
+    /// where consumers explicitly call methods of messaging SDKs to receive messages.
     Receive,
-    /// Control operations (delete, update, list resources, etc.)
+    /// One or more messages are provided for sending to an intermediary.
+    /// If a single message is sent, the context of the “Send” span can be used as the creation context
+    /// and no “Create” span needs to be created.
+    Send,
+    /// One or more messages are settled.
+    Settle,
+    /// Custom value representing control operations over messanging resources.
     Control,
 }
 
@@ -32,9 +39,11 @@ impl MessagingOperationKind {
     /// This follows OpenTelemetry semantic conventions for messaging operations.
     pub fn as_str(&self) -> &'static str {
         match self {
-            MessagingOperationKind::Publish => "publish",
             MessagingOperationKind::Create => "create",
+            MessagingOperationKind::Process => "process",
             MessagingOperationKind::Receive => "receive",
+            MessagingOperationKind::Send => "send",
+            MessagingOperationKind::Settle => "settle",
             MessagingOperationKind::Control => "control",
         }
     }
@@ -50,9 +59,11 @@ impl From<MessagingOperationKind> for SpanKind {
     #[inline]
     fn from(kind: MessagingOperationKind) -> Self {
         match kind {
-            MessagingOperationKind::Publish => SpanKind::Producer,
             MessagingOperationKind::Create => SpanKind::Producer,
+            MessagingOperationKind::Process => SpanKind::Consumer,
             MessagingOperationKind::Receive => SpanKind::Consumer,
+            MessagingOperationKind::Settle => SpanKind::Producer,
+            MessagingOperationKind::Send => SpanKind::Producer,
             MessagingOperationKind::Control => SpanKind::Client,
         }
     }

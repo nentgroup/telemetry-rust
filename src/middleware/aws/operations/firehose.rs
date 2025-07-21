@@ -91,7 +91,7 @@ macro_rules! firehose_stream_operation {
 
 // publish operation
 firehose_publish_operation!(put_record, MessagingOperationKind::Create);
-firehose_publish_operation!(put_record_batch, MessagingOperationKind::Publish);
+firehose_publish_operation!(put_record_batch, MessagingOperationKind::Send);
 
 // global operations
 firehose_global_operation!(list_delivery_streams);

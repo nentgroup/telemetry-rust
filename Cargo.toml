@@ -26,8 +26,9 @@ tracing-subscriber = { version = "0.3.18", default-features = false, features = 
   "json",
   "ansi"
 ] }
-serde = { version = "1.0.200", features = ["derive"], optional = true }
-serde_json = { version = "1.0.116", optional = true }
+serde = { version = "1.0.200", features = ["derive"] }
+serde_json = "1.0.116"
+tracing-serde = "0.2.0"
 opentelemetry_api = { version = "0.20.0", features = ["testing"], optional = true }
 rand = { version = "0.9.0", optional = true }
 tower = { version = "0.5", optional = true }
@@ -51,7 +52,7 @@ full = ["aws-full", "test"]
 default = ["zipkin"]
 zipkin = ["dep:opentelemetry-zipkin"]
 future = ["dep:pin-project-lite"]
-test = ["axum", "dep:serde", "dep:serde_json", "dep:opentelemetry_api", "dep:rand", "dep:http-body-util", "dep:hyper"]
+test = ["axum", "dep:opentelemetry_api", "dep:rand", "dep:http-body-util", "dep:hyper"]
 axum = ["dep:axum", "dep:tower", "dep:futures-util", "dep:pin-project-lite"]
 aws-span = ["dep:aws-types", "dep:paste"]
 aws-instrumentation = ["future"]

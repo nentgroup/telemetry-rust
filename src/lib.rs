@@ -8,14 +8,13 @@
 //!
 //! # Features
 //!
-//! - **OTLP Integration**: Built-in support for OpenTelemetry Protocol (OTLP) exporters
-//! - **Framework Middleware**: Ready-to-use middleware for Axum and AWS Lambda (feature-gated)
-//! - **AWS SDK Instrumentation**: Automatic instrumentation for AWS SDK operations (feature-gated)
-//! - **Context Propagation**: HTTP header-based context propagation for distributed tracing
-//! - **Future Instrumentation**: Async operation monitoring utilities (feature-gated)
-//! - **Testing Utilities**: Integration testing tools for OpenTelemetry validation (feature-gated)
-//! - **Flexible Configuration**: Environment-based configuration with sensible defaults
-//! - **Multiple Backends**: Support for Zipkin, Jaeger, and other OpenTelemetry collectors
+//! - OpenTelemetry tracing instrumentation
+//! - Formatted logs with tracing metadata
+//! - Context Propagation for incoming and outgoing HTTP requests
+//! - Axum middleware to instrument http services
+//! - AWS Lambda instrumentation layer
+//! - AWS SDK instrumentation
+//! - Integration testing tools
 //!
 //! # Available Feature Flags
 //!
@@ -27,7 +26,7 @@
 //! - `aws-full`: All AWS features including Lambda
 //! - `future`: Future instrumentation utilities
 //! - `test`: Testing utilities for OpenTelemetry validation
-//! - `zipkin`: Zipkin exporter support (enabled by default)
+//! - `zipkin`: Zipkin context propagation support (enabled by default)
 //! - `full`: All features enabled
 //!
 //! # Quick Start

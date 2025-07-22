@@ -1,5 +1,9 @@
 # Changelog
 
+## v5.1.0
+
+- Update `MessagingOperationKind` to follow the latest Semantic conventions spec https://github.com/nentgroup/telemetry-rust/pull/129
+
 ## v5.0.0
 
 - **breaking:** New axum version agnostic way to construct `OtelAxumLayer` https://github.com/nentgroup/telemetry-rust/pull/123

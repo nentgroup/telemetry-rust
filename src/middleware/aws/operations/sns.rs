@@ -65,7 +65,7 @@ macro_rules! sns_topic_operation {
 
 // publish operation
 sns_publish_operation!(publish, MessagingOperationKind::Create);
-sns_publish_operation!(publish_batch, MessagingOperationKind::Publish);
+sns_publish_operation!(publish_batch, MessagingOperationKind::Send);
 
 // global operations
 sns_global_operation!(check_if_phone_number_is_opted_out);

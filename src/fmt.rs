@@ -1,7 +1,7 @@
 use opentelemetry::trace::TraceContextExt;
 use serde::{
     Deserialize, Deserializer as _, Serialize, Serializer as _,
-    de::{Error, MapAccess, Visitor as DeVisitor},
+    de::{Error, MapAccess, Visitor as SerdeDeVisitor},
     ser::{SerializeMap, SerializeSeq},
 };
 use serde_json::{Deserializer, Serializer, Value};
@@ -111,7 +111,7 @@ where
         let extensions = self.0.extensions();
         if let Some(fields) = extensions.get::<FormattedFields<N>>() {
             let mut deserializer = Deserializer::from_str(fields);
-            let visitor = SerializerVisior(&mut serializer);
+            let visitor = SerializeMapVisior(&mut serializer);
             if let Err(error) = deserializer.deserialize_map(visitor) {
                 serializer.serialize_entry("formatted_fields", fields.deref())?;
                 serializer.serialize_entry("parsing_error", &format!("{error:?}"))?;
@@ -148,9 +148,10 @@ enum FieldValue<'a> {
     Owned(Value),
 }
 
-struct SerializerVisior<'a, S: SerializeMap>(&'a mut S);
+/// The [serde::de::Visitor] which moves entries from one map to another.
+struct SerializeMapVisior<'a, S: SerializeMap>(&'a mut S);
 
-impl<'de, S: SerializeMap> DeVisitor<'de> for SerializerVisior<'_, S> {
+impl<'de, S: SerializeMap> SerdeDeVisitor<'de> for SerializeMapVisior<'_, S> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -158,7 +159,7 @@ impl<'de, S: SerializeMap> DeVisitor<'de> for SerializerVisior<'_, S> {
     }
 
     fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
-        while let Some((key, value)) = map.next_entry::<&str, Value>()? {
+        while let Some((key, value)) = map.next_entry::<&str, FieldValue>()? {
             self.0
                 .serialize_entry(key, &value)
                 .map_err(A::Error::custom)?;

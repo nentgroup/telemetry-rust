@@ -70,6 +70,15 @@ impl<T> TracedResponse<T> {
             span_id: traceparent.span_id,
         }
     }
+
+    /// Consumes the traced response and returns the inner HTTP response.
+    ///
+    /// # Returns
+    ///
+    /// The wrapped [`hyper::Response`] instance.
+    pub async fn into_inner(self) -> Response<T> {
+        self.resp
+    }
 }
 
 impl<E, T: Body<Data = Bytes, Error = E>> TracedResponse<T> {

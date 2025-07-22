@@ -111,7 +111,7 @@ where
         let extensions = self.0.extensions();
         if let Some(fields) = extensions.get::<FormattedFields<N>>() {
             let mut deserializer = Deserializer::from_str(fields);
-            let visitor = SerializeMapVisior(&mut serializer);
+            let visitor = SerializeMapVisitor(&mut serializer);
             if let Err(error) = deserializer.deserialize_map(visitor) {
                 serializer.serialize_entry("formatted_fields", fields.deref())?;
                 serializer.serialize_entry("parsing_error", &format!("{error:?}"))?;
@@ -149,9 +149,9 @@ enum FieldValue<'a> {
 }
 
 /// The [serde::de::Visitor] which moves entries from one map to another.
-struct SerializeMapVisior<'a, S: SerializeMap>(&'a mut S);
+struct SerializeMapVisitor<'a, S: SerializeMap>(&'a mut S);
 
-impl<'de, S: SerializeMap> SerdeDeVisitor<'de> for SerializeMapVisior<'_, S> {
+impl<'de, S: SerializeMap> SerdeDeVisitor<'de> for SerializeMapVisitor<'_, S> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

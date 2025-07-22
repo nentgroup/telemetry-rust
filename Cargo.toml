@@ -68,6 +68,9 @@ aws-full = ["aws", "aws-lambda"]
 allow-branch = ["main"]
 publish = false
 
+[package.metadata.docs.rs]
+all-features = true
+
 [profile.dev]
 lto = false
 split-debuginfo = "unpacked"

@@ -21,27 +21,24 @@ where
 ///
 /// # Example
 ///
-/// ```rust,no_run
-/// # // This example requires AWS SDK dependencies
-/// use telemetry_rust::middleware::aws::AwsInstrument;
-/// // For actual usage, you would import the appropriate AWS SDK client
-/// // and configure DynamoDB span builders
+/// ```rust
+/// use aws_sdk_dynamodb::{Client as DynamoClient, types::AttributeValue};
+/// use telemetry_rust::middleware::aws::{AwsInstrument, DynamodbSpanBuilder};
 ///
-/// # async fn example_usage() {
-/// # // This is a conceptual example - actual implementation would require:
-/// # // - aws-sdk-dynamodb dependency
-/// # // - proper AWS configuration
-/// # // - DynamodbSpanBuilder from telemetry-rust operations
-/// #
-/// # // let res = dynamo_client
-/// # //     .get_item()
-/// # //     .table_name("table_name")
-/// # //     .index_name("my_index")
-/// # //     .set_key(Some(primary_key))
-/// # //     .send()
-/// # //     .instrument(DynamodbSpanBuilder::get_item("table_name"))
-/// # //     .await;
-/// # }
+/// async fn query_table() {
+///     let config = aws_config::load_from_env().await;
+///     let dynamo_client = DynamoClient::new(&config);
+///     let res = dynamo_client
+///         .query()
+///         .table_name("table_name")
+///         .index_name("my_index")
+///         .key_condition_expression("PK = :pk")
+///         .expression_attribute_values(":pk", AttributeValue::S("Test".to_string()))
+///         .send()
+///         .instrument(DynamodbSpanBuilder::get_item("table_name"))
+///         .await;
+///     println!("DynamoDB response: {res:#?}");
+/// }
 /// ```
 pub trait AwsInstrument<T, E, F>
 where

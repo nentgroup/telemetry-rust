@@ -45,6 +45,8 @@ thiserror = "2.0.12"
 
 [dev-dependencies]
 axum = "0.8.0"
+aws-sdk-dynamodb = "1.58.0"
+aws-config = { version = "1.5.13", features = ["behavior-version-latest"] }
 assert2 = "0.3"
 rstest = "0.25"
 tokio = "1.41"

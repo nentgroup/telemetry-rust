@@ -14,7 +14,6 @@ use rand::Rng;
 #[derive(Debug)]
 pub struct TracedResponse<T = Incoming> {
     resp: Response<T>,
-    /// The OpenTelemetry trace ID associated with this response
     pub trace_id: TraceId,
     pub span_id: SpanId,
 }

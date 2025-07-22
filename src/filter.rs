@@ -99,7 +99,7 @@ impl From<Level> for TracingFilter {
 ///
 /// let level = read_otel_log_level_from_env();
 /// ```
-pub(crate) fn read_tracing_level_from_env() -> Level {
+pub fn read_tracing_level_from_env() -> Level {
     if let Some(level_str) = util::env_var("OTEL_LOG_LEVEL") {
         level_str.parse().unwrap_or(DEFAULT_TRACING_LEVEL)
     } else {

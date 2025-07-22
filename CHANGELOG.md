@@ -3,6 +3,7 @@
 ## v5.1.0
 
 - Update `MessagingOperationKind` to follow the latest Semantic conventions spec https://github.com/nentgroup/telemetry-rust/pull/129
+- Make `telemetry_rust::test::TracedResponse` more generic https://github.com/nentgroup/telemetry-rust/pull/130
 
 ## v5.0.0
 

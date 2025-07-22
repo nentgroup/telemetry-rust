@@ -61,7 +61,10 @@ impl<P> OtelAxumLayer<P> {
     ///
     /// # Arguments
     ///
-    /// * `matched_path_as_str` - `axum::extract::MatchedPath::as_str` or any function to convert `MatchedPath` to a string
+    /// * `matched_path_as_str` - [`axum::extract::MatchedPath::as_str`] or any function to convert [`axum::extract::MatchedPath`] to a `&str`
+    ///
+    ///  [`axum::extract::MatchedPath::as_str`]: https://docs.rs/axum/latest/axum/extract/struct.MatchedPath.html#method.as_str
+    ///  [`axum::extract::MatchedPath`]: https://docs.rs/axum/latest/axum/extract/struct.MatchedPath.html
     pub fn new(matched_path_as_str: AsStr<P>) -> Self {
         OtelAxumLayer {
             matched_path_as_str,

@@ -29,7 +29,7 @@ pub enum MessagingOperationKind {
     Send,
     /// One or more messages are settled.
     Settle,
-    /// Custom value representing control operations over messanging resources.
+    /// Custom value representing control operations over messaging resources.
     Control,
 }
 

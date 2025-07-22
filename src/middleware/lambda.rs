@@ -22,23 +22,24 @@ use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 /// # Example
 ///
 /// ```rust,no_run
-/// use telemetry_rust::middleware::lambda::OtelLambdaLayer;
-/// use lambda_runtime::{LambdaEvent, Context};
-/// use serde_json::Value;
+/// use telemetry_rust::{init_tracing, middleware::lambda::OtelLambdaLayer};
+/// use lambda_runtime::{Error as LambdaRuntimeError, Runtime, service_fn, Error as LambdaError, LambdaEvent};
+///
+/// #[tracing::instrument(skip_all, err, fields(req_id = %event.context.request_id))]
+/// pub async fn handle(event: LambdaEvent<()>) -> Result<String, LambdaError> {
+///     Ok(String::from("Hello!"))
+/// }
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), lambda_runtime::Error> {
 ///     // Grab TracerProvider after telemetry initialisation
-///     let provider = telemetry_rust::init_tracing!(tracing::Level::WARN);
+///     let provider = init_tracing!(tracing::Level::WARN);
 ///
 ///     // Create lambda telemetry layer
 ///     let telemetry_layer = OtelLambdaLayer::new(provider);
 ///
 ///     // Run lambda runtime with telemetry layer
-///     lambda_runtime::Runtime::new(tower::service_fn(|event: LambdaEvent<Value>| async {
-///         // Your handler logic here
-///         Ok::<String, lambda_runtime::Error>("Hello".to_string())
-///     }))
+///     Runtime::new(service_fn(handle))
 ///         .layer(telemetry_layer)
 ///         .run()
 ///         .await?;

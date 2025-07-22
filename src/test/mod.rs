@@ -2,13 +2,17 @@ pub mod jaegar;
 
 use bytes::Bytes;
 use http_body_util::BodyExt;
-use hyper::{Error, HeaderMap, Response, Result, body::Body, header::HeaderValue};
+use hyper::{
+    HeaderMap, Response,
+    body::{Body, Incoming},
+    header::HeaderValue,
+};
 
 pub use opentelemetry_api::trace::{SpanId, TraceId};
 use rand::Rng;
 
 #[derive(Debug)]
-pub struct TracedResponse<T = hyper::body::Incoming> {
+pub struct TracedResponse<T = Incoming> {
     resp: Response<T>,
     /// The OpenTelemetry trace ID associated with this response
     pub trace_id: TraceId,
@@ -25,8 +29,8 @@ impl<T> TracedResponse<T> {
     }
 }
 
-impl<T: Body<Data = Bytes, Error = Error>> TracedResponse<T> {
-    pub async fn into_bytes(self) -> Result<bytes::Bytes> {
+impl<E, T: Body<Data = Bytes, Error = E>> TracedResponse<T> {
+    pub async fn into_bytes(self) -> Result<Bytes, E> {
         Ok(self.resp.into_body().collect().await?.to_bytes())
     }
 }

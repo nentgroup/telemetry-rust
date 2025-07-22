@@ -111,7 +111,7 @@ where
         let extensions = self.0.extensions();
         if let Some(fields) = extensions.get::<FormattedFields<N>>() {
             let mut deserializer = Deserializer::from_str(fields);
-            let visitor = SerializerVisior(&mut serializer);
+            let visitor = SerializeMapVisitor(&mut serializer);
             if let Err(error) = deserializer.deserialize_map(visitor) {
                 serializer.serialize_entry("formatted_fields", fields.deref())?;
                 serializer.serialize_entry("parsing_error", &format!("{error:?}"))?;
@@ -143,14 +143,17 @@ where
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
-enum FieldValue<'a> {
+enum SpanFieldsValue<'a> {
+    /// String which could be borrowed directly from the input json
     Borrowed(&'a str),
+    /// Any other value
     Owned(Value),
 }
 
-struct SerializerVisior<'a, S: SerializeMap>(&'a mut S);
+/// The [serde::de::Visitor] which moves entries from one map to another.
+struct SerializeMapVisitor<'a, S: SerializeMap>(&'a mut S);
 
-impl<'de, S: SerializeMap> DeVisitor<'de> for SerializerVisior<'_, S> {
+impl<'de, S: SerializeMap> DeVisitor<'de> for SerializeMapVisitor<'_, S> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -158,7 +161,7 @@ impl<'de, S: SerializeMap> DeVisitor<'de> for SerializerVisior<'_, S> {
     }
 
     fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
-        while let Some((key, value)) = map.next_entry::<&str, Value>()? {
+        while let Some((key, value)) = map.next_entry::<&str, SpanFieldsValue>()? {
             self.0
                 .serialize_entry(key, &value)
                 .map_err(A::Error::custom)?;
@@ -184,10 +187,10 @@ mod tests {
     #[case("42")]
     fn test_borrowed_field_value(#[case] value: &str) {
         let json = format!("\"{value}\"");
-        let actual = serde_json::from_str::<FieldValue>(&json)
+        let actual = serde_json::from_str::<SpanFieldsValue>(&json)
             .map_err(|err| format!("Error parsing {json:?}: {err:?}"))
             .unwrap();
-        assert!(actual == FieldValue::Borrowed(value));
+        assert!(actual == SpanFieldsValue::Borrowed(value));
     }
 
     // Strings containeng escape sequences and non-string values should be parsed as owned values
@@ -202,9 +205,9 @@ mod tests {
     #[case(())]
     fn test_owned_field_value<T: Serialize + Into<Value>>(#[case] value: T) {
         let json = serde_json::to_string(&value).unwrap();
-        let actual = serde_json::from_str::<FieldValue>(&json)
+        let actual = serde_json::from_str::<SpanFieldsValue>(&json)
             .map_err(|err| format!("Error parsing {json:?}: {err:?}"))
             .unwrap();
-        assert!(actual == FieldValue::Owned(value.into()));
+        assert!(actual == SpanFieldsValue::Owned(value.into()));
     }
 }

@@ -1,7 +1,7 @@
 use opentelemetry::trace::TraceContextExt;
 use serde::{
     Deserialize, Deserializer as _, Serialize, Serializer as _,
-    de::{Error, MapAccess, Visitor as SerdeDeVisitor},
+    de::{Error, MapAccess, Visitor as DeVisitor},
     ser::{SerializeMap, SerializeSeq},
 };
 use serde_json::{Deserializer, Serializer, Value};
@@ -151,7 +151,7 @@ enum FieldValue<'a> {
 /// The [serde::de::Visitor] which moves entries from one map to another.
 struct SerializeMapVisitor<'a, S: SerializeMap>(&'a mut S);
 
-impl<'de, S: SerializeMap> SerdeDeVisitor<'de> for SerializeMapVisitor<'_, S> {
+impl<'de, S: SerializeMap> DeVisitor<'de> for SerializeMapVisitor<'_, S> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

@@ -12,13 +12,12 @@
 
 pub mod jaegar;
 
+use bytes::Bytes;
 use http_body_util::BodyExt;
-use hyper::{HeaderMap, Result, header::HeaderValue};
+use hyper::{Error, HeaderMap, Response, Result, body::Body, header::HeaderValue};
 
 pub use opentelemetry_api::trace::{SpanId, TraceId};
 use rand::Rng;
-
-type Response = hyper::Response<hyper::body::Incoming>;
 
 /// HTTP response wrapper that includes OpenTelemetry trace information.
 ///
@@ -28,45 +27,28 @@ type Response = hyper::Response<hyper::body::Incoming>;
 ///
 /// # Example
 ///
-/// ```rust,no_run
-/// use telemetry_rust::test::{TracedResponse, Traceparent, TracingHeaderKind};
-/// use hyper::{Request, Method};
-/// use http_body_util::Full;
-/// use bytes::Bytes;
+/// ```rust
+/// use telemetry_rust::test::{TracedResponse, Traceparent};
 ///
-/// async fn send_traced_request(method: Method, resource: &str) -> TracedResponse {
+/// async fn send_traced_request() -> TracedResponse<&'static str> {
 ///     let traceparent = Traceparent::generate();
 ///
-///     let mut req = Request::builder()
-///         .method(method)
-///         .uri(format!("http://localhost:8080{}", resource))
-///         .header("content-type", "application/json")
-///         .body(Full::new(Bytes::new()))
-///         .unwrap();
+///     // Send request and get response
+///     let resp = hyper::Response::new("Hello world!");
 ///
-///     let headers_to_insert = traceparent.get_headers(TracingHeaderKind::Traceparent);
-///     for (key, value) in headers_to_insert {
-///         if let Some(header_name) = key {
-///             req.headers_mut().insert(header_name, value);
-///         }
-///     }
-///
-///     // Send request and get response (implementation dependent)
-///     // let resp = send_request(req).await;
-///     // TracedResponse::new(resp, traceparent)
-///     todo!("Implementation depends on HTTP client")
+///     TracedResponse::new(resp, traceparent)
 /// }
 /// ```
 #[derive(Debug)]
-pub struct TracedResponse {
-    resp: Response,
+pub struct TracedResponse<T = hyper::body::Incoming> {
+    resp: Response<T>,
     /// The OpenTelemetry trace ID associated with this response
     pub trace_id: TraceId,
     /// The OpenTelemetry span ID associated with this response
     pub span_id: SpanId,
 }
 
-impl TracedResponse {
+impl<T> TracedResponse<T> {
     /// Creates a new traced response from an HTTP response and trace parent information.
     ///
     /// # Arguments
@@ -77,14 +59,16 @@ impl TracedResponse {
     /// # Returns
     ///
     /// A new [`TracedResponse`] instance
-    pub fn new(resp: Response, traceparent: Traceparent) -> Self {
+    pub fn new(resp: Response<T>, traceparent: Traceparent) -> Self {
         Self {
             resp,
             trace_id: traceparent.trace_id,
             span_id: traceparent.span_id,
         }
     }
+}
 
+impl<T: Body<Data = Bytes, Error = Error>> TracedResponse<T> {
     /// Consumes the response and returns the body as bytes.
     ///
     /// # Returns
@@ -99,15 +83,15 @@ impl TracedResponse {
     }
 }
 
-impl std::ops::Deref for TracedResponse {
-    type Target = Response;
+impl<T> std::ops::Deref for TracedResponse<T> {
+    type Target = Response<T>;
 
     fn deref(&self) -> &Self::Target {
         &self.resp
     }
 }
 
-impl std::ops::DerefMut for TracedResponse {
+impl<T> std::ops::DerefMut for TracedResponse<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.resp
     }

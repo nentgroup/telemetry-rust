@@ -34,13 +34,14 @@ pub type AsStr<T> = fn(&T) -> &str;
 ///
 /// This layer provides automatic tracing instrumentation for Axum web applications,
 /// creating spans for HTTP requests with appropriate semantic attributes.
-/// The layer is generic over `MatchedPath` struct from the axum framework used by the service,
-/// making it compatible with different versions of axum without being tied to a specific version.
+///
+/// The layer is generic over [`axum::extract::MatchedPath`](https://docs.rs/axum/latest/axum/extract/struct.MatchedPath.html),
+/// making it compatible with different versions of axum without being tied to any specific one.
 ///
 /// # Example
 ///
-/// ```rust,no_run
-/// # use axum::{Router, routing};
+/// ```rust
+/// use axum::{Router, routing};
 /// use telemetry_rust::middleware::axum::OtelAxumLayer;
 ///
 /// let app: Router = axum::Router::new()

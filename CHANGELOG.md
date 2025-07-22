@@ -1,5 +1,9 @@
 # Changelog
 
+## v5.1.0
+
+- Make `telemetry_rust::test::TracedResponse` more generic https://github.com/nentgroup/telemetry-rust/pull/130
+
 ## v5.0.0
 
 - **breaking:** New axum version agnostic way to construct `OtelAxumLayer` https://github.com/nentgroup/telemetry-rust/pull/123

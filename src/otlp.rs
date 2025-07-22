@@ -63,8 +63,8 @@ pub enum InitTracerError {
 /// # Examples
 ///
 /// ```rust
-/// use telemetry_rust::otlp::{identity, init_tracer};
 /// use opentelemetry_sdk::Resource;
+/// use telemetry_rust::otlp::{identity, init_tracer};
 ///
 /// let resource = Resource::builder().build();
 /// let tracer_provider = init_tracer(resource, identity).unwrap();
@@ -102,8 +102,8 @@ pub fn identity(v: TracerProviderBuilder) -> TracerProviderBuilder {
 /// # Examples
 ///
 /// ```rust
-/// use telemetry_rust::otlp::{identity, init_tracer};
 /// use opentelemetry_sdk::Resource;
+/// use telemetry_rust::otlp::{identity, init_tracer};
 ///
 /// let resource = Resource::builder().build();
 /// let tracer_provider = init_tracer(resource, identity)?;

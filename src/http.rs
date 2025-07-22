@@ -19,8 +19,8 @@ use tracing_opentelemetry_instrumentation_sdk as otel;
 /// Typically used internally by propagation functions, but can be used directly:
 ///
 /// ```rust
-/// use telemetry_rust::http::HeaderInjector;
 /// use http::HeaderMap;
+/// use telemetry_rust::http::HeaderInjector;
 ///
 /// let mut headers = HeaderMap::new();
 /// let mut injector = HeaderInjector(&mut headers);
@@ -50,8 +50,8 @@ impl Injector for HeaderInjector<'_> {
 /// Typically used internally by propagation functions, but can be used directly:
 ///
 /// ```rust
-/// use telemetry_rust::http::HeaderExtractor;
 /// use http::HeaderMap;
+/// use telemetry_rust::http::HeaderExtractor;
 ///
 /// let headers = HeaderMap::new();
 /// let extractor = HeaderExtractor(&headers);
@@ -88,9 +88,9 @@ impl Extractor for HeaderExtractor<'_> {
 /// # Examples
 ///
 /// ```rust
-/// use telemetry_rust::http::inject_context_on_context;
-/// use opentelemetry::Context;
 /// use http::HeaderMap;
+/// use opentelemetry::Context;
+/// use telemetry_rust::http::inject_context_on_context;
 ///
 /// let context = Context::current();
 /// let mut headers = HeaderMap::new();
@@ -116,8 +116,8 @@ pub fn inject_context_on_context(context: &Context, headers: &mut http::HeaderMa
 /// # Examples
 ///
 /// ```rust
-/// use telemetry_rust::http::inject_context;
 /// use http::HeaderMap;
+/// use telemetry_rust::http::inject_context;
 ///
 /// let mut headers = HeaderMap::new();
 /// inject_context(&mut headers);
@@ -147,8 +147,8 @@ pub fn inject_context(headers: &mut http::HeaderMap) {
 /// # Examples
 ///
 /// ```rust
-/// use telemetry_rust::http::extract_context;
 /// use http::HeaderMap;
+/// use telemetry_rust::http::extract_context;
 ///
 /// let headers = HeaderMap::new();
 /// let context = extract_context(&headers);

@@ -114,8 +114,8 @@ impl TraceData {
     /// # Example
     ///
     /// ```rust
-    /// use telemetry_rust::test::jaegar::{TraceData, Span};
-    /// use telemetry_rust::test::{TraceId, SpanId};
+    /// use telemetry_rust::test::jaegar::{Span, TraceData};
+    /// use telemetry_rust::test::{SpanId, TraceId};
     ///
     /// fn verify_span<'td>(
     ///     trace_data: &'td TraceData,
@@ -217,10 +217,14 @@ impl Span {
     ///
     /// ```rust
     /// use telemetry_rust::test::jaegar::Span;
-    /// use telemetry_rust::test::{TraceId, SpanId};
+    /// use telemetry_rust::test::{SpanId, TraceId};
     ///
     /// // Example of using get_parent_reference in span verification:
-    /// fn verify_parent_relationship(span: &Span, expected_trace_id: TraceId, expected_parent_span_id: SpanId) {
+    /// fn verify_parent_relationship(
+    ///     span: &Span,
+    ///     expected_trace_id: TraceId,
+    ///     expected_parent_span_id: SpanId,
+    /// ) {
     ///     let parent_reference = span.get_parent_reference().unwrap();
     ///     assert_eq!(parent_reference.trace_id, expected_trace_id);
     ///     assert_eq!(parent_reference.span_id, expected_parent_span_id);

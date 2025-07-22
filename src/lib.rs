@@ -183,11 +183,7 @@ macro_rules! fmt_layer {
 /// use telemetry_rust::{init_tracing_with_fallbacks, shutdown_tracer_provider};
 /// use tracing::Level;
 ///
-/// let tracer_provider = init_tracing_with_fallbacks(
-///     Level::INFO,
-///     "my-service",
-///     "1.0.0"
-/// );
+/// let tracer_provider = init_tracing_with_fallbacks(Level::INFO, "my-service", "1.0.0");
 ///
 /// // Your application code here...
 ///

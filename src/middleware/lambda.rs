@@ -22,8 +22,11 @@ use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 /// # Example
 ///
 /// ```rust,no_run
+/// use lambda_runtime::{
+///     Error as LambdaRuntimeError, Error as LambdaError, LambdaEvent, Runtime,
+///     service_fn,
+/// };
 /// use telemetry_rust::{init_tracing, middleware::lambda::OtelLambdaLayer};
-/// use lambda_runtime::{Error as LambdaRuntimeError, Runtime, service_fn, Error as LambdaError, LambdaEvent};
 ///
 /// #[tracing::instrument(skip_all, err, fields(req_id = %event.context.request_id))]
 /// pub async fn handle(event: LambdaEvent<()>) -> Result<String, LambdaError> {

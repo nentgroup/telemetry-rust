@@ -141,15 +141,6 @@ where
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-enum SpanFieldsValue<'a> {
-    /// String which could be borrowed directly from the input json
-    Borrowed(&'a str),
-    /// Any other value
-    Owned(Value),
-}
-
 /// The [serde::de::Visitor] which moves entries from one map to another.
 struct SerializeMapVisitor<'a, S: SerializeMap>(&'a mut S);
 
@@ -161,53 +152,11 @@ impl<'de, S: SerializeMap> DeVisitor<'de> for SerializeMapVisitor<'_, S> {
     }
 
     fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
-        while let Some((key, value)) = map.next_entry::<&str, SpanFieldsValue>()? {
+        while let Some((key, value)) = map.next_entry::<&str, Value>()? {
             self.0
                 .serialize_entry(key, &value)
                 .map_err(A::Error::custom)?;
         }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use assert2::assert;
-    use rstest::rstest;
-    use serde::Serialize;
-
-    use super::*;
-
-    // Normal strings should be parsed as borrowed &str
-    #[rstest]
-    #[case("Hello worlds!")]
-    #[case("123.456")]
-    #[case("true")]
-    #[case("null")]
-    #[case("42")]
-    fn test_borrowed_field_value(#[case] value: &str) {
-        let json = format!("\"{value}\"");
-        let actual = serde_json::from_str::<SpanFieldsValue>(&json)
-            .map_err(|err| format!("Error parsing {json:?}: {err:?}"))
-            .unwrap();
-        assert!(actual == SpanFieldsValue::Borrowed(value));
-    }
-
-    // Strings containeng escape sequences and non-string values should be parsed as owned values
-    #[rstest]
-    #[case("Qwe\\rty")]
-    #[case("\"\"")]
-    #[case(true)]
-    #[case(false)]
-    #[case(123.456)]
-    #[case(i64::MIN)]
-    #[case(u64::MAX)]
-    #[case(())]
-    fn test_owned_field_value<T: Serialize + Into<Value>>(#[case] value: T) {
-        let json = serde_json::to_string(&value).unwrap();
-        let actual = serde_json::from_str::<SpanFieldsValue>(&json)
-            .map_err(|err| format!("Error parsing {json:?}: {err:?}"))
-            .unwrap();
-        assert!(actual == SpanFieldsValue::Owned(value.into()));
     }
 }

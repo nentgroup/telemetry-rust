@@ -2,7 +2,7 @@
 
 use opentelemetry::trace::TraceContextExt;
 use serde::{
-    Deserialize, Deserializer as _, Serialize, Serializer as _,
+    Deserializer as _, Serialize, Serializer as _,
     de::{Error, MapAccess, Visitor as DeVisitor},
     ser::{SerializeMap, SerializeSeq},
 };

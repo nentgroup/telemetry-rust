@@ -49,7 +49,7 @@
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
 use opentelemetry_sdk::resource::{
-    EnvResourceDetector, SdkProvidedResourceDetector, TelemetryResourceDetector,
+    EnvResourceDetector, ResourceDetector, TelemetryResourceDetector,
 };
 use tracing::level_filters::LevelFilter;
 #[cfg(debug_assertions)]
@@ -91,8 +91,8 @@ mod util;
 /// # Environment Variables
 ///
 /// The following environment variables are checked in order of priority:
-/// - Service name: `OTEL_SERVICE_NAME`, `SERVICE_NAME`, `APP_NAME`
-/// - Service version: `OTEL_SERVICE_VERSION`, `SERVICE_VERSION`, `APP_VERSION`
+/// - Service name: `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_SERVICE_NAME`, `SERVICE_NAME`, `APP_NAME`
+/// - Service version: `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_SERVICE_VERSION`, `SERVICE_VERSION`, `APP_VERSION`
 #[derive(Debug, Default)]
 pub struct DetectResource {
     fallback_service_name: &'static str,
@@ -100,9 +100,12 @@ pub struct DetectResource {
 }
 
 impl DetectResource {
-    /// `service.name` is first extracted from environment variables
-    /// (in this order) `OTEL_SERVICE_NAME`, `SERVICE_NAME`, `APP_NAME`.
-    /// But a default value can be provided with this method.
+    /// Creates a new `DetectResource` with the provided fallback service name and version.
+    ///
+    /// # Arguments
+    ///
+    /// * `fallback_service_name` - The default service name to use if not found in environment variables.
+    /// * `fallback_service_version` - The default service version to use if not found in environment variables.
     pub fn new(
         fallback_service_name: &'static str,
         fallback_service_version: &'static str,
@@ -111,6 +114,26 @@ impl DetectResource {
             fallback_service_name,
             fallback_service_version,
         }
+    }
+
+    fn detect_attribute(
+        env_resource: &Resource,
+        key: &'static str,
+        env_keys: &[&str],
+        fallback: &'static str,
+    ) -> KeyValue {
+        let key = Key::new(key);
+        let value = env_resource
+            .get(&key)
+            .or_else(|| {
+                env_keys
+                    .iter()
+                    .flat_map(|k| util::env_var(k))
+                    .next()
+                    .map(Into::into)
+            })
+            .unwrap_or_else(|| fallback.into());
+        KeyValue::new(key, value)
     }
 
     /// Builds the OpenTelemetry resource with detected service information.
@@ -122,24 +145,28 @@ impl DetectResource {
     ///
     /// A configured [`Resource`] with service name and version attributes.
     pub fn build(self) -> Resource {
-        let service_name = util::env_var("OTEL_SERVICE_NAME")
-            .or_else(|| util::env_var("SERVICE_NAME"))
-            .or_else(|| util::env_var("APP_NAME"))
-            .or_else(|| Some(self.fallback_service_name.to_string()))
-            .map(|v| KeyValue::new(semconv::SERVICE_NAME, v));
-        let service_version = util::env_var("OTEL_SERVICE_VERSION")
-            .or_else(|| util::env_var("SERVICE_VERSION"))
-            .or_else(|| util::env_var("APP_VERSION"))
-            .or_else(|| Some(self.fallback_service_version.to_string()))
-            .map(|v| KeyValue::new(semconv::SERVICE_VERSION, v));
+        let env_detector = EnvResourceDetector::new();
+        let env_resource = env_detector.detect();
+
+        let service_name = Self::detect_attribute(
+            &env_resource,
+            semconv::SERVICE_NAME,
+            &["OTEL_SERVICE_NAME", "SERVICE_NAME", "APP_NAME"],
+            self.fallback_service_name,
+        );
+        let service_version = Self::detect_attribute(
+            &env_resource,
+            semconv::SERVICE_VERSION,
+            &["OTEL_SERVICE_VERSION", "SERVICE_VERSION", "APP_VERSION"],
+            self.fallback_service_version,
+        );
 
         let rsrc = Resource::builder_empty()
-            .with_attributes([service_name, service_version].into_iter().flatten())
             .with_detectors(&[
-                Box::new(SdkProvidedResourceDetector),
                 Box::new(TelemetryResourceDetector),
-                Box::new(EnvResourceDetector::new()),
+                Box::new(env_detector),
             ])
+            .with_attributes([service_name, service_version])
             .build();
 
         // Debug

@@ -1,5 +1,9 @@
 # Changelog
 
+## v5.1.1
+
+- Fix reading `service.name` and `service.version` from `OTEL_RESOURCE_ATTRIBUTES` https://github.com/nentgroup/telemetry-rust/pull/132
+
 ## v5.1.0
 
 - Update `MessagingOperationKind` to follow the latest Semantic conventions spec https://github.com/nentgroup/telemetry-rust/pull/129

@@ -144,7 +144,7 @@ impl DetectResource {
             .or_else(|| read_from_env("APP_VERSION"))
             .unwrap_or_else(|| self.fallback_service_version.into());
 
-        let rsrc = Resource::builder_empty()
+        let resource = Resource::builder_empty()
             .with_detectors(&[
                 Box::new(TelemetryResourceDetector),
                 Box::new(env_detector),
@@ -156,11 +156,11 @@ impl DetectResource {
             .build();
 
         // Debug
-        rsrc.iter().for_each(
+        resource.iter().for_each(
             |kv| tracing::debug!(target: "otel::setup::resource", key = %kv.0, value = %kv.1),
         );
 
-        rsrc
+        resource
     }
 }
 

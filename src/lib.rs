@@ -48,9 +48,6 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
-use opentelemetry_sdk::resource::{
-    EnvResourceDetector, ResourceDetector, TelemetryResourceDetector,
-};
 use tracing::level_filters::LevelFilter;
 #[cfg(debug_assertions)]
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -59,7 +56,10 @@ use tracing_subscriber::layer::SubscriberExt;
 use opentelemetry::trace::TracerProvider as _;
 pub use opentelemetry::{Array, Context, Key, KeyValue, StringValue, Value, global};
 pub use opentelemetry_sdk::{
-    Resource, error::OTelSdkError, trace::SdkTracerProvider as TracerProvider,
+    Resource,
+    error::OTelSdkError,
+    resource::{EnvResourceDetector, ResourceDetector, TelemetryResourceDetector},
+    trace::SdkTracerProvider as TracerProvider,
 };
 pub use opentelemetry_semantic_conventions::attribute as semconv;
 pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};

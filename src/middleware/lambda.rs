@@ -1,3 +1,7 @@
+//! AWS Lambda instrumentation utilities.
+//!
+//! This module provides instrumentation layer for AWS Lambda functions.
+
 use crate::{
     future::{InstrumentedFuture, InstrumentedFutureContext},
     semconv,
@@ -10,11 +14,54 @@ use tower::{Layer, Service};
 use tracing::{Instrument, instrument::Instrumented};
 use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 
+/// OpenTelemetry layer for AWS Lambda functions.
+///
+/// This layer provides automatic tracing instrumentation for AWS Lambda functions,
+/// creating spans for each invocation with appropriate FaaS semantic attributes.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use lambda_runtime::{
+///     Error as LambdaRuntimeError, Error as LambdaError, LambdaEvent, Runtime,
+///     service_fn,
+/// };
+/// use telemetry_rust::{init_tracing, middleware::lambda::OtelLambdaLayer};
+///
+/// #[tracing::instrument(skip_all, err, fields(req_id = %event.context.request_id))]
+/// pub async fn handle(event: LambdaEvent<()>) -> Result<String, LambdaError> {
+///     Ok(String::from("Hello!"))
+/// }
+///
+/// #[tokio::main]
+/// async fn main() -> Result<(), lambda_runtime::Error> {
+///     // Grab TracerProvider after telemetry initialisation
+///     let provider = init_tracing!(tracing::Level::WARN);
+///
+///     // Create lambda telemetry layer
+///     let telemetry_layer = OtelLambdaLayer::new(provider);
+///
+///     // Run lambda runtime with telemetry layer
+///     Runtime::new(service_fn(handle))
+///         .layer(telemetry_layer)
+///         .run()
+///         .await?;
+///
+///     // Tracer provider will be automatically shutdown when the runtime is dropped
+///
+///     Ok(())
+/// }
+/// ```
 pub struct OtelLambdaLayer {
     provider: TracerProvider,
 }
 
 impl OtelLambdaLayer {
+    /// Creates a new OpenTelemetry layer for Lambda functions.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The tracer provider to use for creating spans
     pub fn new(provider: TracerProvider) -> Self {
         Self { provider }
     }
@@ -40,6 +87,10 @@ impl<T> InstrumentedFutureContext<T> for TracerProvider {
     }
 }
 
+/// OpenTelemetry service wrapper for AWS Lambda functions.
+///
+/// This service wraps Lambda services to provide automatic invocation tracing
+/// with proper span lifecycle management and cold start detection.
 pub struct OtelLambdaService<S> {
     inner: S,
     provider: TracerProvider,

@@ -1,3 +1,5 @@
+//! OpenTelemetry Protocol (OTLP) configuration and initialization utilities.
+
 // Originally retired from davidB/tracing-opentelemetry-instrumentation-sdk
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
@@ -15,23 +17,98 @@ use std::{collections::HashMap, num::ParseIntError, str::FromStr, time::Duration
 pub use crate::filter::read_tracing_level_from_env as read_otel_log_level_from_env;
 use crate::util;
 
+/// Error types that can occur during OpenTelemetry tracer initialization.
+///
+/// This enum represents the various failure modes when setting up an OTLP
+/// tracer provider, including configuration errors and exporter build failures.
 #[derive(thiserror::Error, Debug)]
 pub enum InitTracerError {
+    /// An unsupported protocol was specified in environment variables.
+    ///
+    /// This error occurs when the `OTEL_EXPORTER_OTLP_PROTOCOL` or
+    /// `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL` environment variable contains
+    /// a protocol that is not supported by this library.
     #[error("unsupported protocol {0:?} form env")]
     UnsupportedEnvProtocol(String),
 
+    /// An invalid timeout value was provided in environment variables.
+    ///
+    /// This error occurs when the timeout specified in `OTEL_EXPORTER_OTLP_TIMEOUT`
+    /// or `OTEL_EXPORTER_OTLP_TRACES_TIMEOUT` cannot be parsed as a valid integer.
     #[error("invalid timeout {0:?} form env: {1}")]
     InvalidEnvTimeout(String, #[source] ParseIntError),
 
+    /// An error occurred while building the OTLP exporter.
+    ///
+    /// This error wraps underlying exporter build errors that may occur during
+    /// the construction of the OTLP span exporter.
     #[error(transparent)]
     ExporterBuildError(#[from] ExporterBuildError),
 }
 
+/// Identity transformation function for tracer provider builders.
+///
+/// This function accepts a [`TracerProviderBuilder`] and returns it unchanged.
+/// It serves as a default transformation function when no custom configuration
+/// is needed during tracer provider initialization.
+///
+/// # Arguments
+///
+/// - `v`: The tracer provider builder to return unchanged
+///
+/// # Returns
+///
+/// The same tracer provider builder that was passed in
+///
+/// # Examples
+///
+/// ```rust
+/// use opentelemetry_sdk::Resource;
+/// use telemetry_rust::otlp::{identity, init_tracer};
+///
+/// let resource = Resource::builder().build();
+/// let tracer_provider = init_tracer(resource, identity).unwrap();
+/// ```
 #[must_use]
 pub fn identity(v: TracerProviderBuilder) -> TracerProviderBuilder {
     v
 }
 
+/// Initializes an OpenTelemetry tracer provider with OTLP exporter configuration.
+///
+/// This function creates a fully configured tracer provider with an OTLP exporter
+/// that reads configuration from environment variables. It supports both HTTP and
+/// gRPC protocols and allows for custom transformation of the tracer provider builder.
+///
+/// # Environment Variables
+///
+/// The function reads configuration from the following environment variables:
+/// - `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` / `OTEL_EXPORTER_OTLP_ENDPOINT`: Exporter endpoint
+/// - `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL` / `OTEL_EXPORTER_OTLP_PROTOCOL`: Protocol (grpc, http, http/protobuf)
+/// - `OTEL_EXPORTER_OTLP_TRACES_TIMEOUT` / `OTEL_EXPORTER_OTLP_TIMEOUT`: Timeout in milliseconds
+/// - `OTEL_EXPORTER_OTLP_HEADERS` / `OTEL_EXPORTER_OTLP_TRACES_HEADERS`: Additional headers
+/// - `OTEL_TRACES_SAMPLER`: Sampling strategy configuration
+/// - `OTEL_TRACES_SAMPLER_ARG`: Sampling rate for ratio-based samplers
+///
+/// # Arguments
+///
+/// - `resource`: OpenTelemetry resource containing service metadata
+/// - `transform`: Function to customize the tracer provider builder before building
+///
+/// # Returns
+///
+/// A configured [`TracerProvider`] on success, or an [`InitTracerError`] on failure
+///
+/// # Examples
+///
+/// ```rust
+/// use opentelemetry_sdk::Resource;
+/// use telemetry_rust::otlp::{identity, init_tracer};
+///
+/// let resource = Resource::builder().build();
+/// let tracer_provider = init_tracer(resource, identity)?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 // see https://opentelemetry.io/docs/reference/specification/protocol/exporter/
 pub fn init_tracer<F>(
     resource: Resource,

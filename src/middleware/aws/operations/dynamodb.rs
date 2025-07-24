@@ -8,9 +8,27 @@ pub const LEGACY_DB_NAME: &str = semconv::DB_NAME;
 #[allow(deprecated)]
 pub const LEGACY_DB_SYSTEM: &str = semconv::DB_SYSTEM;
 
+/// Builder for DynamoDB-specific OpenTelemetry spans.
+///
+/// This enum serves as a namespace for DynamoDB operation span builders.
+/// Each operation provides a specific method to create properly configured
+/// spans with DynamoDB-specific attributes.
 pub enum DynamodbSpanBuilder {}
 
 impl AwsSpanBuilder<'_> {
+    /// Creates a DynamoDB operation span builder.
+    ///
+    /// This method creates a span builder configured for DynamoDB operations with
+    /// appropriate semantic attributes according to OpenTelemetry conventions.
+    ///
+    /// # Arguments
+    ///
+    /// * `method` - The DynamoDB operation method name (e.g., "GetItem", "PutItem")
+    /// * `table_names` - Iterator of table names involved in the operation
+    ///
+    /// # Returns
+    ///
+    /// A configured AWS span builder for the DynamoDB operation
     pub fn dynamodb(
         method: impl Into<StringValue>,
         table_names: impl IntoIterator<Item = impl Into<StringValue>>,
@@ -48,6 +66,9 @@ impl AwsSpanBuilder<'_> {
 macro_rules! dynamodb_global_operation {
     ($op: ident) => {
         impl DynamodbSpanBuilder {
+            #[doc = concat!("Creates a span builder for the DynamoDB ", stringify!($op), " operation.")]
+            ///
+            /// This operation does not require specific table names as it operates globally.
             #[inline]
             pub fn $op<'a>() -> AwsSpanBuilder<'a> {
                 AwsSpanBuilder::dynamodb(
@@ -62,6 +83,11 @@ macro_rules! dynamodb_global_operation {
 macro_rules! dynamodb_table_operation {
     ($op: ident) => {
         impl DynamodbSpanBuilder {
+            #[doc = concat!("Creates a span builder for the DynamoDB ", stringify!($op), " operation on a specific table.")]
+            ///
+            /// # Arguments
+            ///
+            /// * `table_name` - The name of the DynamoDB table
             pub fn $op<'a>(table_name: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
                 AwsSpanBuilder::dynamodb(
                     stringify_camel!($op),
@@ -75,6 +101,11 @@ macro_rules! dynamodb_table_operation {
 macro_rules! dynamodb_table_arn_operation {
     ($op: ident) => {
         impl DynamodbSpanBuilder {
+            #[doc = concat!("Creates a span builder for the DynamoDB ", stringify!($op), " operation using a table ARN.")]
+            ///
+            /// # Arguments
+            ///
+            /// * `table_arn` - The ARN of the DynamoDB table
             pub fn $op<'a>(table_arn: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
                 let table_arn = table_arn.into();
                 AwsSpanBuilder::dynamodb(
@@ -93,6 +124,11 @@ macro_rules! dynamodb_table_arn_operation {
 macro_rules! dynamodb_batch_operation {
     ($op: ident) => {
         impl DynamodbSpanBuilder {
+            #[doc = concat!("Creates a span builder for the DynamoDB ", stringify!($op), " batch operation.")]
+            ///
+            /// # Arguments
+            ///
+            /// * `table_names` - Iterator of table names involved in the batch operation
             pub fn $op<'a>(
                 table_names: impl IntoIterator<Item = impl Into<StringValue>>,
             ) -> AwsSpanBuilder<'a> {

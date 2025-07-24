@@ -2,9 +2,24 @@ use crate::{KeyValue, StringValue, semconv};
 
 use super::*;
 
+/// Builder for Firehose-specific OpenTelemetry spans.
+///
+/// This enum serves as a namespace for Firehose operation span builders.
+/// Each operation provides a specific method to create properly configured
+/// spans with Firehose-specific messaging attributes.
 pub enum FirehoseSpanBuilder {}
 
 impl AwsSpanBuilder<'_> {
+    /// Creates a Firehose operation span builder.
+    ///
+    /// This method creates a span builder configured for Firehose operations with
+    /// appropriate messaging semantic attributes.
+    ///
+    /// # Arguments
+    ///
+    /// * `operation_kind` - The type of messaging operation being performed
+    /// * `method` - The Firehose operation method name
+    /// * `stream_name` - Optional stream name for operations that target specific streams
     pub fn firehose(
         operation_kind: MessagingOperationKind,
         method: impl Into<StringValue>,
@@ -27,6 +42,7 @@ impl AwsSpanBuilder<'_> {
 macro_rules! firehose_global_operation {
     ($op: ident) => {
         impl FirehoseSpanBuilder {
+            #[doc = concat!("Creates a span builder for the Firehose ", stringify!($op), " global operation.")]
             #[inline]
             pub fn $op<'a>() -> AwsSpanBuilder<'a> {
                 AwsSpanBuilder::firehose(
@@ -42,6 +58,11 @@ macro_rules! firehose_global_operation {
 macro_rules! firehose_publish_operation {
     ($op: ident, $kind: expr) => {
         impl FirehoseSpanBuilder {
+            #[doc = concat!("Creates a span builder for the Firehose ", stringify!($op), " operation.")]
+            ///
+            /// # Arguments
+            ///
+            /// * `stream_name` - The name of the Firehose delivery stream
             pub fn $op<'a>(stream_name: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
                 AwsSpanBuilder::firehose($kind, stringify_camel!($op), Some(stream_name))
             }
@@ -52,6 +73,11 @@ macro_rules! firehose_publish_operation {
 macro_rules! firehose_stream_operation {
     ($op: ident) => {
         impl FirehoseSpanBuilder {
+            #[doc = concat!("Creates a span builder for the Firehose ", stringify!($op), " stream operation.")]
+            ///
+            /// # Arguments
+            ///
+            /// * `stream_name` - The name of the Firehose delivery stream
             pub fn $op<'a>(stream_name: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
                 AwsSpanBuilder::firehose(
                     MessagingOperationKind::Control,

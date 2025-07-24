@@ -34,6 +34,9 @@ pub enum MessagingOperationKind {
 }
 
 impl MessagingOperationKind {
+    /// Returns the string representation of the operation kind.
+    ///
+    /// This follows OpenTelemetry semantic conventions for messaging operations.
     pub fn as_str(&self) -> &'static str {
         match self {
             MessagingOperationKind::Create => "create",

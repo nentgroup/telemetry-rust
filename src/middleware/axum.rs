@@ -1,3 +1,8 @@
+//! Axum web framework middleware.
+//!
+//! Provides middleware for the Axum web framework to automatically
+//! instrument HTTP requests with OpenTelemetry tracing.
+
 // Originally retired from davidB/tracing-opentelemetry-instrumentation-sdk
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/axum-tracing-opentelemetry/src/middleware/trace_extractor.rs#L53
 // which is licensed under CC0 1.0 Universal
@@ -15,9 +20,34 @@ use tower::{Layer, Service};
 use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::http as otel_http;
 
+/// Function type for filtering HTTP requests by path.
+///
+/// Takes a path string and returns true if the request should be traced.
 pub type Filter = fn(&str) -> bool;
+
+/// Function type for extracting string representation from a matched path type.
+///
+/// Used to convert Axum's matched path type to a string for span attributes.
 pub type AsStr<T> = fn(&T) -> &str;
 
+/// OpenTelemetry layer for Axum applications.
+///
+/// This layer provides automatic tracing instrumentation for Axum web applications,
+/// creating spans for HTTP requests with appropriate semantic attributes.
+///
+/// The layer is generic over [`axum::extract::MatchedPath`](https://docs.rs/axum/latest/axum/extract/struct.MatchedPath.html),
+/// making it compatible with different versions of axum without being tied to any specific one.
+///
+/// # Example
+///
+/// ```rust
+/// use axum::{Router, routing};
+/// use telemetry_rust::middleware::axum::OtelAxumLayer;
+///
+/// let app: Router = axum::Router::new()
+///     .nest("/api", Router::new()) // api_routes would be your actual routes
+///     .layer(OtelAxumLayer::new(axum::extract::MatchedPath::as_str));
+/// ```
 #[derive(Debug, Clone)]
 pub struct OtelAxumLayer<P> {
     matched_path_as_str: AsStr<P>,
@@ -27,6 +57,14 @@ pub struct OtelAxumLayer<P> {
 
 // add a builder like api
 impl<P> OtelAxumLayer<P> {
+    /// Creates a new OpenTelemetry layer for Axum.
+    ///
+    /// # Arguments
+    ///
+    /// * `matched_path_as_str` - [`axum::extract::MatchedPath::as_str`] or any function to convert [`axum::extract::MatchedPath`] to a `&str`
+    ///
+    ///  [`axum::extract::MatchedPath::as_str`]: https://docs.rs/axum/latest/axum/extract/struct.MatchedPath.html#method.as_str
+    ///  [`axum::extract::MatchedPath`]: https://docs.rs/axum/latest/axum/extract/struct.MatchedPath.html
     pub fn new(matched_path_as_str: AsStr<P>) -> Self {
         OtelAxumLayer {
             matched_path_as_str,
@@ -35,6 +73,11 @@ impl<P> OtelAxumLayer<P> {
         }
     }
 
+    /// Sets a filter function to selectively trace requests.
+    ///
+    /// # Arguments
+    ///
+    /// * `filter` - Function that returns true for paths that should be traced
     pub fn filter(self, filter: Filter) -> Self {
         OtelAxumLayer {
             filter: Some(filter),
@@ -42,6 +85,11 @@ impl<P> OtelAxumLayer<P> {
         }
     }
 
+    /// Configures whether to inject OpenTelemetry context into responses.
+    ///
+    /// # Arguments
+    ///
+    /// * `inject_context` - Whether to inject trace context into response headers
     pub fn inject_context(self, inject_context: bool) -> Self {
         OtelAxumLayer {
             inject_context,
@@ -63,6 +111,10 @@ impl<S, P> Layer<S> for OtelAxumLayer<P> {
     }
 }
 
+/// OpenTelemetry service wrapper for Axum applications.
+///
+/// This service wraps Axum services to provide automatic HTTP request tracing
+/// with OpenTelemetry spans and context propagation.
 #[derive(Debug, Clone)]
 pub struct OtelAxumService<S, P> {
     inner: S,

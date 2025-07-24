@@ -1,3 +1,5 @@
+//! JSON formatting utilities for structured logging with OpenTelemetry.
+
 use opentelemetry::trace::TraceContextExt;
 use serde::{
     Deserialize, Deserializer as _, Serialize, Serializer as _,
@@ -18,6 +20,30 @@ use tracing_subscriber::{
     registry::{LookupSpan, SpanRef},
 };
 
+/// JSON event formatter for structured logging with OpenTelemetry integration.
+///
+/// This formatter serializes tracing events into JSON format with additional OpenTelemetry
+/// metadata including trace IDs, span IDs, and span hierarchy information. It's designed
+/// to work with the tracing-subscriber ecosystem and provides rich context for log analysis.
+///
+/// # Features
+///
+/// - Structured JSON output with consistent field names
+/// - Automatic inclusion of OpenTelemetry trace and span IDs
+/// - Hierarchical span information for request tracing
+/// - ISO 8601 timestamp formatting
+/// - Proper handling of event fields and metadata
+///
+/// # JSON Structure
+///
+/// The generated JSON includes the following fields:
+/// - `timestamp`: ISO 8601 formatted timestamp
+/// - `level`: Log level (ERROR, WARN, INFO, DEBUG, TRACE)
+/// - `target`: The module path where the event was recorded
+/// - `trace_id`: OpenTelemetry trace ID (if available)
+/// - `span_id`: OpenTelemetry span ID (if available)
+/// - `spans`: Array of parent spans with their fields
+/// - Additional fields from the log event, including `message`
 pub struct JsonFormat;
 
 impl<S, N> FormatEvent<S, N> for JsonFormat

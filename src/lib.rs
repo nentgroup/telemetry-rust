@@ -56,7 +56,10 @@ use tracing_subscriber::layer::SubscriberExt;
 use opentelemetry::trace::TracerProvider as _;
 pub use opentelemetry::{Array, Context, Key, KeyValue, StringValue, Value, global};
 pub use opentelemetry_sdk::{
-    Resource, error::OTelSdkError, trace::SdkTracerProvider as TracerProvider,
+    Resource,
+    error::OTelSdkError,
+    resource::{EnvResourceDetector, ResourceDetector, TelemetryResourceDetector},
+    trace::SdkTracerProvider as TracerProvider,
 };
 pub use opentelemetry_semantic_conventions::attribute as semconv;
 pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};
@@ -88,8 +91,8 @@ mod util;
 /// # Environment Variables
 ///
 /// The following environment variables are checked in order of priority:
-/// - Service name: `OTEL_SERVICE_NAME`, `SERVICE_NAME`, `APP_NAME`
-/// - Service version: `OTEL_SERVICE_VERSION`, `SERVICE_VERSION`, `APP_VERSION`
+/// - Service name: `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES`, `SERVICE_NAME`, `APP_NAME`
+/// - Service version: `OTEL_SERVICE_VERSION`, `OTEL_RESOURCE_ATTRIBUTES`, `SERVICE_VERSION`, `APP_VERSION`
 #[derive(Debug, Default)]
 pub struct DetectResource {
     fallback_service_name: &'static str,
@@ -97,9 +100,12 @@ pub struct DetectResource {
 }
 
 impl DetectResource {
-    /// `service.name` is first extracted from environment variables
-    /// (in this order) `OTEL_SERVICE_NAME`, `SERVICE_NAME`, `APP_NAME`.
-    /// But a default value can be provided with this method.
+    /// Creates a new `DetectResource` with the provided fallback service name and version.
+    ///
+    /// # Arguments
+    ///
+    /// * `fallback_service_name` - The default service name to use if not found in environment variables.
+    /// * `fallback_service_version` - The default service version to use if not found in environment variables.
     pub fn new(
         fallback_service_name: &'static str,
         fallback_service_version: &'static str,
@@ -119,27 +125,42 @@ impl DetectResource {
     ///
     /// A configured [`Resource`] with service name and version attributes.
     pub fn build(self) -> Resource {
-        let service_name = util::env_var("OTEL_SERVICE_NAME")
-            .or_else(|| util::env_var("SERVICE_NAME"))
-            .or_else(|| util::env_var("APP_NAME"))
-            .or_else(|| Some(self.fallback_service_name.to_string()))
-            .map(|v| KeyValue::new(semconv::SERVICE_NAME, v));
-        let service_version = util::env_var("OTEL_SERVICE_VERSION")
-            .or_else(|| util::env_var("SERVICE_VERSION"))
-            .or_else(|| util::env_var("APP_VERSION"))
-            .or_else(|| Some(self.fallback_service_version.to_string()))
-            .map(|v| KeyValue::new(semconv::SERVICE_VERSION, v));
+        let env_detector = EnvResourceDetector::new();
+        let env_resource = env_detector.detect();
 
-        let rsrc = Resource::builder()
-            .with_attributes([service_name, service_version].into_iter().flatten())
+        let read_from_env = |key| util::env_var(key).map(Into::into);
+
+        let service_name_key = Key::new(semconv::SERVICE_NAME);
+        let service_name_value = read_from_env("OTEL_SERVICE_NAME")
+            .or_else(|| env_resource.get(&service_name_key))
+            .or_else(|| read_from_env("SERVICE_NAME"))
+            .or_else(|| read_from_env("APP_NAME"))
+            .unwrap_or_else(|| self.fallback_service_name.into());
+
+        let service_version_key = Key::new(semconv::SERVICE_VERSION);
+        let service_version_value = read_from_env("OTEL_SERVICE_VERSION")
+            .or_else(|| env_resource.get(&service_version_key))
+            .or_else(|| read_from_env("SERVICE_VERSION"))
+            .or_else(|| read_from_env("APP_VERSION"))
+            .unwrap_or_else(|| self.fallback_service_version.into());
+
+        let resource = Resource::builder_empty()
+            .with_detectors(&[
+                Box::new(TelemetryResourceDetector),
+                Box::new(env_detector),
+            ])
+            .with_attributes([
+                KeyValue::new(service_name_key, service_name_value),
+                KeyValue::new(service_version_key, service_version_value),
+            ])
             .build();
 
         // Debug
-        rsrc.iter().for_each(
+        resource.iter().for_each(
             |kv| tracing::debug!(target: "otel::setup::resource", key = %kv.0, value = %kv.1),
         );
 
-        rsrc
+        resource
     }
 }
 

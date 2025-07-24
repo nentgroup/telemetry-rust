@@ -91,8 +91,8 @@ mod util;
 /// # Environment Variables
 ///
 /// The following environment variables are checked in order of priority:
-/// - Service name: `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_SERVICE_NAME`, `SERVICE_NAME`, `APP_NAME`
-/// - Service version: `OTEL_RESOURCE_ATTRIBUTES`, `OTEL_SERVICE_VERSION`, `SERVICE_VERSION`, `APP_VERSION`
+/// - Service name: `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES`, `SERVICE_NAME`, `APP_NAME`
+/// - Service version: `OTEL_SERVICE_VERSION`, `OTEL_RESOURCE_ATTRIBUTES`, `SERVICE_VERSION`, `APP_VERSION`
 #[derive(Debug, Default)]
 pub struct DetectResource {
     fallback_service_name: &'static str,
@@ -116,26 +116,6 @@ impl DetectResource {
         }
     }
 
-    fn detect_attribute(
-        env_resource: &Resource,
-        key: &'static str,
-        env_keys: &[&str],
-        fallback: &'static str,
-    ) -> KeyValue {
-        let key = Key::new(key);
-        let value = env_resource
-            .get(&key)
-            .or_else(|| {
-                env_keys
-                    .iter()
-                    .flat_map(|k| util::env_var(k))
-                    .next()
-                    .map(Into::into)
-            })
-            .unwrap_or_else(|| fallback.into());
-        KeyValue::new(key, value)
-    }
-
     /// Builds the OpenTelemetry resource with detected service information.
     ///
     /// This method checks environment variables in order of priority and falls back
@@ -148,25 +128,31 @@ impl DetectResource {
         let env_detector = EnvResourceDetector::new();
         let env_resource = env_detector.detect();
 
-        let service_name = Self::detect_attribute(
-            &env_resource,
-            semconv::SERVICE_NAME,
-            &["OTEL_SERVICE_NAME", "SERVICE_NAME", "APP_NAME"],
-            self.fallback_service_name,
-        );
-        let service_version = Self::detect_attribute(
-            &env_resource,
-            semconv::SERVICE_VERSION,
-            &["OTEL_SERVICE_VERSION", "SERVICE_VERSION", "APP_VERSION"],
-            self.fallback_service_version,
-        );
+        let read_from_env = |key| util::env_var(key).map(Into::into);
+
+        let service_name_key = Key::new(semconv::SERVICE_NAME);
+        let service_name_value = read_from_env("OTEL_SERVICE_NAME")
+            .or_else(|| env_resource.get(&service_name_key))
+            .or_else(|| read_from_env("SERVICE_NAME"))
+            .or_else(|| read_from_env("APP_NAME"))
+            .unwrap_or_else(|| self.fallback_service_name.into());
+
+        let service_version_key = Key::new(semconv::SERVICE_VERSION);
+        let service_version_value = read_from_env("OTEL_SERVICE_VERSION")
+            .or_else(|| env_resource.get(&service_version_key))
+            .or_else(|| read_from_env("SERVICE_VERSION"))
+            .or_else(|| read_from_env("APP_VERSION"))
+            .unwrap_or_else(|| self.fallback_service_version.into());
 
         let rsrc = Resource::builder_empty()
             .with_detectors(&[
                 Box::new(TelemetryResourceDetector),
                 Box::new(env_detector),
             ])
-            .with_attributes([service_name, service_version])
+            .with_attributes([
+                KeyValue::new(service_name_key, service_name_value),
+                KeyValue::new(service_version_key, service_version_value),
+            ])
             .build();
 
         // Debug

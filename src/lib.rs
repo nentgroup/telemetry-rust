@@ -48,6 +48,9 @@
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
+use opentelemetry_sdk::resource::{
+    EnvResourceDetector, SdkProvidedResourceDetector, TelemetryResourceDetector,
+};
 use tracing::level_filters::LevelFilter;
 #[cfg(debug_assertions)]
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -130,8 +133,13 @@ impl DetectResource {
             .or_else(|| Some(self.fallback_service_version.to_string()))
             .map(|v| KeyValue::new(semconv::SERVICE_VERSION, v));
 
-        let rsrc = Resource::builder()
+        let rsrc = Resource::builder_empty()
             .with_attributes([service_name, service_version].into_iter().flatten())
+            .with_detectors(&[
+                Box::new(SdkProvidedResourceDetector),
+                Box::new(TelemetryResourceDetector),
+                Box::new(EnvResourceDetector::new()),
+            ])
             .build();
 
         // Debug

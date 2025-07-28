@@ -10,7 +10,10 @@ use std::{
     task::{Context, Poll},
 };
 
-use crate::middleware::aws::{AwsSpan, AwsSpanBuilder};
+use crate::{
+    KeyValue,
+    middleware::aws::{AwsSpan, AwsSpanBuilder},
+};
 
 struct NoOp;
 
@@ -31,7 +34,10 @@ enum InstrumentedStreamState<'a> {
 
 impl<'a> InstrumentedStreamState<'a> {
     fn new(span: impl Into<AwsSpanBuilder<'a>>) -> Self {
-        Self::Waiting(Box::new(span.into()))
+        let span = Into::<AwsSpanBuilder>::into(span);
+        Self::Waiting(Box::new(
+            span.attribute(KeyValue::new("aws.pagination_stream", true)),
+        ))
     }
 }
 

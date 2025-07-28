@@ -47,6 +47,9 @@ pin_project! {
     /// This struct automatically creates spans for stream operations and handles proper
     /// span lifecycle management including error handling and completion tracking.
     ///
+    /// The instrumented stream automatically adds the `aws.pagination_stream = true` attribute
+    /// to help identify pagination/streaming operations in traces.
+    ///
     /// The instrumented stream maintains state to track the span lifecycle:
     /// - `Waiting`: Initial state with a span builder ready to start
     /// - `Flowing`: Active state with an ongoing span
@@ -109,6 +112,9 @@ where
 /// This trait provides the `instrument` method that wraps streams with telemetry
 /// capabilities, automatically creating and managing spans for AWS operations.
 /// It supports both regular streams and AWS pagination streams.
+///
+/// All instrumented streams automatically include the `aws.pagination_stream = true`
+/// attribute to help identify streaming operations in traces.
 ///
 /// # Examples
 ///

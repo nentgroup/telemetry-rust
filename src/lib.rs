@@ -20,8 +20,8 @@
 //!
 //! - `axum`: Axum web framework middleware support
 //! - `aws-span`: AWS SDK span creation utilities
-//! - `aws-instrumentation`: AWS SDK automatic instrumentation
-//! - `aws-stream-instrumentation`: AWS SDK automatic instrumentation for pagination stream
+//! - `aws-instrumentation`: Instrumentation for AWS SDK operations
+//! - `aws-stream-instrumentation`: Instrumentation for AWS SDK pagination streams
 //! - `aws-lambda`: AWS Lambda runtime middleware
 //! - `aws`: All AWS features (span + instrumentation + stream instrumentation)
 //! - `aws-full`: All AWS features including Lambda

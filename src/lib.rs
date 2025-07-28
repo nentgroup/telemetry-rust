@@ -21,8 +21,9 @@
 //! - `axum`: Axum web framework middleware support
 //! - `aws-span`: AWS SDK span creation utilities
 //! - `aws-instrumentation`: AWS SDK automatic instrumentation
+//! - `aws-stream-instrumentation`: AWS SDK automatic instrumentation for pagination stream
 //! - `aws-lambda`: AWS Lambda runtime middleware
-//! - `aws`: All AWS features (span + instrumentation)
+//! - `aws`: All AWS features (span + instrumentation + stream instrumentation)
 //! - `aws-full`: All AWS features including Lambda
 //! - `future`: Future instrumentation utilities
 //! - `test`: Testing utilities for OpenTelemetry validation
@@ -91,8 +92,10 @@ mod util;
 /// # Environment Variables
 ///
 /// The following environment variables are checked in order of priority:
-/// - Service name: `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES`, `SERVICE_NAME`, `APP_NAME`
-/// - Service version: `OTEL_SERVICE_VERSION`, `OTEL_RESOURCE_ATTRIBUTES`, `SERVICE_VERSION`, `APP_VERSION`
+/// - Service name: `OTEL_SERVICE_NAME`, service.name from `OTEL_RESOURCE_ATTRIBUTES`, `SERVICE_NAME`, `APP_NAME`
+/// - Service version: `OTEL_SERVICE_VERSION`, service.version from `OTEL_RESOURCE_ATTRIBUTES`, `SERVICE_VERSION`, `APP_VERSION`
+///
+/// Note: `OTEL_RESOURCE_ATTRIBUTES` is automatically parsed by the OpenTelemetry SDK's environment resource detector.
 #[derive(Debug, Default)]
 pub struct DetectResource {
     fallback_service_name: &'static str,

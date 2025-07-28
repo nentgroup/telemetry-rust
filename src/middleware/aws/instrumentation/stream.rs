@@ -36,6 +36,15 @@ impl<'a> InstrumentedStreamState<'a> {
 }
 
 pin_project! {
+    /// A wrapper around a Stream that provides OpenTelemetry instrumentation for AWS operations.
+    ///
+    /// This struct automatically creates spans for stream operations and handles proper
+    /// span lifecycle management including error handling and completion tracking.
+    ///
+    /// The instrumented stream maintains state to track the span lifecycle:
+    /// - `Waiting`: Initial state with a span builder ready to start
+    /// - `Flowing`: Active state with an ongoing span
+    /// - `Finished`: Terminal state after the stream completes or errors
     pub struct InstrumentedStream<'a, S: Stream> {
         #[pin]
         inner: S,
@@ -89,11 +98,64 @@ where
     }
 }
 
+/// A trait for adding OpenTelemetry instrumentation to AWS streams.
+///
+/// This trait provides the `instrument` method that wraps streams with telemetry
+/// capabilities, automatically creating and managing spans for AWS operations.
+/// It supports both regular streams and AWS pagination streams.
+///
+/// # Examples
+///
+/// ```rust
+/// use aws_sdk_dynamodb::{Client as DynamoClient, types::AttributeValue};
+/// use futures_util::TryStreamExt;
+/// use telemetry_rust::{
+///     KeyValue,
+///     middleware::aws::{AwsStreamInstrument, DynamodbSpanBuilder},
+///     semconv,
+/// };
+///
+/// async fn query_table() -> Result<usize, Box<dyn std::error::Error>> {
+///     let config = aws_config::load_from_env().await;
+///     let dynamo_client = DynamoClient::new(&config);
+///     let items =
+///         dynamo_client
+///             .query()
+///             .table_name("table_name")
+///             .index_name("my_index")
+///             .key_condition_expression("PK = :pk")
+///             .expression_attribute_values(":pk", AttributeValue::S("Test".to_string()))
+///             .into_paginator()
+///             .items()
+///             .send()
+///             .instrument(DynamodbSpanBuilder::query("table_name").attribute(
+///                 KeyValue::new(semconv::AWS_DYNAMODB_INDEX_NAME, "my_index"),
+///             ))
+///             .try_collect::<Vec<_>>()
+///             .await?;
+///     println!("DynamoDB items: {items:#?}");
+///     Ok(items.len())
+/// }
+/// ```
 pub trait AwsStreamInstrument<T, E, S>
 where
     E: RequestId + Error,
     S: Stream<Item = Result<T, E>>,
 {
+    /// Instruments the stream with OpenTelemetry tracing.
+    ///
+    /// This method wraps the stream in an [`InstrumentedStream`] that will:
+    /// - Start a span when the stream begins polling
+    /// - End the span with success when the stream completes normally
+    /// - End the span with error information if the stream encounters an error
+    ///
+    /// # Arguments
+    ///
+    /// * `span` - The span builder or span configuration to use for instrumentation
+    ///
+    /// # Returns
+    ///
+    /// An [`InstrumentedStream`] that wraps the original stream with telemetry capabilities.
     fn instrument<'a>(
         self,
         span: impl Into<AwsSpanBuilder<'a>>,

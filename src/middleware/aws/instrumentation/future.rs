@@ -25,21 +25,29 @@ where
 ///
 /// ```rust
 /// use aws_sdk_dynamodb::{Client as DynamoClient, types::AttributeValue};
-/// use telemetry_rust::middleware::aws::{AwsInstrument, DynamodbSpanBuilder};
+/// use telemetry_rust::{
+///     KeyValue,
+///     middleware::aws::{AwsInstrument, DynamodbSpanBuilder},
+///     semconv,
+/// };
 ///
-/// async fn query_table() {
+/// async fn query_table() -> Result<i32, Box<dyn std::error::Error>> {
 ///     let config = aws_config::load_from_env().await;
 ///     let dynamo_client = DynamoClient::new(&config);
-///     let res = dynamo_client
-///         .query()
-///         .table_name("table_name")
-///         .index_name("my_index")
-///         .key_condition_expression("PK = :pk")
-///         .expression_attribute_values(":pk", AttributeValue::S("Test".to_string()))
-///         .send()
-///         .instrument(DynamodbSpanBuilder::get_item("table_name"))
-///         .await;
-///     println!("DynamoDB response: {res:#?}");
+///     let resp =
+///         dynamo_client
+///             .query()
+///             .table_name("table_name")
+///             .index_name("my_index")
+///             .key_condition_expression("PK = :pk")
+///             .expression_attribute_values(":pk", AttributeValue::S("Test".to_string()))
+///             .send()
+///             .instrument(DynamodbSpanBuilder::query("table_name").attribute(
+///                 KeyValue::new(semconv::AWS_DYNAMODB_INDEX_NAME, "my_index"),
+///             ))
+///             .await?;
+///     println!("DynamoDB items: {:#?}", resp.items());
+///     Ok(resp.count())
 /// }
 /// ```
 pub trait AwsInstrument<T, E, F>

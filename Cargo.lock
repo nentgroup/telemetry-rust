@@ -456,6 +456,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-smithy-types-convert"
+version = "0.60.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df786cc1aea35d24b609f7a32d05570916edfe7b3e09e81f2faf365f9062f647"
+dependencies = [
+ "aws-smithy-async",
+ "futures-core",
+]
+
+[[package]]
 name = "aws-smithy-xml"
 version = "0.60.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2523,6 +2533,8 @@ dependencies = [
  "assert2",
  "aws-config",
  "aws-sdk-dynamodb",
+ "aws-smithy-async",
+ "aws-smithy-types-convert",
  "aws-types",
  "axum",
  "bytes",

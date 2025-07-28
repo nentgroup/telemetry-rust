@@ -1,8 +1,10 @@
 use aws_types::request_id::RequestId;
 use std::{error::Error, future::Future};
 
-use super::{AwsSpan, AwsSpanBuilder};
-use crate::future::{InstrumentedFuture, InstrumentedFutureContext};
+use crate::{
+    future::{InstrumentedFuture, InstrumentedFutureContext},
+    middleware::aws::{AwsSpan, AwsSpanBuilder},
+};
 
 impl<T, E> InstrumentedFutureContext<Result<T, E>> for AwsSpan
 where

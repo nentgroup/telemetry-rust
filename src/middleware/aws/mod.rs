@@ -13,12 +13,10 @@ use tracing::Span;
 
 use crate::{Context, KeyValue, OpenTelemetrySpanExt, StringValue, semconv};
 
-#[cfg(feature = "aws-instrumentation")]
 mod instrumentation;
 mod operations;
 
-#[cfg(feature = "aws-instrumentation")]
-pub use instrumentation::AwsInstrument;
+pub use instrumentation::*;
 pub use operations::*;
 
 /// A wrapper around an OpenTelemetry span specifically designed for AWS operations.

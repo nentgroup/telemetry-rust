@@ -1,5 +1,9 @@
 # Changelog
 
+## v5.2.0
+
+- Implement `AwsStreamInstrument` trait to instrument AWS pagination streams https://github.com/nentgroup/telemetry-rust/pull/134
+
 ## v5.1.1
 
 - Fix reading `service.name` and `service.version` from `OTEL_RESOURCE_ATTRIBUTES` https://github.com/nentgroup/telemetry-rust/pull/132
@@ -84,7 +88,7 @@ OtelAxumLayer::new(MatchedPath::as_str).inject_context(true)
 
 ## v1.5.0
 
-- Implement `AwsInstrumented` trait to instrument AWS operations https://github.com/nentgroup/telemetry-rust/pull/13
+- Implement `AwsInstrument` trait to instrument AWS operations https://github.com/nentgroup/telemetry-rust/pull/13
 
 ## v1.4.0
 

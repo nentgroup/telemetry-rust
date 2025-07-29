@@ -1,7 +1,7 @@
 //! Instrumentation utilities for AWS SDK operations.
 //!
 //! This module provides comprehensive instrumentation for AWS services,
-//! including automatic instrumentation and a low-lewel api for manual span creation.
+//! including automatic instrumentation and a low-level API for manual span creation.
 //! It supports both individual AWS SDK operations and streaming/pagination.
 //!
 //! # Features

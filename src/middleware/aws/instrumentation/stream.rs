@@ -15,6 +15,10 @@ use crate::{
     middleware::aws::{AwsSpan, AwsSpanBuilder},
 };
 
+/// A no-op implementation of [`RequestId`] for internal use.
+///
+/// This is used in place of an AWS response to satisfy [`AwsSpan::end`] trait bounds,
+/// because we don't have access to the real response with request ID information.
 struct Void;
 
 impl RequestId for Void {

@@ -1,7 +1,19 @@
 //! Instrumentation utilities for AWS SDK operations.
 //!
-//! This module provides instrumentation for AWS services,
-//! including span creation and context propagation for AWS SDK operations.
+//! This module provides comprehensive instrumentation for AWS services,
+//! including automatic instrumentation and a low-level API for manual span creation.
+//! It supports both individual AWS SDK operations and streaming/pagination.
+//!
+//! # Features
+//!
+//! - **Span Creation**: Manual span creation with [`AwsSpan`] and [`AwsSpanBuilder`]
+//! - **Instrumentation**: Automatic instrumentation for AWS SDK operations with [`AwsInstrument`] trait
+//! - **Stream Instrumentation**: Automatic instrumentation for AWS [`PaginationStream`](`aws_smithy_async::future::pagination_stream::PaginationStream`) with [`AwsStreamInstrument`] trait
+//!
+//! # Feature Flags
+//!
+//! - `aws-instrumentation`: Enables [`Future`] instrumentation via [`AwsInstrument`] trait
+//! - `aws-stream-instrumentation`: Enables [`Stream`][`futures_util::Stream`] instrumentation via [`AwsStreamInstrument`] trait
 
 use aws_types::request_id::RequestId;
 use opentelemetry::{
@@ -13,12 +25,10 @@ use tracing::Span;
 
 use crate::{Context, KeyValue, OpenTelemetrySpanExt, StringValue, semconv};
 
-#[cfg(feature = "aws-instrumentation")]
 mod instrumentation;
 mod operations;
 
-#[cfg(feature = "aws-instrumentation")]
-pub use instrumentation::AwsInstrument;
+pub use instrumentation::*;
 pub use operations::*;
 
 /// A wrapper around an OpenTelemetry span specifically designed for AWS operations.

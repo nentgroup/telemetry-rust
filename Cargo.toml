@@ -38,7 +38,9 @@ pin-project-lite = { version = "0.2", optional = true }
 futures-util = { version = "0.3", default-features = false, features = [], optional = true }
 hyper = { package = "hyper", version = "1.3", default-features = false, optional = true }
 http-body-util = { version = "0.1.1", optional = true }
-aws-types =  { version = "1", optional = true }
+aws-types = { version = "1", optional = true }
+aws-smithy-async = { version = "1.2.5", optional = true }
+aws-smithy-types-convert = { version = "0.60.9", features = ["convert-streams"], optional = true }
 lambda_runtime = { version = "0", optional = true }
 paste = { version = "1.0.14", optional = true }
 thiserror = "2.0.12"
@@ -59,9 +61,10 @@ future = ["dep:pin-project-lite"]
 test = ["dep:bytes", "dep:opentelemetry_api", "dep:rand", "dep:http-body-util", "dep:hyper"]
 axum = ["dep:tower", "dep:futures-util", "dep:pin-project-lite"]
 aws-span = ["dep:aws-types", "dep:paste"]
-aws-instrumentation = ["future"]
+aws-instrumentation = ["aws-span", "future"]
+aws-stream-instrumentation = ["aws-span", "dep:pin-project-lite", "dep:aws-smithy-async", "dep:aws-smithy-types-convert"]
 aws-lambda = ["dep:tower", "dep:lambda_runtime", "future"]
-aws = ["aws-span", "aws-instrumentation"]
+aws = ["aws-span", "aws-instrumentation", "aws-stream-instrumentation"]
 aws-full = ["aws", "aws-lambda"]
 
 [package.metadata.release]

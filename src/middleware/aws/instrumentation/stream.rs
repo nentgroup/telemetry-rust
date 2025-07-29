@@ -38,7 +38,14 @@ enum InstrumentedStreamState<'a> {
     Invalid,
 }
 
-impl InstrumentedStreamState<'_> {
+impl<'a> InstrumentedStreamState<'a> {
+    fn new(span: impl Into<AwsSpanBuilder<'a>>) -> Self {
+        let span = Into::<AwsSpanBuilder>::into(span);
+        Self::Waiting(Box::new(
+            span.attribute(KeyValue::new("aws.pagination_stream", true)),
+        ))
+    }
+
     fn kind(&self) -> InstrumentedStreamKind {
         match self {
             InstrumentedStreamState::Waiting(_) => InstrumentedStreamKind::Waiting,
@@ -63,15 +70,6 @@ impl InstrumentedStreamState<'_> {
         };
         span.end(aws_response);
         Self::Finished
-    }
-}
-
-impl<'a> InstrumentedStreamState<'a> {
-    fn new(span: impl Into<AwsSpanBuilder<'a>>) -> Self {
-        let span = Into::<AwsSpanBuilder>::into(span);
-        Self::Waiting(Box::new(
-            span.attribute(KeyValue::new("aws.pagination_stream", true)),
-        ))
     }
 }
 

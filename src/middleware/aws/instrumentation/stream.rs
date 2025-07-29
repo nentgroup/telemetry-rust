@@ -23,6 +23,12 @@ impl RequestId for NoOp {
     }
 }
 
+enum InstrumentedStreamKind {
+    Waiting,
+    Flowing,
+    Finished,
+}
+
 #[derive(Default)]
 enum InstrumentedStreamState<'a> {
     Waiting(Box<AwsSpanBuilder<'a>>),
@@ -30,6 +36,34 @@ enum InstrumentedStreamState<'a> {
     Finished,
     #[default]
     Invalid,
+}
+
+impl InstrumentedStreamState<'_> {
+    fn kind(&self) -> InstrumentedStreamKind {
+        match self {
+            InstrumentedStreamState::Waiting(_) => InstrumentedStreamKind::Waiting,
+            InstrumentedStreamState::Flowing(_) => InstrumentedStreamKind::Flowing,
+            InstrumentedStreamState::Finished => InstrumentedStreamKind::Finished,
+            InstrumentedStreamState::Invalid => {
+                panic!("Invalid instrumented stream state")
+            }
+        }
+    }
+
+    fn start(self) -> Self {
+        let Self::Waiting(span) = self else {
+            panic!("Instrumented stream state is not Waiting");
+        };
+        Self::Flowing(span.start())
+    }
+
+    fn end<E: RequestId + Error>(self, aws_response: &Result<NoOp, E>) -> Self {
+        let Self::Flowing(span) = self else {
+            panic!("Instrumented stream state is not Flowing");
+        };
+        span.end(aws_response);
+        Self::Finished
+    }
 }
 
 impl<'a> InstrumentedStreamState<'a> {
@@ -70,39 +104,24 @@ where
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.project();
-        let state = this.state.take();
-        match state {
-            InstrumentedStreamState::Waiting(span) => {
-                this.state
-                    .set(InstrumentedStreamState::Flowing(span.start()));
+        match this.state.get_mut().kind() {
+            InstrumentedStreamKind::Waiting => {
+                this.state.set(this.state.take().start());
                 this.inner.poll_next(cx)
             }
-            InstrumentedStreamState::Flowing(aws_span) => {
-                match this.inner.poll_next(cx) {
-                    Poll::Ready(None) => {
-                        aws_span.end::<NoOp, E>(&Ok(NoOp));
-                        this.state.set(InstrumentedStreamState::Finished);
-                        Poll::Ready(None)
-                    }
-                    Poll::Ready(Some(Err(err))) => {
-                        let aws_result = Err(err);
-                        aws_span.end::<NoOp, E>(&aws_result);
-                        this.state.set(InstrumentedStreamState::Finished);
-                        Poll::Ready(aws_result.err().map(Err))
-                    }
-                    result => {
-                        this.state.set(InstrumentedStreamState::Flowing(aws_span));
-                        result
-                    }
+            InstrumentedStreamKind::Flowing => match this.inner.poll_next(cx) {
+                Poll::Ready(None) => {
+                    this.state.set(this.state.take().end(&Ok::<_, E>(NoOp)));
+                    Poll::Ready(None)
                 }
-            }
-            InstrumentedStreamState::Finished => {
-                this.state.set(state);
-                Poll::Ready(None)
-            }
-            InstrumentedStreamState::Invalid => {
-                panic!("Invalid instrumented stream state")
-            }
+                Poll::Ready(Some(Err(err))) => {
+                    let aws_result = Err(err);
+                    this.state.set(this.state.take().end(&aws_result));
+                    Poll::Ready(aws_result.err().map(Err))
+                }
+                result => result,
+            },
+            InstrumentedStreamKind::Finished => Poll::Ready(None),
         }
     }
 }

@@ -3,8 +3,8 @@ use crate::{Key, KeyValue, StringValue, Value};
 #[macro_export]
 macro_rules! instrument_aws_operation {
     ($sdk:ident::operation::$op:ident) => {
-        paste! {
-            impl InstrumentedFluentBuilder<'_, $sdk::operation::$op::builders::[<$op:camel FluentBuilder>]> {
+        paste::paste! {
+            impl super::InstrumentedFluentBuilder<'_, $sdk::operation::$op::builders::[<$op:camel FluentBuilder>]> {
                 pub async fn send(self) -> Result<
                     $sdk::operation::$op::[<$op:camel Output>],
                     $sdk::error::SdkError<$sdk::operation::$op::[<$op:camel Error>]>,
@@ -16,9 +16,9 @@ macro_rules! instrument_aws_operation {
     };
 }
 
-pub(crate) use instrument_aws_operation;
+pub(super) use instrument_aws_operation;
 
-pub(crate) trait AsAttribute {
+pub(super) trait AsAttribute {
     fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue>;
 }
 

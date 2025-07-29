@@ -1,8 +1,5 @@
-use paste::paste;
-use std::collections::HashSet;
-
-use super::{AwsInstrumentBuilder, InstrumentedFluentBuilder, utils::*};
-use crate::{middleware::aws::*, semconv};
+use super::{AwsInstrumentBuilder, utils::*};
+use crate::middleware::aws::*;
 
 impl<'a> AwsInstrumentBuilder<'a>
     for aws_sdk_firehose::operation::put_record::builders::PutRecordFluentBuilder

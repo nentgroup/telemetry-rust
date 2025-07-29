@@ -1,7 +1,6 @@
-use paste::paste;
 use std::collections::HashSet;
 
-use super::{AwsInstrumentBuilder, InstrumentedFluentBuilder, utils::*};
+use super::{AwsInstrumentBuilder, utils::*};
 use crate::{middleware::aws::*, semconv};
 
 impl<'a> AwsInstrumentBuilder<'a>

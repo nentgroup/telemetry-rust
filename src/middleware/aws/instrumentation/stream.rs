@@ -15,9 +15,9 @@ use crate::{
     middleware::aws::{AwsSpan, AwsSpanBuilder},
 };
 
-struct NoOp;
+struct Void;
 
-impl RequestId for NoOp {
+impl RequestId for Void {
     fn request_id(&self) -> Option<&str> {
         None
     }
@@ -64,7 +64,7 @@ impl<'a> InstrumentedStreamState<'a> {
         Self::Flowing(span.start())
     }
 
-    fn end<E: RequestId + Error>(self, aws_response: &Result<NoOp, E>) -> Self {
+    fn end<E: RequestId + Error>(self, aws_response: &Result<Void, E>) -> Self {
         let Self::Flowing(span) = self else {
             panic!("Instrumented stream state is not Flowing");
         };
@@ -109,7 +109,7 @@ where
             }
             InstrumentedStreamKind::Flowing => match this.inner.poll_next(cx) {
                 Poll::Ready(None) => {
-                    this.state.set(this.state.take().end(&Ok::<_, E>(NoOp)));
+                    this.state.set(this.state.take().end(&Ok::<_, E>(Void)));
                     Poll::Ready(None)
                 }
                 Poll::Ready(Some(Err(err))) => {

@@ -4,6 +4,10 @@ pub(super) mod utils;
 
 #[cfg(feature = "aws-dynamodb")]
 mod dynamodb;
+#[cfg(feature = "aws-firehose")]
+mod firehose;
+#[cfg(feature = "aws-sns")]
+mod sns;
 
 pub trait AwsInstrumentBuilder<'a>
 where

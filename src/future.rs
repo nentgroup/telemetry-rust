@@ -1,27 +1,68 @@
+//! Future instrumentation utilities for async operation monitoring.
+//!
+//! This module provides wrapper types and traits for instrumenting async operations
+//! with callbacks that execute when futures complete, enabling monitoring and
+//! metrics collection for async workloads.
+
 use pin_project_lite::pin_project;
 use std::{
     future::Future,
     pin::Pin,
-    task::{ready, Context as TaskContext, Poll},
+    task::{Context as TaskContext, Poll, ready},
 };
 
+/// Trait for handling the completion of instrumented futures.
+///
+/// This trait provides a callback mechanism to perform actions when an instrumented
+/// future completes with a result. It's typically used for recording metrics,
+/// logging outcomes, or other side effects based on the future's result.
 pub trait InstrumentedFutureContext<T> {
+    /// Called when the instrumented future completes with a result.
+    ///
+    /// # Arguments
+    ///
+    /// - `result`: Reference to the result produced by the future
     fn on_result(self, result: &T);
 }
 
 pin_project! {
+    /// A future wrapper that provides instrumentation hooks for result handling.
+    ///
+    /// This future wrapper allows for instrumentation of async operations by providing
+    /// a context that is called when the future completes. It ensures that the context
+    /// callback is invoked exactly once when the future produces its result.
+    ///
+    /// # State Management
+    ///
+    /// The future maintains two states:
+    /// - `Pending`: The wrapped future is still executing and contains the future and context
+    /// - `Complete`: The future has completed and the context has been invoked
+    ///
+    /// # Generic Parameters
+    ///
+    /// - `F`: The wrapped future type
+    /// - `C`: The context type that implements [`InstrumentedFutureContext`]
+    ///
+    /// # Fields
+    ///
+    /// The `Pending` variant contains the future being instrumented and the context
+    /// that will be called when it completes. Field documentation is not possible
+    /// within pin_project macros.
     #[project = InstrumentedFutureProj]
     #[project_replace = InstrumentedFutureOwn]
+    #[allow(missing_docs)]
     pub enum InstrumentedFuture<F, C>
     where
         F: Future,
         C: InstrumentedFutureContext<F::Output>,
     {
+        /// Future is currently executing and waiting for completion
         Pending {
             #[pin]
             future: F,
             context: C,
         },
+        /// Future has completed and context has been invoked
         Complete,
     }
 }
@@ -31,6 +72,32 @@ where
     F: Future,
     C: InstrumentedFutureContext<F::Output>,
 {
+    /// Creates a new instrumented future with the given future and context.
+    ///
+    /// # Arguments
+    ///
+    /// - `future`: The future to instrument
+    /// - `context`: The context that will be called when the future completes
+    ///
+    /// # Returns
+    ///
+    /// A new [`InstrumentedFuture`] in the `Pending` state
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use telemetry_rust::future::{InstrumentedFuture, InstrumentedFutureContext};
+    ///
+    /// struct MyContext;
+    /// impl InstrumentedFutureContext<i32> for MyContext {
+    ///     fn on_result(self, result: &i32) {
+    ///         println!("Future completed with result: {}", result);
+    ///     }
+    /// }
+    ///
+    /// let future = async { 42 };
+    /// let instrumented = InstrumentedFuture::new(future, MyContext);
+    /// ```
     pub fn new(future: F, context: C) -> Self {
         Self::Pending { future, context }
     }

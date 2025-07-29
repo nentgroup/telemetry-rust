@@ -1,10 +1,13 @@
+//! Axum web framework middleware.
+//!
+//! Provides middleware for the Axum web framework to automatically
+//! instrument HTTP requests with OpenTelemetry tracing.
+
 // Originally retired from davidB/tracing-opentelemetry-instrumentation-sdk
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/axum-tracing-opentelemetry/src/middleware/trace_extractor.rs#L53
 // which is licensed under CC0 1.0 Universal
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
-use axum::extract::MatchedPath;
-use futures_util::future::BoxFuture;
 use http::{Request, Response};
 use pin_project_lite::pin_project;
 use std::{
@@ -17,46 +20,116 @@ use tower::{Layer, Service};
 use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::http as otel_http;
 
+/// Function type for filtering HTTP requests by path.
+///
+/// Takes a path string and returns true if the request should be traced.
 pub type Filter = fn(&str) -> bool;
 
-#[derive(Default, Debug, Clone)]
-pub struct OtelAxumLayer {
+/// Function type for extracting string representation from a matched path type.
+///
+/// Used to convert Axum's matched path type to a string for span attributes.
+pub type AsStr<T> = fn(&T) -> &str;
+
+/// OpenTelemetry layer for Axum applications.
+///
+/// This layer provides automatic tracing instrumentation for Axum web applications,
+/// creating spans for HTTP requests with appropriate semantic attributes.
+///
+/// The layer is generic over [`axum::extract::MatchedPath`](https://docs.rs/axum/latest/axum/extract/struct.MatchedPath.html),
+/// making it compatible with different versions of axum without being tied to any specific one.
+///
+/// # Example
+///
+/// ```rust
+/// use axum::{Router, routing};
+/// use telemetry_rust::middleware::axum::OtelAxumLayer;
+///
+/// let app: Router = axum::Router::new()
+///     .nest("/api", Router::new()) // api_routes would be your actual routes
+///     .layer(OtelAxumLayer::new(axum::extract::MatchedPath::as_str));
+/// ```
+#[derive(Debug, Clone)]
+pub struct OtelAxumLayer<P> {
+    matched_path_as_str: AsStr<P>,
     filter: Option<Filter>,
+    inject_context: bool,
 }
 
 // add a builder like api
-impl OtelAxumLayer {
-    #[must_use]
+impl<P> OtelAxumLayer<P> {
+    /// Creates a new OpenTelemetry layer for Axum.
+    ///
+    /// # Arguments
+    ///
+    /// * `matched_path_as_str` - [`axum::extract::MatchedPath::as_str`] or any function to convert [`axum::extract::MatchedPath`] to a `&str`
+    ///
+    ///  [`axum::extract::MatchedPath::as_str`]: https://docs.rs/axum/latest/axum/extract/struct.MatchedPath.html#method.as_str
+    ///  [`axum::extract::MatchedPath`]: https://docs.rs/axum/latest/axum/extract/struct.MatchedPath.html
+    pub fn new(matched_path_as_str: AsStr<P>) -> Self {
+        OtelAxumLayer {
+            matched_path_as_str,
+            filter: None,
+            inject_context: false,
+        }
+    }
+
+    /// Sets a filter function to selectively trace requests.
+    ///
+    /// # Arguments
+    ///
+    /// * `filter` - Function that returns true for paths that should be traced
     pub fn filter(self, filter: Filter) -> Self {
         OtelAxumLayer {
             filter: Some(filter),
+            ..self
+        }
+    }
+
+    /// Configures whether to inject OpenTelemetry context into responses.
+    ///
+    /// # Arguments
+    ///
+    /// * `inject_context` - Whether to inject trace context into response headers
+    pub fn inject_context(self, inject_context: bool) -> Self {
+        OtelAxumLayer {
+            inject_context,
+            ..self
         }
     }
 }
 
-impl<S> Layer<S> for OtelAxumLayer {
+impl<S, P> Layer<S> for OtelAxumLayer<P> {
     /// The wrapped service
-    type Service = OtelAxumService<S>;
+    type Service = OtelAxumService<S, P>;
     fn layer(&self, inner: S) -> Self::Service {
         OtelAxumService {
             inner,
+            matched_path_as_str: self.matched_path_as_str,
             filter: self.filter,
+            inject_context: self.inject_context,
         }
     }
 }
 
+/// OpenTelemetry service wrapper for Axum applications.
+///
+/// This service wraps Axum services to provide automatic HTTP request tracing
+/// with OpenTelemetry spans and context propagation.
 #[derive(Debug, Clone)]
-pub struct OtelAxumService<S> {
+pub struct OtelAxumService<S, P> {
     inner: S,
+    matched_path_as_str: AsStr<P>,
     filter: Option<Filter>,
+    inject_context: bool,
 }
 
-impl<S, B, B2> Service<Request<B>> for OtelAxumService<S>
+impl<S, B, B2, P> Service<Request<B>> for OtelAxumService<S, P>
 where
     S: Service<Request<B>, Response = Response<B2>> + Clone + Send + 'static,
     S::Error: Error + 'static, //fmt::Display + 'static,
     S::Future: Send + 'static,
     B: Send + 'static,
+    P: Send + Sync + 'static,
 {
     type Response = S::Response;
     type Error = S::Error;
@@ -70,9 +143,10 @@ where
 
     fn call(&mut self, req: Request<B>) -> Self::Future {
         use tracing_opentelemetry::OpenTelemetrySpanExt;
-        let span = if self.filter.map_or(true, |f| f(req.uri().path())) {
+        let span = if self.filter.is_none_or(|f| f(req.uri().path())) {
             let span = otel_http::http_server::make_span_from_request(&req);
-            let route = http_route(&req);
+            let matched_path = req.extensions().get::<P>();
+            let route = matched_path.map_or("", self.matched_path_as_str);
             let method = otel_http::http_method(req.method());
             // let client_ip = parse_x_forwarded_for(req.headers())
             //     .or_else(|| {
@@ -96,6 +170,7 @@ where
         };
         ResponseFuture {
             inner: future,
+            inject_context: self.inject_context,
             span,
         }
     }
@@ -108,6 +183,7 @@ pin_project! {
     pub struct ResponseFuture<F> {
         #[pin]
         pub(crate) inner: F,
+        pub(crate) inject_context: bool,
         pub(crate) span: Span,
         // pub(crate) start: Instant,
     }
@@ -123,61 +199,17 @@ where
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.project();
         let _guard = this.span.enter();
-        let result = futures_util::ready!(this.inner.poll(cx));
+        let mut result = futures_util::ready!(this.inner.poll(cx));
         otel_http::http_server::update_span_from_response_or_error(this.span, &result);
-        Poll::Ready(result)
-    }
-}
-
-#[inline]
-fn http_route<B>(req: &Request<B>) -> &str {
-    req.extensions()
-        .get::<MatchedPath>()
-        .map_or_else(|| "", |mp| mp.as_str())
-}
-
-#[derive(Default, Debug, Clone)]
-pub struct OtelInResponseLayer;
-
-impl<S> Layer<S> for OtelInResponseLayer {
-    type Service = OtelInResponseService<S>;
-
-    fn layer(&self, inner: S) -> Self::Service {
-        OtelInResponseService { inner }
-    }
-}
-
-#[derive(Default, Debug, Clone)]
-pub struct OtelInResponseService<S> {
-    inner: S,
-}
-
-impl<S, B, B2> Service<Request<B>> for OtelInResponseService<S>
-where
-    S: Service<Request<B>, Response = Response<B2>> + Send + 'static,
-    S::Future: Send + 'static,
-{
-    type Response = S::Response;
-    type Error = S::Error;
-    // `BoxFuture` is a type alias for `Pin<Box<dyn Future + Send + 'a>>`
-    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
-
-    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
-    }
-
-    #[allow(unused_mut)]
-    fn call(&mut self, mut request: Request<B>) -> Self::Future {
-        let future = self.inner.call(request);
-
-        Box::pin(async move {
-            let mut response = future.await?;
-            // inject the trace context into the response (optional but useful for debugging and client)
+        if *this.inject_context
+            && let Ok(response) = result.as_mut()
+        {
             otel_http::inject_context(
                 &tracing_opentelemetry_instrumentation_sdk::find_current_context(),
                 response.headers_mut(),
             );
-            Ok(response)
-        })
+        }
+
+        Poll::Ready(result)
     }
 }

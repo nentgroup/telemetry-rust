@@ -4,8 +4,9 @@
 use tracing::Level::INFO;
 // middleware::axum is available if feature flag axum is on
 use telemetry_rust::{
-    init_tracing,
+    TracerProvider, init_tracing,
     middleware::axum::{OtelAxumLayer, OtelInResponseLayer},
+    shutdown_tracer_provider,
 };
 
 #[tracing::instrument]
@@ -18,19 +19,23 @@ async fn route_otel() -> impl axum::response::IntoResponse {
 
 #[tokio::main]
 async fn main() {
-    init_tracing!(INFO);
+    let provider: TracerProvider = init_tracing!(INFO);
 
     // ...
 
     let app = axum::Router::new()
         // request processed inside span
         .route("/otel", axum::routing::get(route_otel))
-        // include trace context as header into the response
-        .layer(OtelInResponseLayer::default())
-        // start OpenTelemetry trace on incoming request
-        .layer(OtelAxumLayer::default());
+        // start OpenTelemetry trace on incoming request + include trace context as header into the response
+        .layer(OtelAxumLayer::new(axum::extract::MatchedPath::as_str).inject_context(true));
 
     // ...
+}
+
+async fn graceful_shutdown(provider: TracerProvider) {
+    // ...
+    shutdown_tracer_provider(&provider);
+}
 ```
 
 ## AWS SDK instrumentation
@@ -123,8 +128,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         .run()
         .await?;
 
-    // Shutdown tracer provider before exiting
-    telemetry_rust::shutdown_signal();
+    // Tracer provider will be automatically shutdown when the runtime is dropped
 
     Ok(())
 }
@@ -199,4 +203,12 @@ Though it's still possible to create a simple HTTP layer to report the correct t
 
 ```rust
 let http_telemetry_layer = OtelLambdaLayer::http(provider);
+```
+
+## Publishing new version
+
+New version could be published using [cargo-release](https://github.com/crate-ci/cargo-release?tab=readme-ov-file#install):
+
+```sh
+cargo release -x <level>
 ```

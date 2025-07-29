@@ -1,20 +1,33 @@
+//! Context propagation utilities for distributed tracing across service boundaries.
+
 use opentelemetry::{
-    propagation::{
-        text_map_propagator::FieldIter, Extractor, Injector, TextMapCompositePropagator,
-        TextMapPropagator,
-    },
-    trace::TraceError,
     Context,
+    propagation::{
+        Extractor, Injector, TextMapCompositePropagator, TextMapPropagator,
+        text_map_propagator::FieldIter,
+    },
 };
-use opentelemetry_sdk::propagation::{BaggagePropagator, TraceContextPropagator};
+use opentelemetry_sdk::{
+    propagation::{BaggagePropagator, TraceContextPropagator},
+    trace::TraceError,
+};
 #[cfg(feature = "zipkin")]
 use opentelemetry_zipkin::{B3Encoding, Propagator as B3Propagator};
 use std::collections::BTreeSet;
 
 use crate::util;
 
+/// Type alias for a boxed text map propagator.
+///
+/// This type represents a thread-safe, heap-allocated text map propagator that can be
+/// used for OpenTelemetry context propagation across service boundaries.
 pub type Propagator = Box<dyn TextMapPropagator + Send + Sync>;
 
+/// A no-op propagator that performs no context injection or extraction.
+///
+/// This propagator can be used when context propagation is explicitly disabled
+/// or not needed. It implements the [`TextMapPropagator`] trait but performs
+/// no actual propagation operations.
 #[derive(Debug)]
 pub struct NonePropagator;
 
@@ -30,6 +43,18 @@ impl TextMapPropagator for NonePropagator {
     }
 }
 
+/// A text map propagator that uses different propagators for injection and extraction.
+///
+/// This propagator allows for asymmetric context propagation where different
+/// propagation strategies can be used for outgoing requests (injection) versus
+/// incoming requests (extraction). This is useful when you need to maintain
+/// compatibility with multiple tracing systems or protocols.
+///
+/// # Use Cases
+///
+/// - Migrating between tracing systems while maintaining compatibility
+/// - Supporting multiple trace context formats in a single service
+/// - Using environment-specific propagation strategies
 #[derive(Debug)]
 pub struct TextMapSplitPropagator {
     extract_propagator: Propagator,
@@ -38,6 +63,16 @@ pub struct TextMapSplitPropagator {
 }
 
 impl TextMapSplitPropagator {
+    /// Creates a new split propagator with separate propagators for extraction and injection.
+    ///
+    /// # Arguments
+    ///
+    /// - `extract_propagator`: Propagator used for extracting context from incoming requests
+    /// - `inject_propagator`: Propagator used for injecting context into outgoing requests
+    ///
+    /// # Returns
+    ///
+    /// A new [`TextMapSplitPropagator`] instance
     pub fn new(extract_propagator: Propagator, inject_propagator: Propagator) -> Self {
         let mut fields = BTreeSet::from_iter(extract_propagator.fields());
         fields.extend(inject_propagator.fields());
@@ -50,6 +85,38 @@ impl TextMapSplitPropagator {
         }
     }
 
+    /// Creates a split propagator based on the `OTEL_PROPAGATORS` environment variable.
+    ///
+    /// This method reads the `OTEL_PROPAGATORS` environment variable to determine which
+    /// propagators to use. The first propagator in the list is used for injection,
+    /// while all propagators are composed together for extraction.
+    ///
+    /// # Environment Variable Format
+    ///
+    /// The `OTEL_PROPAGATORS` variable should contain a comma-separated list of propagator names:
+    /// - `tracecontext`: W3C Trace Context propagator
+    /// - `baggage`: W3C Baggage propagator
+    /// - `b3`: B3 single header propagator (requires "zipkin" feature)
+    /// - `b3multi`: B3 multiple header propagator (requires "zipkin" feature)
+    /// - `none`: No-op propagator
+    ///
+    /// # Returns
+    ///
+    /// A configured [`TextMapSplitPropagator`] on success, or a [`TraceError`] if
+    /// the environment variable contains unsupported propagator names.
+    ///
+    /// # Examples
+    ///
+    /// ```bash
+    /// export OTEL_PROPAGATORS=tracecontext,baggage
+    /// ```
+    ///
+    /// ```rust
+    /// use telemetry_rust::propagation::TextMapSplitPropagator;
+    ///
+    /// let propagator = TextMapSplitPropagator::from_env()?;
+    /// # Ok::<(), opentelemetry_sdk::trace::TraceError>(())
+    /// ```
     pub fn from_env() -> Result<Self, TraceError> {
         let value_from_env = match util::env_var("OTEL_PROPAGATORS") {
             Some(value) => value,
@@ -120,7 +187,7 @@ fn propagator_from_string(v: &str) -> Result<Propagator, TraceError> {
         ))),
         #[cfg(not(feature = "zipkin"))]
         "b3" => Err(TraceError::from(
-            "unsupported propagator form env OTEL_PROPAGATORS: 'b3', try to enable compile feature 'zipkin'"
+            "unsupported propagator form env OTEL_PROPAGATORS: 'b3', try to enable compile feature 'zipkin'",
         )),
         #[cfg(feature = "zipkin")]
         "b3multi" => Ok(Box::new(B3Propagator::with_encoding(
@@ -128,7 +195,7 @@ fn propagator_from_string(v: &str) -> Result<Propagator, TraceError> {
         ))),
         #[cfg(not(feature = "zipkin"))]
         "b3multi" => Err(TraceError::from(
-            "unsupported propagator form env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'"
+            "unsupported propagator form env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'",
         )),
         unknown => Err(TraceError::from(format!(
             "unsupported propagator form env OTEL_PROPAGATORS: {unknown:?}"
@@ -137,7 +204,6 @@ fn propagator_from_string(v: &str) -> Result<Propagator, TraceError> {
 }
 
 #[cfg(test)]
-#[cfg(feature = "tracer")]
 mod tests {
     use assert2::let_assert;
 

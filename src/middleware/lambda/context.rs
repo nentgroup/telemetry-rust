@@ -1,11 +1,11 @@
-use crate::semconv;
 use lambda_runtime::LambdaInvocation;
-use opentelemetry::{trace::SpanKind, StringValue};
-use opentelemetry_sdk::trace::TracerProvider;
+use opentelemetry::{StringValue, trace::SpanKind};
+use opentelemetry_sdk::trace::SdkTracerProvider as TracerProvider;
 use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 
 use super::OtelLambdaLayer;
+use crate::{middleware::aws::MessagingOperationKind, semconv};
 
 pub trait LambdaServiceContext {
     fn create_span(&self, req: &LambdaInvocation, coldstart: bool) -> Span;
@@ -89,7 +89,7 @@ lambda_service!(
         MESSAGING_SYSTEM: Value,
         MESSAGING_DESTINATION_NAME: OptionalValue,
     },
-    { semconv::MESSAGING_OPERATION } = "receive",
+    { semconv::MESSAGING_OPERATION_TYPE } = MessagingOperationKind::Process.as_str(),
 );
 lambda_service!(
     datasource,
@@ -109,6 +109,11 @@ lambda_service!(
 );
 
 impl OtelLambdaLayer<GenericLambdaService> {
+    /// Creates a new OpenTelemetry layer for Lambda functions.
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - The tracer provider to use for creating spans
     #[inline]
     pub fn new(provider: TracerProvider) -> Self {
         Self::other(provider)

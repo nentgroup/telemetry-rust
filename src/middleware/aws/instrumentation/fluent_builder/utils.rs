@@ -1,6 +1,5 @@
 use crate::{Key, KeyValue, StringValue, Value};
 
-#[macro_export]
 macro_rules! instrument_aws_operation {
     ($sdk:ident::operation::$op:ident) => {
         paste::paste! {

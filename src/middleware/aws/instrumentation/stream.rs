@@ -124,11 +124,12 @@ where
     }
 }
 
-/// A trait for adding OpenTelemetry instrumentation to AWS streams.
+/// A trait for adding OpenTelemetry instrumentation to AWS pagination streams.
 ///
 /// This trait provides the `instrument` method that wraps streams with telemetry
 /// capabilities, automatically creating and managing spans for AWS operations.
-/// It supports both regular streams and AWS pagination streams.
+/// It is designed for AWS pagination streams, but it is implemented for any
+/// [`TryStream`][`futures_util::TryStream`] yielding AWS SDK errors.
 ///
 /// All instrumented streams automatically include the `aws.pagination_stream = true`
 /// attribute to help identify streaming operations in traces.
@@ -173,7 +174,7 @@ where
 {
     /// Instruments the stream with OpenTelemetry tracing.
     ///
-    /// This method wraps the stream in an [`InstrumentedStream`] that will:
+    /// This method wraps a [`TryStream`][`futures_util::TryStream`] in an [`InstrumentedStream`] that will:
     /// - Start a span when the stream begins polling
     /// - End the span with success when the stream completes normally
     /// - End the span with error information if the stream encounters an error

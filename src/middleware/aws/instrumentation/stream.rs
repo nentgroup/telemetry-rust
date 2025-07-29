@@ -23,14 +23,14 @@ impl RequestId for Void {
     }
 }
 
-enum InstrumentedStreamKind {
+enum StreamStateKind {
     Waiting,
     Flowing,
     Finished,
 }
 
 #[derive(Default)]
-enum InstrumentedStreamState<'a> {
+enum StreamState<'a> {
     Waiting(Box<AwsSpanBuilder<'a>>),
     Flowing(AwsSpan),
     Finished,
@@ -38,7 +38,7 @@ enum InstrumentedStreamState<'a> {
     Invalid,
 }
 
-impl<'a> InstrumentedStreamState<'a> {
+impl<'a> StreamState<'a> {
     fn new(span: impl Into<AwsSpanBuilder<'a>>) -> Self {
         let span = Into::<AwsSpanBuilder>::into(span);
         Self::Waiting(Box::new(
@@ -46,12 +46,12 @@ impl<'a> InstrumentedStreamState<'a> {
         ))
     }
 
-    fn kind(&self) -> InstrumentedStreamKind {
+    fn kind(&self) -> StreamStateKind {
         match self {
-            InstrumentedStreamState::Waiting(_) => InstrumentedStreamKind::Waiting,
-            InstrumentedStreamState::Flowing(_) => InstrumentedStreamKind::Flowing,
-            InstrumentedStreamState::Finished => InstrumentedStreamKind::Finished,
-            InstrumentedStreamState::Invalid => {
+            StreamState::Waiting(_) => StreamStateKind::Waiting,
+            StreamState::Flowing(_) => StreamStateKind::Flowing,
+            StreamState::Finished => StreamStateKind::Finished,
+            StreamState::Invalid => {
                 panic!("Invalid instrumented stream state")
             }
         }
@@ -89,7 +89,7 @@ pin_project! {
     pub struct InstrumentedStream<'a, S: Stream> {
         #[pin]
         inner: S,
-        state: Cell<InstrumentedStreamState<'a>>,
+        state: Cell<StreamState<'a>>,
     }
 }
 
@@ -103,11 +103,11 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.project();
         match this.state.get_mut().kind() {
-            InstrumentedStreamKind::Waiting => {
+            StreamStateKind::Waiting => {
                 this.state.set(this.state.take().start());
                 this.inner.poll_next(cx)
             }
-            InstrumentedStreamKind::Flowing => match this.inner.poll_next(cx) {
+            StreamStateKind::Flowing => match this.inner.poll_next(cx) {
                 Poll::Ready(None) => {
                     this.state.set(this.state.take().end(&Ok::<_, E>(Void)));
                     Poll::Ready(None)
@@ -119,7 +119,7 @@ where
                 }
                 result => result,
             },
-            InstrumentedStreamKind::Finished => Poll::Ready(None),
+            StreamStateKind::Finished => Poll::Ready(None),
         }
     }
 }
@@ -202,7 +202,7 @@ where
     ) -> InstrumentedStream<'a, S> {
         InstrumentedStream {
             inner: self,
-            state: Cell::new(InstrumentedStreamState::new(span)),
+            state: Cell::new(StreamState::new(span)),
         }
     }
 }

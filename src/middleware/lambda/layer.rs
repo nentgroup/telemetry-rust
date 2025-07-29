@@ -14,6 +14,8 @@ use super::context::LambdaServiceContext;
 ///
 /// This layer provides automatic tracing instrumentation for AWS Lambda functions,
 /// creating spans for each invocation with appropriate FaaS semantic attributes.
+/// The layer uses context providers to create trigger-specific spans with the
+/// correct OpenTelemetry attributes.
 ///
 /// # Example
 ///
@@ -34,8 +36,13 @@ use super::context::LambdaServiceContext;
 ///     // Grab TracerProvider after telemetry initialisation
 ///     let provider = init_tracing!(tracing::Level::WARN);
 ///
-///     // Create lambda telemetry layer
+///     // Create generic lambda telemetry layer
 ///     let telemetry_layer = OtelLambdaLayer::new(provider);
+///
+///     // Or create specialized layers for specific event source type:
+///     // let telemetry_layer = OtelLambdaLayer::http(provider);
+///     // let telemetry_layer = OtelLambdaLayer::sqs(provider, Some("arn:aws:sqs:..."));
+///     // let telemetry_layer = OtelLambdaLayer::timer(provider, Some("0/5 * * * ? *"));
 ///
 ///     // Run lambda runtime with telemetry layer
 ///     Runtime::new(service_fn(handle))
@@ -54,6 +61,21 @@ pub struct OtelLambdaLayer<C> {
 }
 
 impl<C> OtelLambdaLayer<C> {
+    /// Creates a new OpenTelemetry layer with a custom context provider.
+    ///
+    /// This method allows you to create a layer with any custom context that
+    /// implements [`LambdaServiceContext`]. For most use cases, you should use
+    /// the specialized factory methods like [`OtelLambdaLayer::new`],
+    /// [`OtelLambdaLayer::http`], [`OtelLambdaLayer::pubsub`], etc.
+    ///
+    /// # Arguments
+    ///
+    /// * `context` - A context provider that implements [`LambdaServiceContext`] trait
+    /// * `provider` - The [`TracerProvider`] to use for creating spans
+    ///
+    /// # Returns
+    ///
+    /// A configured [`OtelLambdaLayer`] with the provided context
     pub fn with_context(context: C, provider: TracerProvider) -> Self {
         Self {
             context: Arc::new(context),

@@ -119,7 +119,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
     // Grab TracerProvider after telemetry initialisation
     let provider = telemetry_rust::init_tracing!(tracing::Level::WARN);
 
-    // Create lambda telemetry layer
+    // Create a generic lambda telemetry layer
     let telemetry_layer = telemetry_rust::middleware::lambda::OtelLambdaLayer::new(provider);
 
     // Run lambda runtime with telemetry layer

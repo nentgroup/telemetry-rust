@@ -150,7 +150,7 @@ dynamodb_global_operation!(describe_backup);
 dynamodb_global_operation!(describe_export);
 dynamodb_global_operation!(describe_import);
 
-// PartiQL
+// PartiQL operations
 dynamodb_global_operation!(execute_statement);
 dynamodb_global_operation!(batch_execute_statement);
 dynamodb_global_operation!(execute_transaction);

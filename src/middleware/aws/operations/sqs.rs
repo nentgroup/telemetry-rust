@@ -1,3 +1,6 @@
+/// AWS SQS operations
+///
+/// API Reference: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_Operations.html
 use http::Uri;
 
 use crate::{KeyValue, StringValue, semconv};

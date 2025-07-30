@@ -142,7 +142,13 @@ impl<'a> AwsInstrumentBuilder<'a>
             .iter()
             .flat_map(|items| items.keys())
             .map(ToOwned::to_owned);
+        let attributes = [self
+            .get_request_items()
+            .as_ref()
+            .map(|items| items.len())
+            .as_attribute(semconv::DB_OPERATION_BATCH_SIZE)];
         DynamodbSpanBuilder::batch_get_item(table_names)
+            .attributes(attributes.into_iter().flatten())
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::batch_get_item);
@@ -156,7 +162,13 @@ impl<'a> AwsInstrumentBuilder<'a>
             .iter()
             .flat_map(|items| items.keys())
             .map(ToOwned::to_owned);
+        let attributes = [self
+            .get_request_items()
+            .as_ref()
+            .map(|items| items.len())
+            .as_attribute(semconv::DB_OPERATION_BATCH_SIZE)];
         DynamodbSpanBuilder::batch_write_item(table_names)
+            .attributes(attributes.into_iter().flatten())
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::batch_write_item);

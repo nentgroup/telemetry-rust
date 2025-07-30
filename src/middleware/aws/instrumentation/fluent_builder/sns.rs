@@ -3,9 +3,7 @@
 use super::{AwsInstrumentBuilder, utils::*};
 use crate::middleware::aws::*;
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::publish::builders::PublishFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for PublishFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_target_arn().clone().unwrap_or_default();
         SnsSpanBuilder::publish(topic_arn)
@@ -13,9 +11,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_sns::operation::publish);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::publish_batch::builders::PublishBatchFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for PublishBatchFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
         let attributes = [self
@@ -30,18 +26,14 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_sns::operation::publish_batch);
 
 // Topic management operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::create_topic::builders::CreateTopicFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for CreateTopicFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::create_topic()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::create_topic);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::delete_topic::builders::DeleteTopicFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DeleteTopicFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
         SnsSpanBuilder::delete_topic(topic_arn)
@@ -49,9 +41,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_sns::operation::delete_topic);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::get_topic_attributes::builders::GetTopicAttributesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetTopicAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
         SnsSpanBuilder::get_topic_attributes(topic_arn)
@@ -59,9 +49,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_sns::operation::get_topic_attributes);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::set_topic_attributes::builders::SetTopicAttributesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for SetTopicAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
         SnsSpanBuilder::set_topic_attributes(topic_arn)
@@ -69,9 +57,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_sns::operation::set_topic_attributes);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::list_topics::builders::ListTopicsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListTopicsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::list_topics()
     }
@@ -79,9 +65,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_sns::operation::list_topics);
 
 // Subscription operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::subscribe::builders::SubscribeFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for SubscribeFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
         SnsSpanBuilder::subscribe(topic_arn)
@@ -89,18 +73,14 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_sns::operation::subscribe);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::unsubscribe::builders::UnsubscribeFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UnsubscribeFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::unsubscribe()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::unsubscribe);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::confirm_subscription::builders::ConfirmSubscriptionFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ConfirmSubscriptionFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
         SnsSpanBuilder::confirm_subscription(topic_arn)
@@ -108,18 +88,14 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_sns::operation::confirm_subscription);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::list_subscriptions::builders::ListSubscriptionsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListSubscriptionsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::list_subscriptions()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::list_subscriptions);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::list_subscriptions_by_topic::builders::ListSubscriptionsByTopicFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListSubscriptionsByTopicFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
         SnsSpanBuilder::list_subscriptions_by_topic(topic_arn)
@@ -127,18 +103,14 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_sns::operation::list_subscriptions_by_topic);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::get_subscription_attributes::builders::GetSubscriptionAttributesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetSubscriptionAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::get_subscription_attributes()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::get_subscription_attributes);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::set_subscription_attributes::builders::SetSubscriptionAttributesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for SetSubscriptionAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::set_subscription_attributes()
     }
@@ -146,9 +118,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_sns::operation::set_subscription_attributes);
 
 // Permission operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::add_permission::builders::AddPermissionFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for AddPermissionFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
         SnsSpanBuilder::add_permission(topic_arn)
@@ -156,9 +126,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_sns::operation::add_permission);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::remove_permission::builders::RemovePermissionFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for RemovePermissionFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
         SnsSpanBuilder::remove_permission(topic_arn)
@@ -167,45 +135,35 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_sns::operation::remove_permission);
 
 // Platform application operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::create_platform_application::builders::CreatePlatformApplicationFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for CreatePlatformApplicationFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::create_platform_application()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::create_platform_application);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::delete_platform_application::builders::DeletePlatformApplicationFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DeletePlatformApplicationFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::delete_platform_application()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::delete_platform_application);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::get_platform_application_attributes::builders::GetPlatformApplicationAttributesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetPlatformApplicationAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::get_platform_application_attributes()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::get_platform_application_attributes);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::set_platform_application_attributes::builders::SetPlatformApplicationAttributesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for SetPlatformApplicationAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::set_platform_application_attributes()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::set_platform_application_attributes);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::list_platform_applications::builders::ListPlatformApplicationsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListPlatformApplicationsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::list_platform_applications()
     }
@@ -213,45 +171,35 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_sns::operation::list_platform_applications);
 
 // Platform endpoint operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::create_platform_endpoint::builders::CreatePlatformEndpointFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for CreatePlatformEndpointFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::create_platform_endpoint()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::create_platform_endpoint);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::delete_endpoint::builders::DeleteEndpointFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DeleteEndpointFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::delete_endpoint()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::delete_endpoint);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::get_endpoint_attributes::builders::GetEndpointAttributesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetEndpointAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::get_endpoint_attributes()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::get_endpoint_attributes);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::set_endpoint_attributes::builders::SetEndpointAttributesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for SetEndpointAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::set_endpoint_attributes()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::set_endpoint_attributes);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::list_endpoints_by_platform_application::builders::ListEndpointsByPlatformApplicationFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListEndpointsByPlatformApplicationFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::list_endpoints_by_platform_application()
     }
@@ -259,9 +207,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_sns::operation::list_endpoints_by_platform_application);
 
 // Origination number operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::list_origination_numbers::builders::ListOriginationNumbersFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListOriginationNumbersFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::list_origination_numbers()
     }
@@ -269,27 +215,21 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_sns::operation::list_origination_numbers);
 
 // Simple phone number operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::check_if_phone_number_is_opted_out::builders::CheckIfPhoneNumberIsOptedOutFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for CheckIfPhoneNumberIsOptedOutFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::check_if_phone_number_is_opted_out()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::check_if_phone_number_is_opted_out);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::opt_in_phone_number::builders::OptInPhoneNumberFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for OptInPhoneNumberFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::opt_in_phone_number()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::opt_in_phone_number);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::list_phone_numbers_opted_out::builders::ListPhoneNumbersOptedOutFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListPhoneNumbersOptedOutFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::list_phone_numbers_opted_out()
     }
@@ -297,9 +237,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_sns::operation::list_phone_numbers_opted_out);
 
 // Add just one SMS operation to test the custom macro
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::get_sms_attributes::builders::GetSMSAttributesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetSMSAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::get_sms_attributes()
     }
@@ -312,9 +250,7 @@ instrument_aws_operation!(
 );
 
 // SMS sandbox operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::create_sms_sandbox_phone_number::builders::CreateSMSSandboxPhoneNumberFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for CreateSMSSandboxPhoneNumberFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::create_sms_sandbox_phone_number()
     }
@@ -326,9 +262,7 @@ instrument_aws_operation!(
     CreateSMSSandboxPhoneNumberError
 );
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::delete_sms_sandbox_phone_number::builders::DeleteSMSSandboxPhoneNumberFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DeleteSMSSandboxPhoneNumberFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::delete_sms_sandbox_phone_number()
     }
@@ -340,9 +274,7 @@ instrument_aws_operation!(
     DeleteSMSSandboxPhoneNumberError
 );
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::get_sms_sandbox_account_status::builders::GetSMSSandboxAccountStatusFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetSMSSandboxAccountStatusFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::get_sms_sandbox_account_status()
     }
@@ -354,9 +286,7 @@ instrument_aws_operation!(
     GetSMSSandboxAccountStatusError
 );
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::list_sms_sandbox_phone_numbers::builders::ListSMSSandboxPhoneNumbersFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListSMSSandboxPhoneNumbersFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::list_sms_sandbox_phone_numbers()
     }
@@ -368,9 +298,7 @@ instrument_aws_operation!(
     ListSMSSandboxPhoneNumbersError
 );
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::verify_sms_sandbox_phone_number::builders::VerifySMSSandboxPhoneNumberFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for VerifySMSSandboxPhoneNumberFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::verify_sms_sandbox_phone_number()
     }
@@ -383,9 +311,7 @@ instrument_aws_operation!(
 );
 
 // SMS attributes operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::set_sms_attributes::builders::SetSMSAttributesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for SetSMSAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::set_sms_attributes()
     }
@@ -398,18 +324,14 @@ instrument_aws_operation!(
 );
 
 // Data protection operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::get_data_protection_policy::builders::GetDataProtectionPolicyFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetDataProtectionPolicyFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::get_data_protection_policy()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::get_data_protection_policy);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::put_data_protection_policy::builders::PutDataProtectionPolicyFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for PutDataProtectionPolicyFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::put_data_protection_policy()
     }
@@ -417,27 +339,21 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_sns::operation::put_data_protection_policy);
 
 // Resource tagging operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::list_tags_for_resource::builders::ListTagsForResourceFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListTagsForResourceFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::list_tags_for_resource()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::list_tags_for_resource);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::tag_resource::builders::TagResourceFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for TagResourceFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::tag_resource()
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::tag_resource);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::untag_resource::builders::UntagResourceFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UntagResourceFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::untag_resource()
     }

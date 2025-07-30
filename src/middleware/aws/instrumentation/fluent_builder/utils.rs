@@ -3,6 +3,7 @@ use crate::{Key, KeyValue, StringValue, Value};
 /// Generates [`super::InstrumentedFluentBuilder`] implementation for AWS SDK operations.
 macro_rules! instrument_aws_operation {
     ($sdk:ident::operation::$op:ident, $builder:ident, $output:ident, $error:ident) => {
+        use $sdk::operation::$op::builders::$builder;
         impl
             super::InstrumentedFluentBuilder<'_, $sdk::operation::$op::builders::$builder>
         {

@@ -5,9 +5,7 @@ use std::collections::HashSet;
 use super::{AwsInstrumentBuilder, utils::*};
 use crate::{middleware::aws::*, semconv};
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::get_item::builders::GetItemFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetItemFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         let attributes = [
@@ -22,9 +20,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::get_item);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::get_resource_policy::builders::GetResourcePolicyFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetResourcePolicyFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_resource_arn().clone().unwrap_or_default();
         DynamodbSpanBuilder::get_resource_policy(table_name)
@@ -32,9 +28,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::get_resource_policy);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::put_item::builders::PutItemFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for PutItemFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::put_item(table_name)
@@ -42,9 +36,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::put_item);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::put_resource_policy::builders::PutResourcePolicyFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for PutResourcePolicyFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_resource_arn().clone().unwrap_or_default();
         DynamodbSpanBuilder::put_resource_policy(table_name)
@@ -52,9 +44,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::put_resource_policy);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::update_item::builders::UpdateItemFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UpdateItemFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::update_item(table_name)
@@ -62,9 +52,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::update_item);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::delete_item::builders::DeleteItemFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DeleteItemFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::delete_item(table_name)
@@ -72,9 +60,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::delete_item);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::delete_resource_policy::builders::DeleteResourcePolicyFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DeleteResourcePolicyFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_resource_arn().clone().unwrap_or_default();
         DynamodbSpanBuilder::delete_resource_policy(table_name)
@@ -82,9 +68,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::delete_resource_policy);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::query::builders::QueryFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for QueryFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         let attributes = [
@@ -107,9 +91,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::query);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::scan::builders::ScanFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ScanFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         let attributes = [
@@ -133,9 +115,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::scan);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::batch_get_item::builders::BatchGetItemFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for BatchGetItemFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_names = self
             .get_request_items()
@@ -153,9 +133,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::batch_get_item);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::batch_write_item::builders::BatchWriteItemFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for BatchWriteItemFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_names = self
             .get_request_items()
@@ -173,9 +151,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::batch_write_item);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::transact_get_items::builders::TransactGetItemsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for TransactGetItemsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_names = self
             .get_transact_items()
@@ -190,9 +166,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::transact_get_items);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::transact_write_items::builders::TransactWriteItemsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for TransactWriteItemsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_names = self
             .get_transact_items()
@@ -216,9 +190,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_dynamodb::operation::transact_write_items);
 
 // Table management operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::create_table::builders::CreateTableFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for CreateTableFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         let throughput = self.get_provisioned_throughput().as_ref();
@@ -236,9 +208,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::create_table);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::delete_table::builders::DeleteTableFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DeleteTableFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::delete_table(table_name)
@@ -246,9 +216,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::delete_table);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_table::builders::DescribeTableFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeTableFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::describe_table(table_name)
@@ -256,9 +224,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::describe_table);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::update_table::builders::UpdateTableFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UpdateTableFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         let throughput = self.get_provisioned_throughput().as_ref();
@@ -276,9 +242,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::update_table);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::list_tables::builders::ListTablesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListTablesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let attributes = [
             self.get_exclusive_start_table_name()
@@ -291,9 +255,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_dynamodb::operation::list_tables);
 
 // Backup operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::create_backup::builders::CreateBackupFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for CreateBackupFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::create_backup(table_name)
@@ -301,27 +263,21 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::create_backup);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::delete_backup::builders::DeleteBackupFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DeleteBackupFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         DynamodbSpanBuilder::delete_backup()
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::delete_backup);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_backup::builders::DescribeBackupFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeBackupFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         DynamodbSpanBuilder::describe_backup()
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::describe_backup);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::list_backups::builders::ListBackupsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListBackupsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::list_backups(table_name)
@@ -329,9 +285,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::list_backups);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::restore_table_from_backup::builders::RestoreTableFromBackupFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for RestoreTableFromBackupFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let target_table_name = self.get_target_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::restore_table_from_backup(target_table_name)
@@ -339,9 +293,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::restore_table_from_backup);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::restore_table_to_point_in_time::builders::RestoreTableToPointInTimeFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for RestoreTableToPointInTimeFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let target_table_name = self.get_target_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::restore_table_to_point_in_time(target_table_name)
@@ -350,32 +302,27 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_dynamodb::operation::restore_table_to_point_in_time);
 
 // PartiQL operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::execute_statement::builders::ExecuteStatementFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ExecuteStatementFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let attributes = [
             self.get_consistent_read()
                 .as_attribute(semconv::AWS_DYNAMODB_CONSISTENT_READ),
             self.get_limit().as_attribute(semconv::AWS_DYNAMODB_LIMIT),
         ];
-        DynamodbSpanBuilder::execute_statement().attributes(attributes.into_iter().flatten())
+        DynamodbSpanBuilder::execute_statement()
+            .attributes(attributes.into_iter().flatten())
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::execute_statement);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::batch_execute_statement::builders::BatchExecuteStatementFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for BatchExecuteStatementFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         DynamodbSpanBuilder::batch_execute_statement()
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::batch_execute_statement);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::execute_transaction::builders::ExecuteTransactionFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ExecuteTransactionFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         DynamodbSpanBuilder::execute_transaction()
     }
@@ -383,34 +330,27 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_dynamodb::operation::execute_transaction);
 
 // Additional global operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_endpoints::builders::DescribeEndpointsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeEndpointsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         DynamodbSpanBuilder::describe_endpoints()
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::describe_endpoints);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_limits::builders::DescribeLimitsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeLimitsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         DynamodbSpanBuilder::describe_limits()
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::describe_limits);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::list_global_tables::builders::ListGlobalTablesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListGlobalTablesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let attributes = [
             self.get_exclusive_start_global_table_name()
                 .as_attribute(semconv::AWS_DYNAMODB_EXCLUSIVE_START_TABLE),
             self.get_limit().as_attribute(semconv::AWS_DYNAMODB_LIMIT),
-            self.get_region_name()
-                .as_attribute(semconv::CLOUD_REGION),
+            self.get_region_name().as_attribute(semconv::CLOUD_REGION),
         ];
         DynamodbSpanBuilder::list_global_tables()
             .attributes(attributes.into_iter().flatten())
@@ -419,27 +359,21 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_dynamodb::operation::list_global_tables);
 
 // Import/Export operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_export::builders::DescribeExportFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeExportFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         DynamodbSpanBuilder::describe_export()
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::describe_export);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_import::builders::DescribeImportFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeImportFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         DynamodbSpanBuilder::describe_import()
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::describe_import);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::import_table::builders::ImportTableFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ImportTableFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self
             .get_table_creation_parameters()
@@ -452,9 +386,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::import_table);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::export_table_to_point_in_time::builders::ExportTableToPointInTimeFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ExportTableToPointInTimeFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_arn = self.get_table_arn().clone().unwrap_or_default();
         DynamodbSpanBuilder::export_table_to_point_in_time(table_arn)
@@ -462,9 +394,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::export_table_to_point_in_time);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::list_exports::builders::ListExportsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListExportsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_arn = self.get_table_arn().clone().unwrap_or_default();
         let attributes = [self
@@ -476,9 +406,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::list_exports);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::list_imports::builders::ListImportsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListImportsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_arn = self.get_table_arn().clone().unwrap_or_default();
         let attributes = [self
@@ -491,9 +419,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_dynamodb::operation::list_imports);
 
 // Global table operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::create_global_table::builders::CreateGlobalTableFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for CreateGlobalTableFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let global_table_name = self.get_global_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::create_global_table(global_table_name)
@@ -501,9 +427,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::create_global_table);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_global_table::builders::DescribeGlobalTableFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeGlobalTableFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let global_table_name = self.get_global_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::describe_global_table(global_table_name)
@@ -511,9 +435,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::describe_global_table);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_global_table_settings::builders::DescribeGlobalTableSettingsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeGlobalTableSettingsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let global_table_name = self.get_global_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::describe_global_table_settings(global_table_name)
@@ -521,9 +443,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::describe_global_table_settings);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::update_global_table::builders::UpdateGlobalTableFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UpdateGlobalTableFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let global_table_name = self.get_global_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::update_global_table(global_table_name)
@@ -531,9 +451,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::update_global_table);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::update_global_table_settings::builders::UpdateGlobalTableSettingsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UpdateGlobalTableSettingsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let global_table_name = self.get_global_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::update_global_table_settings(global_table_name)
@@ -542,9 +460,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_dynamodb::operation::update_global_table_settings);
 
 // Additional table management operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_continuous_backups::builders::DescribeContinuousBackupsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeContinuousBackupsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::describe_continuous_backups(table_name)
@@ -552,9 +468,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::describe_continuous_backups);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::update_continuous_backups::builders::UpdateContinuousBackupsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UpdateContinuousBackupsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::update_continuous_backups(table_name)
@@ -562,9 +476,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::update_continuous_backups);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_time_to_live::builders::DescribeTimeToLiveFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeTimeToLiveFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::describe_time_to_live(table_name)
@@ -572,9 +484,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::describe_time_to_live);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::update_time_to_live::builders::UpdateTimeToLiveFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UpdateTimeToLiveFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::update_time_to_live(table_name)
@@ -582,9 +492,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::update_time_to_live);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_table_replica_auto_scaling::builders::DescribeTableReplicaAutoScalingFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeTableReplicaAutoScalingFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::describe_table_replica_auto_scaling(table_name)
@@ -594,9 +502,7 @@ instrument_aws_operation!(
     aws_sdk_dynamodb::operation::describe_table_replica_auto_scaling
 );
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::update_table_replica_auto_scaling::builders::UpdateTableReplicaAutoScalingFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UpdateTableReplicaAutoScalingFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::update_table_replica_auto_scaling(table_name)
@@ -605,9 +511,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_dynamodb::operation::update_table_replica_auto_scaling);
 
 // Kinesis streaming operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_kinesis_streaming_destination::builders::DescribeKinesisStreamingDestinationFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeKinesisStreamingDestinationFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::describe_kinesis_streaming_destination(table_name)
@@ -617,9 +521,7 @@ instrument_aws_operation!(
     aws_sdk_dynamodb::operation::describe_kinesis_streaming_destination
 );
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::enable_kinesis_streaming_destination::builders::EnableKinesisStreamingDestinationFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for EnableKinesisStreamingDestinationFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::enable_kinesis_streaming_destination(table_name)
@@ -629,9 +531,7 @@ instrument_aws_operation!(
     aws_sdk_dynamodb::operation::enable_kinesis_streaming_destination
 );
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::disable_kinesis_streaming_destination::builders::DisableKinesisStreamingDestinationFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DisableKinesisStreamingDestinationFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::disable_kinesis_streaming_destination(table_name)
@@ -641,9 +541,7 @@ instrument_aws_operation!(
     aws_sdk_dynamodb::operation::disable_kinesis_streaming_destination
 );
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::update_kinesis_streaming_destination::builders::UpdateKinesisStreamingDestinationFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UpdateKinesisStreamingDestinationFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         DynamodbSpanBuilder::update_kinesis_streaming_destination(table_name)
@@ -654,44 +552,36 @@ instrument_aws_operation!(
 );
 
 // Contributor insights operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::describe_contributor_insights::builders::DescribeContributorInsightsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeContributorInsightsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
-        let attributes = [
-            self.get_index_name()
-                .as_attribute(semconv::AWS_DYNAMODB_INDEX_NAME),
-        ];
+        let attributes = [self
+            .get_index_name()
+            .as_attribute(semconv::AWS_DYNAMODB_INDEX_NAME)];
         DynamodbSpanBuilder::describe_contributor_insights(table_name)
             .attributes(attributes.into_iter().flatten())
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::describe_contributor_insights);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::list_contributor_insights::builders::ListContributorInsightsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListContributorInsightsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
-        let attributes = [
-            self.get_max_results().as_attribute(semconv::AWS_DYNAMODB_LIMIT),
-        ];
+        let attributes = [self
+            .get_max_results()
+            .as_attribute(semconv::AWS_DYNAMODB_LIMIT)];
         DynamodbSpanBuilder::list_contributor_insights(table_name)
             .attributes(attributes.into_iter().flatten())
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::list_contributor_insights);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::update_contributor_insights::builders::UpdateContributorInsightsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UpdateContributorInsightsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
-        let attributes = [
-            self.get_index_name()
-                .as_attribute(semconv::AWS_DYNAMODB_INDEX_NAME),
-        ];
+        let attributes = [self
+            .get_index_name()
+            .as_attribute(semconv::AWS_DYNAMODB_INDEX_NAME)];
         DynamodbSpanBuilder::update_contributor_insights(table_name)
             .attributes(attributes.into_iter().flatten())
     }
@@ -699,9 +589,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_dynamodb::operation::update_contributor_insights);
 
 // Resource tagging operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::list_tags_of_resource::builders::ListTagsOfResourceFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListTagsOfResourceFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let resource_arn = self.get_resource_arn().clone().unwrap_or_default();
         DynamodbSpanBuilder::list_tags_of_resource(resource_arn)
@@ -709,9 +597,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::list_tags_of_resource);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::tag_resource::builders::TagResourceFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for TagResourceFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let resource_arn = self.get_resource_arn().clone().unwrap_or_default();
         DynamodbSpanBuilder::tag_resource(resource_arn)
@@ -719,9 +605,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::tag_resource);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::untag_resource::builders::UntagResourceFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UntagResourceFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let resource_arn = self.get_resource_arn().clone().unwrap_or_default();
         DynamodbSpanBuilder::untag_resource(resource_arn)

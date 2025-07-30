@@ -4,9 +4,7 @@ use super::{AwsInstrumentBuilder, utils::*};
 use crate::{middleware::aws::*, semconv};
 
 // Publish operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::put_record::builders::PutRecordFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for PutRecordFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
         let attributes = [self
@@ -20,17 +18,14 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_firehose::operation::put_record);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::put_record_batch::builders::PutRecordBatchFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for PutRecordBatchFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
-        let attributes = [
-            self.get_records()
-                .as_ref()
-                .map(|records| records.len())
-                .as_attribute(semconv::MESSAGING_BATCH_MESSAGE_COUNT),
-        ];
+        let attributes = [self
+            .get_records()
+            .as_ref()
+            .map(|records| records.len())
+            .as_attribute(semconv::MESSAGING_BATCH_MESSAGE_COUNT)];
         FirehoseSpanBuilder::put_record_batch(stream_name)
             .attributes(attributes.into_iter().flatten())
     }
@@ -38,9 +33,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_firehose::operation::put_record_batch);
 
 // Global operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::list_delivery_streams::builders::ListDeliveryStreamsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListDeliveryStreamsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         FirehoseSpanBuilder::list_delivery_streams()
     }
@@ -48,9 +41,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_firehose::operation::list_delivery_streams);
 
 // Stream management operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::create_delivery_stream::builders::CreateDeliveryStreamFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for CreateDeliveryStreamFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
         FirehoseSpanBuilder::create_delivery_stream(stream_name)
@@ -58,9 +49,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_firehose::operation::create_delivery_stream);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::delete_delivery_stream::builders::DeleteDeliveryStreamFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DeleteDeliveryStreamFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
         FirehoseSpanBuilder::delete_delivery_stream(stream_name)
@@ -68,9 +57,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_firehose::operation::delete_delivery_stream);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::describe_delivery_stream::builders::DescribeDeliveryStreamFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DescribeDeliveryStreamFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
         FirehoseSpanBuilder::describe_delivery_stream(stream_name)
@@ -79,9 +66,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_firehose::operation::describe_delivery_stream);
 
 // Tagging operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::list_tags_for_delivery_stream::builders::ListTagsForDeliveryStreamFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListTagsForDeliveryStreamFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
         FirehoseSpanBuilder::list_tags_for_delivery_stream(stream_name)
@@ -89,9 +74,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_firehose::operation::list_tags_for_delivery_stream);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::tag_delivery_stream::builders::TagDeliveryStreamFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for TagDeliveryStreamFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
         FirehoseSpanBuilder::tag_delivery_stream(stream_name)
@@ -99,9 +82,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_firehose::operation::tag_delivery_stream);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::untag_delivery_stream::builders::UntagDeliveryStreamFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UntagDeliveryStreamFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
         FirehoseSpanBuilder::untag_delivery_stream(stream_name)
@@ -110,9 +91,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_firehose::operation::untag_delivery_stream);
 
 // Encryption operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::start_delivery_stream_encryption::builders::StartDeliveryStreamEncryptionFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for StartDeliveryStreamEncryptionFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
         FirehoseSpanBuilder::start_delivery_stream_encryption(stream_name)
@@ -120,9 +99,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_firehose::operation::start_delivery_stream_encryption);
 
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::stop_delivery_stream_encryption::builders::StopDeliveryStreamEncryptionFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for StopDeliveryStreamEncryptionFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
         FirehoseSpanBuilder::stop_delivery_stream_encryption(stream_name)
@@ -131,9 +108,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_firehose::operation::stop_delivery_stream_encryption);
 
 // Update operations
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_firehose::operation::update_destination::builders::UpdateDestinationFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for UpdateDestinationFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
         FirehoseSpanBuilder::update_destination(stream_name)

@@ -120,9 +120,7 @@ semconv::SERVER_PORT                       // Server port
 
 Example:
 ```rust
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::get_item::builders::GetItemFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetItemFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         
@@ -194,9 +192,7 @@ For each missing operation, add both:
 #### A. AwsInstrumentBuilder Implementation
 
 ```rust
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_{service}::operation::{operation_name}::builders::{OperationName}FluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for {OperationName}FluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         // Extract relevant parameters from the fluent builder
         let resource_arn = self.get_resource_arn().clone().unwrap_or_default();
@@ -238,9 +234,7 @@ instrument_aws_operation!(
 ### Pattern 1: Simple Operations (No Parameters)
 
 ```rust
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::list_topics::builders::ListTopicsFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for ListTopicsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         // Simple operation - no additional attributes needed
         SnsSpanBuilder::list_topics()
@@ -252,9 +246,7 @@ instrument_aws_operation!(aws_sdk_sns::operation::list_topics);
 ### Pattern 2: Resource-Specific Operations (Following Semantic Conventions)
 
 ```rust
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::delete_topic::builders::DeleteTopicFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for DeleteTopicFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         // Extract topic ARN - follows SNS semantic conventions
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
@@ -267,9 +259,7 @@ instrument_aws_operation!(aws_sdk_sns::operation::delete_topic);
 ### Pattern 3: Operations with Rich Semantic Attributes
 
 ```rust
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_dynamodb::operation::get_item::builders::GetItemFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetItemFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         
@@ -293,9 +283,7 @@ instrument_aws_operation!(aws_sdk_dynamodb::operation::get_item);
 ### Pattern 4: SMS/Special Case Operations (Type Name Issues)
 
 ```rust
-impl<'a> AwsInstrumentBuilder<'a>
-    for aws_sdk_sns::operation::get_sms_attributes::builders::GetSMSAttributesFluentBuilder
-{
+impl<'a> AwsInstrumentBuilder<'a> for GetSMSAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::get_sms_attributes()
     }

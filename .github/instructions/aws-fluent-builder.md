@@ -1,8 +1,8 @@
-# AWS SDK Fluent Builder Instrumentation
+---
+applyTo: "src/middleware/aws/instrumentation/fluent_builder/*.rs,src/middleware/aws/operations/*.rs"
+---
 
-<!-- This guide applies to AWS SDK fluent builder instrumentation files -->
-<!-- Applies to: src/middleware/aws/instrumentation/fluent_builder/*.rs -->
-<!-- Applies to: src/middleware/aws/operations/*.rs -->
+# AWS SDK Fluent Builder Instrumentation
 
 This guide explains how to maintain and extend AWS SDK fluent builder instrumentation for OpenTelemetry tracing in this Rust telemetry library.
 

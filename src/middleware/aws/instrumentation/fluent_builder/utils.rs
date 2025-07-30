@@ -34,6 +34,7 @@ macro_rules! instrument_aws_operation {
 
 pub(super) use instrument_aws_operation;
 
+/// A trait for converting fluent builder properties into OpenTelemetry key-value attributes.
 pub(super) trait AsAttribute {
     fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue>;
 }
@@ -52,7 +53,13 @@ impl AsAttribute for Option<bool> {
 
 impl AsAttribute for Option<i32> {
     fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
-        self.map(|value| KeyValue::new(key, value as i64))
+        self.map(Into::<i64>::into).as_attribute(key)
+    }
+}
+
+impl AsAttribute for Option<i64> {
+    fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
+        self.map(|value| KeyValue::new(key, value))
     }
 }
 

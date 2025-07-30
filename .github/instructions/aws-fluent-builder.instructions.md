@@ -179,11 +179,11 @@ Operations are defined using macros like:
 
 ```bash
 # Count existing instrumentations
-grep 'instrument_aws_operation!' src/middleware/aws/instrumentation/fluent_builder/{service}.rs | wc -l
+grep 'SpanBuilder::' src/middleware/aws/instrumentation/fluent_builder/{service}.rs | wc -l
 
 # Compare operation names
 grep -E '_operation!' src/middleware/aws/operations/{service}.rs | sed -E 's/.*_operation!\(([^,)]*).*/\1/' | sort > /tmp/operations.txt
-grep 'instrument_aws_operation!(aws_sdk_{service}::operation::' src/middleware/aws/instrumentation/fluent_builder/{service}.rs | sed 's/.*operation::\([^,)]*\).*/\1/' | sort > /tmp/instrumented.txt
+grep 'SpanBuilder::' src/middleware/aws/instrumentation/fluent_builder/{service}.rs | sed 's/.*SpanBuilder::\([^,()]*\)().*/\1/' | sort > /tmp/instrumented.txt
 diff /tmp/operations.txt /tmp/instrumented.txt
 ```
 
@@ -368,7 +368,7 @@ cargo clippy --all-features --all-targets -- -D warnings
 ```bash
 # Verify all operations have instrumentation
 operations_count=$(grep -E '_operation!' src/middleware/aws/operations/{service}.rs | wc -l)
-instrumented_count=$(grep 'instrument_aws_operation!' src/middleware/aws/instrumentation/fluent_builder/{service}.rs | wc -l)
+instrumented_count=$(grep 'SpanBuilder::' src/middleware/aws/instrumentation/fluent_builder/{service}.rs | wc -l)
 echo "Operations: $operations_count, Instrumented: $instrumented_count"
 
 # Extract API reference for manual verification against AWS docs

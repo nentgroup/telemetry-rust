@@ -1,4 +1,4 @@
-use crate::{middleware::aws::*, Context};
+use crate::{Context, middleware::aws::*};
 
 pub(super) mod utils;
 
@@ -8,6 +8,8 @@ mod dynamodb;
 mod firehose;
 #[cfg(feature = "aws-sns")]
 mod sns;
+#[cfg(feature = "aws-sqs")]
+mod sqs;
 
 /// A trait for AWS service clients that can be instrumented with OpenTelemetry tracing.
 ///

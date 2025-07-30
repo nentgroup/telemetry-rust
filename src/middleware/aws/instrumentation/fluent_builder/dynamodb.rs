@@ -23,6 +23,16 @@ impl<'a> AwsInstrumentBuilder<'a>
 instrument_aws_operation!(aws_sdk_dynamodb::operation::get_item);
 
 impl<'a> AwsInstrumentBuilder<'a>
+    for aws_sdk_dynamodb::operation::get_resource_policy::builders::GetResourcePolicyFluentBuilder
+{
+    fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
+        let table_name = self.get_resource_arn().clone().unwrap_or_default();
+        DynamodbSpanBuilder::get_resource_policy(table_name)
+    }
+}
+instrument_aws_operation!(aws_sdk_dynamodb::operation::get_resource_policy);
+
+impl<'a> AwsInstrumentBuilder<'a>
     for aws_sdk_dynamodb::operation::put_item::builders::PutItemFluentBuilder
 {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
@@ -31,6 +41,16 @@ impl<'a> AwsInstrumentBuilder<'a>
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::put_item);
+
+impl<'a> AwsInstrumentBuilder<'a>
+    for aws_sdk_dynamodb::operation::put_resource_policy::builders::PutResourcePolicyFluentBuilder
+{
+    fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
+        let table_name = self.get_resource_arn().clone().unwrap_or_default();
+        DynamodbSpanBuilder::put_resource_policy(table_name)
+    }
+}
+instrument_aws_operation!(aws_sdk_dynamodb::operation::put_resource_policy);
 
 impl<'a> AwsInstrumentBuilder<'a>
     for aws_sdk_dynamodb::operation::update_item::builders::UpdateItemFluentBuilder
@@ -51,6 +71,16 @@ impl<'a> AwsInstrumentBuilder<'a>
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::delete_item);
+
+impl<'a> AwsInstrumentBuilder<'a>
+    for aws_sdk_dynamodb::operation::delete_resource_policy::builders::DeleteResourcePolicyFluentBuilder
+{
+    fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
+        let table_name = self.get_resource_arn().clone().unwrap_or_default();
+        DynamodbSpanBuilder::delete_resource_policy(table_name)
+    }
+}
+instrument_aws_operation!(aws_sdk_dynamodb::operation::delete_resource_policy);
 
 impl<'a> AwsInstrumentBuilder<'a>
     for aws_sdk_dynamodb::operation::query::builders::QueryFluentBuilder

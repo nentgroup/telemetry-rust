@@ -1,3 +1,6 @@
+/// AWS DynamoDB operations
+///
+/// API Reference: https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Operations_Amazon_DynamoDB.html
 use crate::{KeyValue, StringValue, Value, semconv};
 
 use super::*;

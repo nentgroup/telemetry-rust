@@ -1,3 +1,6 @@
+/// AWS DynamoDB operations
+///
+/// API Reference: https://docs.aws.amazon.com/firehose/latest/APIReference/API_Operations.html
 use crate::{KeyValue, StringValue, semconv};
 
 use super::*;

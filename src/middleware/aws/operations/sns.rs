@@ -1,3 +1,6 @@
+/// AWS SNS operations
+///
+/// API Reference: https://docs.aws.amazon.com/sns/latest/api/API_Operations.html
 use crate::{KeyValue, StringValue, semconv};
 
 use super::*;

@@ -305,7 +305,7 @@ impl<'a> AwsInstrumentBuilder<'a>
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::restore_table_to_point_in_time);
 
-// Execute operations
+// PartiQL operations
 impl<'a> AwsInstrumentBuilder<'a>
     for aws_sdk_dynamodb::operation::execute_statement::builders::ExecuteStatementFluentBuilder
 {

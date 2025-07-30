@@ -146,14 +146,29 @@ impl<'a> AwsInstrumentBuilder<'a>
 
 ## Adding New Service Instrumentation
 
-### Step 1: Check Operations File Coverage
+### Step 1: Verify Complete Operation Coverage
 
-First, identify all operations that need instrumentation by examining the operations file:
+**CRITICAL**: Always check the AWS API reference links in the operations files to ensure no operations are missing.
+
+Each operations file contains an API reference link (e.g., `/// API Reference: https://docs.aws.amazon.com/firehose/latest/APIReference/API_Operations.html`). Use this to:
+
+1. **Compare with AWS API docs** - Verify all operations listed in the official API reference are implemented
+2. **Check for new operations** - AWS regularly adds new operations that may not yet be instrumented  
+3. **Validate operation names** - Ensure operation names match the official API exactly
 
 ```bash
+# Extract API reference link for manual verification
+grep "API Reference:" src/middleware/aws/operations/{service}.rs
+
 # Find all operation macros in the operations file
 grep -E '_operation!' src/middleware/aws/operations/{service}.rs | wc -l
+
+# List current operation names
+grep -E '_operation!' src/middleware/aws/operations/{service}.rs | \
+  sed -E 's/.*_operation!\(([^,)]*).*/\1/' | sort
 ```
+
+**Manual verification required**: Open the API reference link and compare the listed operations with those implemented in the operations file.
 
 Operations are defined using macros like:
 - `{service}_global_operation!(operation_name);` - Global operations (no resource ARN)
@@ -349,12 +364,18 @@ cargo clippy --all-features --all-targets -- -D warnings
 ```
 
 ### 4. Coverage Verification
+
 ```bash
 # Verify all operations have instrumentation
 operations_count=$(grep -E '_operation!' src/middleware/aws/operations/{service}.rs | wc -l)
 instrumented_count=$(grep 'instrument_aws_operation!' src/middleware/aws/instrumentation/fluent_builder/{service}.rs | wc -l)
 echo "Operations: $operations_count, Instrumented: $instrumented_count"
+
+# Extract API reference for manual verification against AWS docs
+grep "API Reference:" src/middleware/aws/operations/{service}.rs
 ```
+
+**Manual step**: Open the API reference link and verify that all operations listed in the AWS API documentation are implemented in the operations file.
 
 ### 5. Semantic Convention Compliance Check
 
@@ -372,15 +393,16 @@ grep -n "MessagingOperationKind" src/middleware/aws/operations/{service}.rs
 
 ## Key Rules
 
-1. **Check semantic conventions FIRST** - Always consult OpenTelemetry docs for the specific AWS service before implementation
-2. **Use semantic conventions constants** - Prefer `semconv::` constants over hardcoded strings for well-known attributes  
-3. **Every operation** in the operations file must have corresponding fluent builder instrumentation
-4. **Extract semantic attributes** - Use fluent builder getters to populate recommended span attributes from the conventions
-5. **Use resource identifiers** when available (`get_topic_arn()`, `get_table_name()`, etc.) as per semantic conventions
-6. **Use explicit macro form** for operations with type naming issues (especially SMS, API operations)
-7. **Follow existing patterns** within the same service for consistency
-8. **Test thoroughly** - build, test, and lint must all pass
-9. **Group related operations** with comments for maintainability
+1. **Verify against AWS API docs** - Always check the API reference links in operations files to ensure complete coverage
+2. **Check semantic conventions FIRST** - Always consult OpenTelemetry docs for the specific AWS service before implementation
+3. **Use semantic conventions constants** - Prefer `semconv::` constants over hardcoded strings for well-known attributes  
+4. **Every operation** in the operations file must have corresponding fluent builder instrumentation
+5. **Extract semantic attributes** - Use fluent builder getters to populate recommended span attributes from the conventions
+6. **Use resource identifiers** when available (`get_topic_arn()`, `get_table_name()`, etc.) as per semantic conventions
+7. **Use explicit macro form** for operations with type naming issues (especially SMS, API operations)
+8. **Follow existing patterns** within the same service for consistency
+9. **Test thoroughly** - build, test, and lint must all pass
+10. **Group related operations** with comments for maintainability
 
 ## File Organization
 

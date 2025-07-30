@@ -9,12 +9,11 @@ impl<'a> AwsInstrumentBuilder<'a>
 {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let stream_name = self.get_delivery_stream_name().clone().unwrap_or_default();
-        let attributes = [
-            self.get_record()
-                .as_ref()
-                .map(|record| record.data().as_ref().len())
-                .as_attribute(semconv::MESSAGING_MESSAGE_BODY_SIZE),
-        ];
+        let attributes = [self
+            .get_record()
+            .as_ref()
+            .map(|record| record.data().as_ref().len())
+            .as_attribute(semconv::MESSAGING_MESSAGE_BODY_SIZE)];
         FirehoseSpanBuilder::put_record(stream_name)
             .attributes(attributes.into_iter().flatten())
     }

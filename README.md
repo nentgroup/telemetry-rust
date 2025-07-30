@@ -43,6 +43,7 @@ async fn graceful_shutdown(provider: TracerProvider) {
 ### `AwsInstrumented` trait
 
 ```rust
+// DynamoDB instrumentation
 let res = dynamo_client
     .get_item()
     .table_name("table_name")
@@ -50,6 +51,33 @@ let res = dynamo_client
     .set_key(primary_key)
     .send()
     .instrument(DynamodbSpanBuilder::get_item("table_name"))
+    .await;
+
+// SQS instrumentation
+let res = sqs_client
+    .send_message()
+    .queue_url("https://sqs.region.amazonaws.com/account/queue_name")
+    .message_body("Hello World")
+    .send()
+    .instrument(SqsSpanBuilder::send_message("https://sqs.region.amazonaws.com/account/queue_name"))
+    .await;
+
+// SNS instrumentation
+let res = sns_client
+    .publish()
+    .topic_arn("arn:aws:sns:region:account:topic_name")
+    .message("Hello World")
+    .send()
+    .instrument(SnsSpanBuilder::publish("arn:aws:sns:region:account:topic_name"))
+    .await;
+
+// Firehose instrumentation
+let res = firehose_client
+    .put_record()
+    .delivery_stream_name("stream_name")
+    .record(record)
+    .send()
+    .instrument(FirehoseSpanBuilder::put_record("stream_name"))
     .await;
 ```
 
@@ -94,6 +122,7 @@ Only the following AWS targets are fully supported at the moment:
 
  * DynamoDB
  * SNS
+ * SQS
  * Firehose
 
 But a generic `AwsSpanBuilder` could be used to instrument any other AWS SDK:

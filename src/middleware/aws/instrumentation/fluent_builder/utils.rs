@@ -1,16 +1,33 @@
 use crate::{Key, KeyValue, StringValue, Value};
 
+/// Generates [`super::InstrumentedFluentBuilder`] implementation for AWS SDK operations.
 macro_rules! instrument_aws_operation {
+    ($sdk:ident::operation::$op:ident, $builder:ident, $output:ident, $error:ident) => {
+        impl
+            super::InstrumentedFluentBuilder<'_, $sdk::operation::$op::builders::$builder>
+        {
+            /// Executes the AWS operation with instrumentation.
+            ///
+            /// This method creates a span for the operation and executes it within
+            /// that span context, providing automatic distributed tracing.
+            pub async fn send(
+                self,
+            ) -> Result<
+                $sdk::operation::$op::$output,
+                $sdk::error::SdkError<$sdk::operation::$op::$error>,
+            > {
+                self.inner.send().instrument(self.span).await
+            }
+        }
+    };
     ($sdk:ident::operation::$op:ident) => {
         paste::paste! {
-            impl super::InstrumentedFluentBuilder<'_, $sdk::operation::$op::builders::[<$op:camel FluentBuilder>]> {
-                pub async fn send(self) -> Result<
-                    $sdk::operation::$op::[<$op:camel Output>],
-                    $sdk::error::SdkError<$sdk::operation::$op::[<$op:camel Error>]>,
-                > {
-                    self.inner.send().instrument(self.span).await
-                }
-            }
+            instrument_aws_operation!(
+                $sdk::operation::$op,
+                [<$op:camel FluentBuilder>],
+                [<$op:camel Output>],
+                [<$op:camel Error>]
+            );
         }
     };
 }

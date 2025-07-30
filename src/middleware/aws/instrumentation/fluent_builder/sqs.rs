@@ -45,7 +45,13 @@ instrument_aws_operation!(aws_sdk_sqs::operation::delete_message);
 impl<'a> AwsInstrumentBuilder<'a> for DeleteMessageBatchFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
+        let attributes = [self
+            .get_entries()
+            .as_ref()
+            .map(|entries| entries.len() as i64)
+            .as_attribute(semconv::MESSAGING_BATCH_MESSAGE_COUNT)];
         SqsSpanBuilder::delete_message_batch(queue_url)
+            .attributes(attributes.into_iter().flatten())
     }
 }
 instrument_aws_operation!(aws_sdk_sqs::operation::delete_message_batch);
@@ -61,7 +67,13 @@ instrument_aws_operation!(aws_sdk_sqs::operation::change_message_visibility);
 impl<'a> AwsInstrumentBuilder<'a> for ChangeMessageVisibilityBatchFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
+        let attributes = [self
+            .get_entries()
+            .as_ref()
+            .map(|entries| entries.len() as i64)
+            .as_attribute(semconv::MESSAGING_BATCH_MESSAGE_COUNT)];
         SqsSpanBuilder::change_message_visibility_batch(queue_url)
+            .attributes(attributes.into_iter().flatten())
     }
 }
 instrument_aws_operation!(aws_sdk_sqs::operation::change_message_visibility_batch);
@@ -127,7 +139,11 @@ instrument_aws_operation!(aws_sdk_sqs::operation::remove_permission);
 impl<'a> AwsInstrumentBuilder<'a> for GetQueueUrlFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_name = self.get_queue_name().clone().unwrap_or_default();
+        let attributes = [self
+            .get_queue_owner_aws_account_id()
+            .as_attribute(semconv::CLOUD_ACCOUNT_ID)];
         SqsSpanBuilder::get_queue_url(queue_name)
+            .attributes(attributes.into_iter().flatten())
     }
 }
 instrument_aws_operation!(aws_sdk_sqs::operation::get_queue_url);

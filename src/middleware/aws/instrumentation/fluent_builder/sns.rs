@@ -18,7 +18,13 @@ impl<'a> AwsInstrumentBuilder<'a>
 {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
+        let attributes = [self
+            .get_publish_batch_request_entries()
+            .as_ref()
+            .map(|entries| entries.len())
+            .as_attribute(semconv::MESSAGING_BATCH_MESSAGE_COUNT)];
         SnsSpanBuilder::publish_batch(topic_arn)
+            .attributes(attributes.into_iter().flatten())
     }
 }
 instrument_aws_operation!(aws_sdk_sns::operation::publish_batch);

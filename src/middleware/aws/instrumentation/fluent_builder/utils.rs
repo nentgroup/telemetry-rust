@@ -69,6 +69,14 @@ impl AsAttribute for Option<f64> {
     }
 }
 
+impl AsAttribute for Option<usize> {
+    fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
+        self.map(TryInto::<i64>::try_into)
+            .and_then(Result::ok)
+            .as_attribute(key)
+    }
+}
+
 impl AsAttribute for Option<Vec<String>> {
     fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
         self.as_ref().map(|value| {

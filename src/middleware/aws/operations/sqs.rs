@@ -24,7 +24,7 @@ impl AwsSpanBuilder<'_> {
     ///
     /// * `operation_kind` - The type of messaging operation being performed
     /// * `method` - The SQS operation method name
-    /// * `queue` - Optional SNS queue URL or name for operations that target specific queues
+    /// * `queue` - Optional SQS queue URL or name for operations that target specific queues
     pub fn sqs(
         operation_kind: MessagingOperationKind,
         method: impl Into<StringValue>,
@@ -72,13 +72,13 @@ macro_rules! sqs_global_operation {
 macro_rules! sqs_messaging_operation {
     ($op: ident, $kind: expr) => {
         impl SqsSpanBuilder {
-            #[doc = concat!("Creates a span builder for the SNS ", stringify!($op), " messaging operation.")]
+            #[doc = concat!("Creates a span builder for the SQS ", stringify!($op), " messaging operation.")]
             ///
             /// # Arguments
             ///
-            /// * `queue` - SNS queue URL or name
+            /// * `queue` - SQS queue URL or name
             pub fn $op<'a>(queue: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
-                AwsSpanBuilder::sns($kind, stringify_camel!($op), Some(queue))
+                AwsSpanBuilder::sqs($kind, stringify_camel!($op), Some(queue))
             }
         }
     };
@@ -91,7 +91,7 @@ macro_rules! sqs_queue_operation {
             ///
             /// # Arguments
             ///
-            /// * `queue` - SNS queue URL or name
+            /// * `queue` - SQS queue URL or name
             pub fn $op<'a>(queue: impl Into<StringValue>) -> AwsSpanBuilder<'a> {
                 AwsSpanBuilder::sqs(
                     MessagingOperationKind::Control,

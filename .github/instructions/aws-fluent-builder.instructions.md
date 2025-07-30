@@ -349,13 +349,13 @@ Or use compiler errors to identify correct names - the error message will sugges
 
 ### 1. Build Check
 ```bash
-cargo check --features aws-instrumentation
-cargo build --features aws-instrumentation
+cargo check --features aws-full
+cargo build --features aws-full
 ```
 
 ### 2. Test Check  
 ```bash
-cargo test --lib --features aws-instrumentation
+cargo test --lib --features aws-full
 ```
 
 ### 3. Lint Check

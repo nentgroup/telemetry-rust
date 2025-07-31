@@ -5,10 +5,12 @@ pub(super) use super::AwsSpanBuilder;
 mod dynamodb;
 mod firehose;
 mod sns;
+mod sqs;
 
 pub use dynamodb::DynamodbSpanBuilder;
 pub use firehose::FirehoseSpanBuilder;
 pub use sns::SnsSpanBuilder;
+pub use sqs::SqsSpanBuilder;
 
 /// Messaging operation type
 ///

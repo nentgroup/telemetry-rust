@@ -130,8 +130,8 @@ where
 /// Generates [`super::InstrumentedFluentBuilder`] implementation for AWS SDK operations.
 macro_rules! instrument_aws_operation {
     ($sdk:ident::operation::$op:ident, $builder:ident, $output:ident, $error:ident) => {
-        use $sdk::operation::$op::$output;
         use $sdk::operation::$op::builders::$builder;
+        use $sdk::operation::$op::$output;
         impl
             super::InstrumentedFluentBuilder<'_, $sdk::operation::$op::builders::$builder>
         {
@@ -149,7 +149,8 @@ macro_rules! instrument_aws_operation {
                 $crate::future::InstrumentedFuture::new(
                     self.inner.send(),
                     super::FluentBuilderSpan(span),
-                ).await
+                )
+                .await
             }
         }
     };

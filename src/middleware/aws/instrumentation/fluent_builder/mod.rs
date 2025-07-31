@@ -76,7 +76,38 @@ impl<'a, T: AwsInstrumentBuilder<'a>> InstrumentedFluentBuilder<'a, T> {
 
 pub(super) struct FluentBuilderSpan(AwsSpan);
 
+/// A trait for extracting OpenTelemetry attributes from AWS operation output objects.
+///
+/// This trait allows AWS SDK operation outputs to provide additional span attributes
+/// that are only available after the operation completes, such as consumed capacity,
+/// result counts, and other response metadata that enhances observability.
+///
+/// # Implementation Notes
+///
+/// Implementations should extract relevant attributes following OpenTelemetry semantic
+/// conventions for the specific AWS service. The extracted attributes will be added
+/// to the span after the operation completes successfully.
+///
+/// # Examples
+///
+/// ```rust,ignore
+/// impl InstrumentedFluentBuilderOutput for QueryOutput {
+///     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+///         [
+///             self.count().as_attribute(semconv::AWS_DYNAMODB_COUNT),
+///             self.scanned_count().as_attribute(semconv::AWS_DYNAMODB_SCANNED_COUNT),
+///         ].into_iter().flatten()
+///     }
+/// }
+/// ```
 pub(super) trait InstrumentedFluentBuilderOutput {
+    /// Extracts OpenTelemetry attributes from the AWS operation output.
+    ///
+    /// Returns an iterator of key-value pairs that will be added to the span
+    /// as attributes. Implementations should follow OpenTelemetry semantic
+    /// conventions for the specific AWS service.
+    ///
+    /// The default implementation returns no attributes.
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         None
     }

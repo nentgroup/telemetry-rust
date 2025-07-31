@@ -303,28 +303,31 @@ instrument_aws_operation!(aws_sdk_dynamodb::operation::restore_table_to_point_in
 
 // PartiQL operations
 impl<'a> AwsInstrumentBuilder<'a> for ExecuteStatementFluentBuilder {
+    /// Table names are not automatically extracted from PartiQL statement
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let attributes = [
             self.get_consistent_read()
                 .as_attribute(semconv::AWS_DYNAMODB_CONSISTENT_READ),
             self.get_limit().as_attribute(semconv::AWS_DYNAMODB_LIMIT),
         ];
-        DynamodbSpanBuilder::execute_statement()
+        DynamodbSpanBuilder::execute_statement(None::<StringValue>)
             .attributes(attributes.into_iter().flatten())
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::execute_statement);
 
 impl<'a> AwsInstrumentBuilder<'a> for BatchExecuteStatementFluentBuilder {
+    /// Table names are not automatically extracted from PartiQL statement
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
-        DynamodbSpanBuilder::batch_execute_statement()
+        DynamodbSpanBuilder::batch_execute_statement(None::<StringValue>)
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::batch_execute_statement);
 
 impl<'a> AwsInstrumentBuilder<'a> for ExecuteTransactionFluentBuilder {
+    /// Table names are not automatically extracted from PartiQL statement
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
-        DynamodbSpanBuilder::execute_transaction()
+        DynamodbSpanBuilder::execute_transaction(None::<StringValue>)
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::execute_transaction);

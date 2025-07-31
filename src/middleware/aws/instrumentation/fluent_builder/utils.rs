@@ -71,3 +71,12 @@ impl AsAttribute for Option<aws_sdk_dynamodb::types::Select> {
         })
     }
 }
+
+/// Helper macro to create attribute arrays that filter out None values
+macro_rules! attributes {
+    ($($expr:expr),* $(,)?) => {
+        [$($expr,)*].into_iter().flatten()
+    };
+}
+
+pub(super) use attributes;

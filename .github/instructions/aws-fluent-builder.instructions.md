@@ -159,10 +159,10 @@ Each operations file contains an API reference link (e.g., `/// API Reference: h
 grep "API Reference:" src/middleware/aws/operations/{service}.rs
 
 # Find all operation macros in the operations file
-grep -E '_operation!' src/middleware/aws/operations/{service}.rs | wc -l
+grep -c '_operation!' src/middleware/aws/operations/{service}.rs
 
 # List current operation names
-grep -E '_operation!' src/middleware/aws/operations/{service}.rs | \
+grep '_operation!' src/middleware/aws/operations/{service}.rs | \
   sed -E 's/.*_operation!\(([^,)]*).*/\1/' | sort
 ```
 
@@ -177,10 +177,10 @@ Operations are defined using macros like:
 
 ```bash
 # Count existing instrumentations
-grep 'SpanBuilder::' src/middleware/aws/instrumentation/fluent_builder/{service}.rs | wc -l
+grep -c 'SpanBuilder::' src/middleware/aws/instrumentation/fluent_builder/{service}.rs
 
 # Compare operation names
-grep -E '_operation!' src/middleware/aws/operations/{service}.rs | sed -E 's/.*_operation!\(([^,)]*).*/\1/' | sort > /tmp/operations.txt
+grep '_operation!' src/middleware/aws/operations/{service}.rs | sed -E 's/.*_operation!\(([^,)]*).*/\1/' | sort > /tmp/operations.txt
 grep 'SpanBuilder::' src/middleware/aws/instrumentation/fluent_builder/{service}.rs | sed 's/.*SpanBuilder::\([^,()]*\)().*/\1/' | sort > /tmp/instrumented.txt
 diff /tmp/operations.txt /tmp/instrumented.txt
 ```
@@ -355,8 +355,8 @@ cargo clippy --all-features --all-targets -- -D warnings
 
 ```bash
 # Verify all operations have instrumentation
-operations_count=$(grep -E '_operation!' src/middleware/aws/operations/{service}.rs | wc -l)
-instrumented_count=$(grep 'SpanBuilder::' src/middleware/aws/instrumentation/fluent_builder/{service}.rs | wc -l)
+operations_count=$(grep -c '_operation!' src/middleware/aws/operations/{service}.rs)
+instrumented_count=$(grep -c 'SpanBuilder::' src/middleware/aws/instrumentation/fluent_builder/{service}.rs)
 echo "Operations: $operations_count, Instrumented: $instrumented_count"
 
 # Extract API reference for manual verification against AWS docs

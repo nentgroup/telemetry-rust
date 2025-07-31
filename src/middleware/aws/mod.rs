@@ -33,8 +33,11 @@ pub use operations::*;
 
 /// A wrapper around an OpenTelemetry span specifically designed for AWS operations.
 ///
-/// This struct provides convenient methods for handling AWS-specific span attributes
-/// and status updates, particularly for recording request IDs and error handling.
+/// This struct represents an active span for an AWS SDK operation.
+/// It provides convenient methods for setting span attributes and recording
+/// AWS operation status upon its completion, including AWS request ID and optional error.
+///
+/// Should be constructed using [`AwsSpanBuilder`] by calling [`AwsSpanBuilder::start`].
 pub struct AwsSpan {
     span: BoxedSpan,
 }
@@ -82,7 +85,7 @@ impl AwsSpan {
     ///
     /// # Arguments
     ///
-    /// * `attribute` - The key-value attribute to add to the span
+    /// * `attribute` - The [`KeyValue`] attribute to add to the span
     ///
     /// # Example
     ///
@@ -105,7 +108,7 @@ impl AwsSpan {
     ///
     /// # Arguments
     ///
-    /// * `attributes` - An iterator of key-value attributes to add to the span
+    /// * `attributes` - An iterator of [`KeyValue`] attributes to add to the span
     ///
     /// # Example
     ///
@@ -132,8 +135,8 @@ impl From<BoxedSpan> for AwsSpan {
 
 /// Builder for creating AWS-specific OpenTelemetry spans.
 ///
-/// This builder provides a fluent interface for constructing spans with AWS-specific
-/// attributes and proper span kinds for different types of AWS operations.
+/// This builder provides a fluent interface for constructing [`AwsSpan`] with
+/// required attributes and proper span kinds for different types of AWS operations.
 pub struct AwsSpanBuilder<'a> {
     inner: SpanBuilder,
     tracer: BoxedTracer,
@@ -224,7 +227,7 @@ impl<'a> AwsSpanBuilder<'a> {
     ///
     /// # Arguments
     ///
-    /// * `iter` - An iterator of key-value attributes to add to the span
+    /// * `iter` - An iterator of [`KeyValue`] attributes to add to the span
     pub fn attributes(mut self, iter: impl IntoIterator<Item = KeyValue>) -> Self {
         if let Some(attributes) = &mut self.inner.attributes {
             attributes.extend(iter);
@@ -238,28 +241,28 @@ impl<'a> AwsSpanBuilder<'a> {
     ///
     /// # Arguments
     ///
-    /// * `attribute` - The key-value attribute to add to the span
+    /// * `attribute` - The [`KeyValue`] attribute to add to the span
     #[inline]
     pub fn attribute(self, attribute: KeyValue) -> Self {
         self.attributes(std::iter::once(attribute))
     }
 
-    /// Sets the parent context for the span.
+    /// Sets the parent [`Context`] for the span.
     ///
     /// # Arguments
     ///
-    /// * `context` - The OpenTelemetry context to use as the parent
+    /// * `context` - The OpenTelemetry [`Context`] to use as the parent
     #[inline]
     pub fn context(mut self, context: &'a Context) -> Self {
         self.context = Some(context);
         self
     }
 
-    /// Optionally sets the parent context for the span.
+    /// Optionally sets the parent [`Context`] for the span.
     ///
     /// # Arguments
     ///
-    /// * `context` - An optional OpenTelemetry context to use as the parent
+    /// * `context` - An optional OpenTelemetry [`Context`] to use as the parent
     #[inline]
     pub fn set_context(mut self, context: Option<&'a Context>) -> Self {
         self.context = context;
@@ -273,7 +276,7 @@ impl<'a> AwsSpanBuilder<'a> {
             .into()
     }
 
-    /// Starts the span and returns an AwsSpan.
+    /// Starts the span and returns an [`AwsSpan`].
     ///
     /// This method creates and starts the span using either the explicitly set context
     /// or the current tracing span's context as the parent.

@@ -16,7 +16,14 @@ impl<'a> AwsInstrumentBuilder<'a> for PutRecordFluentBuilder {
         FirehoseSpanBuilder::put_record(stream_name).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for PutRecordOutput {}
+impl InstrumentedFluentBuilderOutput for PutRecordOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        [KeyValue::new(
+            semconv::MESSAGING_MESSAGE_ID,
+            self.record_id().to_owned(),
+        )]
+    }
+}
 instrument_aws_operation!(aws_sdk_firehose::operation::put_record);
 
 impl<'a> AwsInstrumentBuilder<'a> for PutRecordBatchFluentBuilder {
@@ -31,7 +38,14 @@ impl<'a> AwsInstrumentBuilder<'a> for PutRecordBatchFluentBuilder {
         FirehoseSpanBuilder::put_record_batch(stream_name).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for PutRecordBatchOutput {}
+impl InstrumentedFluentBuilderOutput for PutRecordBatchOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        [KeyValue::new(
+            "messaging.batch.message_count.failed",
+            self.failed_put_count() as i64,
+        )]
+    }
+}
 instrument_aws_operation!(aws_sdk_firehose::operation::put_record_batch);
 
 // Global operations

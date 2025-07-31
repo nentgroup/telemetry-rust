@@ -9,7 +9,14 @@ impl<'a> AwsInstrumentBuilder<'a> for PublishFluentBuilder {
         SnsSpanBuilder::publish(topic_arn)
     }
 }
-impl InstrumentedFluentBuilderOutput for PublishOutput {}
+impl InstrumentedFluentBuilderOutput for PublishOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.message_id()
+                .as_attribute(semconv::MESSAGING_MESSAGE_ID),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_sns::operation::publish);
 
 impl<'a> AwsInstrumentBuilder<'a> for PublishBatchFluentBuilder {
@@ -24,7 +31,15 @@ impl<'a> AwsInstrumentBuilder<'a> for PublishBatchFluentBuilder {
         SnsSpanBuilder::publish_batch(topic_arn).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for PublishBatchOutput {}
+impl InstrumentedFluentBuilderOutput for PublishBatchOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.failed()
+                .len()
+                .as_attribute("messaging.batch.message_count.failed"),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_sns::operation::publish_batch);
 
 // Topic management operations
@@ -33,7 +48,14 @@ impl<'a> AwsInstrumentBuilder<'a> for CreateTopicFluentBuilder {
         SnsSpanBuilder::create_topic()
     }
 }
-impl InstrumentedFluentBuilderOutput for CreateTopicOutput {}
+impl InstrumentedFluentBuilderOutput for CreateTopicOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.topic_arn()
+                .as_attribute(semconv::MESSAGING_DESTINATION_NAME),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_sns::operation::create_topic);
 
 impl<'a> AwsInstrumentBuilder<'a> for DeleteTopicFluentBuilder {

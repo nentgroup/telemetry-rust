@@ -11,6 +11,12 @@ impl AsAttribute for Option<String> {
     }
 }
 
+impl AsAttribute for Option<&str> {
+    fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
+        self.map(ToOwned::to_owned).as_attribute(key)
+    }
+}
+
 impl AsAttribute for Option<bool> {
     fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
         self.map(|value| KeyValue::new(key, value))
@@ -40,6 +46,12 @@ impl AsAttribute for Option<usize> {
         self.map(TryInto::<i64>::try_into)
             .and_then(Result::ok)
             .as_attribute(key)
+    }
+}
+
+impl AsAttribute for usize {
+    fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
+        TryInto::<i64>::try_into(*self).ok().as_attribute(key)
     }
 }
 

@@ -10,7 +10,14 @@ impl<'a> AwsInstrumentBuilder<'a> for SendMessageFluentBuilder {
         SqsSpanBuilder::send_message(queue_url)
     }
 }
-impl InstrumentedFluentBuilderOutput for SendMessageOutput {}
+impl InstrumentedFluentBuilderOutput for SendMessageOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.message_id()
+                .as_attribute(semconv::MESSAGING_MESSAGE_ID),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_sqs::operation::send_message);
 
 impl<'a> AwsInstrumentBuilder<'a> for SendMessageBatchFluentBuilder {
@@ -25,7 +32,15 @@ impl<'a> AwsInstrumentBuilder<'a> for SendMessageBatchFluentBuilder {
         SqsSpanBuilder::send_message_batch(queue_url).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for SendMessageBatchOutput {}
+impl InstrumentedFluentBuilderOutput for SendMessageBatchOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.failed()
+                .len()
+                .as_attribute("messaging.batch.message_count.failed"),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_sqs::operation::send_message_batch);
 
 impl<'a> AwsInstrumentBuilder<'a> for ReceiveMessageFluentBuilder {
@@ -34,7 +49,15 @@ impl<'a> AwsInstrumentBuilder<'a> for ReceiveMessageFluentBuilder {
         SqsSpanBuilder::receive_message(queue_url)
     }
 }
-impl InstrumentedFluentBuilderOutput for ReceiveMessageOutput {}
+impl InstrumentedFluentBuilderOutput for ReceiveMessageOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.messages()
+                .len()
+                .as_attribute(semconv::MESSAGING_BATCH_MESSAGE_COUNT)
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_sqs::operation::receive_message);
 
 impl<'a> AwsInstrumentBuilder<'a> for DeleteMessageFluentBuilder {

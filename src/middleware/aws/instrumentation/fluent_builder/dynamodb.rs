@@ -94,7 +94,17 @@ impl<'a> AwsInstrumentBuilder<'a> for QueryFluentBuilder {
         DynamodbSpanBuilder::query(table_name).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for QueryOutput {}
+impl InstrumentedFluentBuilderOutput for QueryOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        [
+            KeyValue::new(semconv::AWS_DYNAMODB_COUNT, self.count() as i64),
+            KeyValue::new(
+                semconv::AWS_DYNAMODB_SCANNED_COUNT,
+                self.scanned_count() as i64,
+            ),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_dynamodb::operation::query);
 
 impl<'a> AwsInstrumentBuilder<'a> for ScanFluentBuilder {
@@ -119,7 +129,17 @@ impl<'a> AwsInstrumentBuilder<'a> for ScanFluentBuilder {
         DynamodbSpanBuilder::scan(table_name).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for ScanOutput {}
+impl InstrumentedFluentBuilderOutput for ScanOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        [
+            KeyValue::new(semconv::AWS_DYNAMODB_COUNT, self.count() as i64),
+            KeyValue::new(
+                semconv::AWS_DYNAMODB_SCANNED_COUNT,
+                self.scanned_count() as i64,
+            ),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_dynamodb::operation::scan);
 
 impl<'a> AwsInstrumentBuilder<'a> for BatchGetItemFluentBuilder {

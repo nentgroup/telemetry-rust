@@ -26,16 +26,16 @@
 //!
 //! ## AWS Features
 //! - `aws-span`: AWS SDK span creation utilities
-//! - `aws-instrumentation`: Manual instrumentation for AWS SDK operations
+//! - `aws-instrumentation`: Lightweight manual instrumentation for AWS SDK operations
 //! - `aws-stream-instrumentation`: Instrumentation for AWS SDK pagination streams
-//! - `aws-fluent-builder-instrumentation`: Automatic fluent builder instrumentation core
+//! - `aws-fluent-builder-instrumentation`: Core traits for fluent builders instrumentation (see [service-specific features](#aws-service-specific-features))
 //! - `aws-lambda`: AWS Lambda runtime middleware
 //!
 //! ## AWS Service-Specific Features
-//! - `aws-dynamodb`: DynamoDB automatic fluent builder instrumentation
-//! - `aws-firehose`: Firehose automatic fluent builder instrumentation
-//! - `aws-sns`: SNS automatic fluent builder instrumentation
-//! - `aws-sqs`: SQS automatic fluent builder instrumentation
+//! - `aws-dynamodb`: DynamoDB automatic fluent builders instrumentation
+//! - `aws-firehose`: Firehose automatic fluent builders instrumentation
+//! - `aws-sns`: SNS automatic fluent builders instrumentation
+//! - `aws-sqs`: SQS automatic fluent builders instrumentation
 //!
 //! ## Feature Bundles
 //! - `aws`: All core AWS features (span + instrumentation + stream instrumentation)

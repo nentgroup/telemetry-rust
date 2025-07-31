@@ -121,7 +121,7 @@ semconv::SERVER_PORT                       // Server port
 
 Example:
 ```rust
-impl<'a> AwsInstrumentBuilder<'a> for GetItemFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for GetItemFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         
@@ -437,10 +437,10 @@ diff /tmp/operations.txt /tmp/instrumented.txt
 
 For each missing operation, add both input and output instrumentation:
 
-#### A. AwsInstrumentBuilder Implementation (Input Attributes)
+#### A. AwsBuilderInstrument Implementation (Input Attributes)
 
 ```rust
-impl<'a> AwsInstrumentBuilder<'a> for {OperationName}FluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for {OperationName}FluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         // Extract relevant parameters from the fluent builder
         let resource_arn = self.get_resource_arn().clone().unwrap_or_default();
@@ -502,7 +502,7 @@ instrument_aws_operation!(
 
 #### D. Implementation Priority
 
-1. **Input attributes** (AwsInstrumentBuilder) - Always implement first
+1. **Input attributes** (AwsBuilderInstrument) - Always implement first
 2. **Output attributes** (InstrumentedFluentBuilderOutput) - Implement for operations with meaningful result metrics
 3. **Macro call** - Add last to tie everything together
 
@@ -545,7 +545,7 @@ attributes![
 ### Pattern 1: Simple Operations (No Parameters, No Result Metrics)
 
 ```rust
-impl<'a> AwsInstrumentBuilder<'a> for ListTopicsFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for ListTopicsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         // Simple operation - no additional attributes needed
         SnsSpanBuilder::list_topics()
@@ -561,7 +561,7 @@ instrument_aws_operation!(aws_sdk_sns::operation::list_topics);
 ### Pattern 2: Resource-Specific Operations (Following Semantic Conventions)
 
 ```rust
-impl<'a> AwsInstrumentBuilder<'a> for DeleteTopicFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for DeleteTopicFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         // Extract topic ARN - follows SNS semantic conventions
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
@@ -576,7 +576,7 @@ instrument_aws_operation!(aws_sdk_sns::operation::delete_topic);
 ### Pattern 3: Operations with Rich Input and Output Attributes
 
 ```rust
-impl<'a> AwsInstrumentBuilder<'a> for GetItemFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for GetItemFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let table_name = self.get_table_name().clone().unwrap_or_default();
         
@@ -614,7 +614,7 @@ instrument_aws_operation!(aws_sdk_dynamodb::operation::get_item);
 ### Pattern 4: Batch Operations with Rich Output Metrics
 
 ```rust
-impl<'a> AwsInstrumentBuilder<'a> for PublishBatchFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for PublishBatchFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
         
@@ -649,7 +649,7 @@ instrument_aws_operation!(aws_sdk_sns::operation::publish_batch);
 ### Pattern 5: SMS/Special Case Operations (Type Name Issues)
 
 ```rust
-impl<'a> AwsInstrumentBuilder<'a> for GetSMSAttributesFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for GetSMSAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SnsSpanBuilder::get_sms_attributes()
     }
@@ -768,21 +768,21 @@ Organize implementations by logical groups, with input and output implementation
 
 ```rust
 // Publishing operations
-impl<'a> AwsInstrumentBuilder<'a> for PublishFluentBuilder { ... }
+impl<'a> AwsBuilderInstrument<'a> for PublishFluentBuilder { ... }
 impl InstrumentedFluentBuilderOutput for aws_sdk_sns::operation::publish::PublishOutput { ... }
 
-impl<'a> AwsInstrumentBuilder<'a> for PublishBatchFluentBuilder { ... }
+impl<'a> AwsBuilderInstrument<'a> for PublishBatchFluentBuilder { ... }
 impl InstrumentedFluentBuilderOutput for aws_sdk_sns::operation::publish_batch::PublishBatchOutput { ... }
 
 // Topic management operations  
-impl<'a> AwsInstrumentBuilder<'a> for CreateTopicFluentBuilder { ... }
+impl<'a> AwsBuilderInstrument<'a> for CreateTopicFluentBuilder { ... }
 impl InstrumentedFluentBuilderOutput for aws_sdk_sns::operation::create_topic::CreateTopicOutput { ... }
 
-impl<'a> AwsInstrumentBuilder<'a> for DeleteTopicFluentBuilder { ... }
+impl<'a> AwsBuilderInstrument<'a> for DeleteTopicFluentBuilder { ... }
 // No output extraction needed for delete operations
 
 // SMS sandbox operations
-impl<'a> AwsInstrumentBuilder<'a> for CreateSMSSandboxPhoneNumberFluentBuilder { ... }
+impl<'a> AwsBuilderInstrument<'a> for CreateSMSSandboxPhoneNumberFluentBuilder { ... }
 // ... etc
 ```
 

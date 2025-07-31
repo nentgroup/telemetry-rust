@@ -11,7 +11,7 @@ Ask for the AWS service name if not provided (e.g., "SNS", "DynamoDB", "Firehose
 Requirements for verification:
 * **API Reference Analysis**: Extract and follow the API reference link from the operations file to compare against official AWS documentation
 * **Operations Coverage**: Ensure every AWS API operation has a corresponding `{service}_*_operation!` macro call
-* **Fluent Builder Coverage**: Verify every operation macro has matching `instrument_aws_operation!` and `AwsInstrumentBuilder` implementations
+* **Fluent Builder Coverage**: Verify every operation macro has matching `instrument_aws_operation!` and `AwsBuilderInstrument` implementations
 * **Name Accuracy**: Confirm operation names exactly match AWS API documentation
 * **Type Compatibility**: Identify type name mismatches requiring explicit macro forms
 

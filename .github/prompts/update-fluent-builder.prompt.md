@@ -9,7 +9,7 @@ Your goal is to update AWS SDK fluent builder instrumentations in `src/middlewar
 Ask for the AWS service name if not provided (e.g., "SNS", "DynamoDB", "Firehose").
 
 Requirements for fluent builder instrumentations:
-* **Complete Coverage**: Every operation in the corresponding operations file must have both `AwsInstrumentBuilder` implementation and `instrument_aws_operation!` macro call
+* **Complete Coverage**: Every operation in the corresponding operations file must have both `AwsBuilderInstrument` implementation and `instrument_aws_operation!` macro call
 * **Semantic Compliance**: Follow OpenTelemetry semantic conventions using `semconv::` constants from the crate
 * **SDK Compatibility**: Use correct type names from current `aws-sdk-{service}` crate, handling mismatches with explicit macro forms
 * **Rich Attributes**: Extract all relevant semantic attributes using fluent builder `self.get_*()` methods

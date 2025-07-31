@@ -15,7 +15,7 @@ mod sqs;
 ///
 /// This trait provides methods to build spans for AWS operations and instrument the
 /// fluent builders returned by AWS SDK operations.
-pub trait AwsInstrumentBuilder<'a>
+pub trait AwsBuilderInstrument<'a>
 where
     Self: Sized,
 {
@@ -40,12 +40,12 @@ where
 /// This struct wraps AWS SDK fluent builders and automatically creates spans
 /// when operations are executed, providing distributed tracing capabilities
 /// for AWS service calls.
-pub struct InstrumentedFluentBuilder<'a, T: AwsInstrumentBuilder<'a>> {
+pub struct InstrumentedFluentBuilder<'a, T: AwsBuilderInstrument<'a>> {
     inner: T,
     span: AwsSpanBuilder<'a>,
 }
 
-impl<'a, T: AwsInstrumentBuilder<'a>> InstrumentedFluentBuilder<'a, T> {
+impl<'a, T: AwsBuilderInstrument<'a>> InstrumentedFluentBuilder<'a, T> {
     /// Creates a new instrumented fluent builder.
     ///
     /// # Arguments

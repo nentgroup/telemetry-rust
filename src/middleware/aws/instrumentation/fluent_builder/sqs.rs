@@ -4,7 +4,7 @@ use super::{utils::*, *};
 use crate::semconv;
 
 // Message operations
-impl<'a> AwsInstrumentBuilder<'a> for SendMessageFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for SendMessageFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::send_message(queue_url)
@@ -20,7 +20,7 @@ impl InstrumentedFluentBuilderOutput for SendMessageOutput {
 }
 instrument_aws_operation!(aws_sdk_sqs::operation::send_message);
 
-impl<'a> AwsInstrumentBuilder<'a> for SendMessageBatchFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for SendMessageBatchFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         let attributes = attributes![
@@ -43,7 +43,7 @@ impl InstrumentedFluentBuilderOutput for SendMessageBatchOutput {
 }
 instrument_aws_operation!(aws_sdk_sqs::operation::send_message_batch);
 
-impl<'a> AwsInstrumentBuilder<'a> for ReceiveMessageFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for ReceiveMessageFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::receive_message(queue_url)
@@ -60,7 +60,7 @@ impl InstrumentedFluentBuilderOutput for ReceiveMessageOutput {
 }
 instrument_aws_operation!(aws_sdk_sqs::operation::receive_message);
 
-impl<'a> AwsInstrumentBuilder<'a> for DeleteMessageFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for DeleteMessageFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::delete_message(queue_url)
@@ -69,7 +69,7 @@ impl<'a> AwsInstrumentBuilder<'a> for DeleteMessageFluentBuilder {
 impl InstrumentedFluentBuilderOutput for DeleteMessageOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::delete_message);
 
-impl<'a> AwsInstrumentBuilder<'a> for DeleteMessageBatchFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for DeleteMessageBatchFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         let attributes = attributes![
@@ -84,7 +84,7 @@ impl<'a> AwsInstrumentBuilder<'a> for DeleteMessageBatchFluentBuilder {
 impl InstrumentedFluentBuilderOutput for DeleteMessageBatchOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::delete_message_batch);
 
-impl<'a> AwsInstrumentBuilder<'a> for ChangeMessageVisibilityFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for ChangeMessageVisibilityFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::change_message_visibility(queue_url)
@@ -93,7 +93,7 @@ impl<'a> AwsInstrumentBuilder<'a> for ChangeMessageVisibilityFluentBuilder {
 impl InstrumentedFluentBuilderOutput for ChangeMessageVisibilityOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::change_message_visibility);
 
-impl<'a> AwsInstrumentBuilder<'a> for ChangeMessageVisibilityBatchFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for ChangeMessageVisibilityBatchFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         let attributes = attributes![
@@ -109,7 +109,7 @@ impl InstrumentedFluentBuilderOutput for ChangeMessageVisibilityBatchOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::change_message_visibility_batch);
 
 // Queue management operations
-impl<'a> AwsInstrumentBuilder<'a> for CreateQueueFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for CreateQueueFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_name = self.get_queue_name().clone().unwrap_or_default();
         SqsSpanBuilder::create_queue(queue_name)
@@ -118,7 +118,7 @@ impl<'a> AwsInstrumentBuilder<'a> for CreateQueueFluentBuilder {
 impl InstrumentedFluentBuilderOutput for CreateQueueOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::create_queue);
 
-impl<'a> AwsInstrumentBuilder<'a> for DeleteQueueFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for DeleteQueueFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::delete_queue(queue_url)
@@ -127,7 +127,7 @@ impl<'a> AwsInstrumentBuilder<'a> for DeleteQueueFluentBuilder {
 impl InstrumentedFluentBuilderOutput for DeleteQueueOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::delete_queue);
 
-impl<'a> AwsInstrumentBuilder<'a> for GetQueueAttributesFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for GetQueueAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::get_queue_attributes(queue_url)
@@ -136,7 +136,7 @@ impl<'a> AwsInstrumentBuilder<'a> for GetQueueAttributesFluentBuilder {
 impl InstrumentedFluentBuilderOutput for GetQueueAttributesOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::get_queue_attributes);
 
-impl<'a> AwsInstrumentBuilder<'a> for SetQueueAttributesFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for SetQueueAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::set_queue_attributes(queue_url)
@@ -145,7 +145,7 @@ impl<'a> AwsInstrumentBuilder<'a> for SetQueueAttributesFluentBuilder {
 impl InstrumentedFluentBuilderOutput for SetQueueAttributesOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::set_queue_attributes);
 
-impl<'a> AwsInstrumentBuilder<'a> for PurgeQueueFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for PurgeQueueFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::purge_queue(queue_url)
@@ -154,7 +154,7 @@ impl<'a> AwsInstrumentBuilder<'a> for PurgeQueueFluentBuilder {
 impl InstrumentedFluentBuilderOutput for PurgeQueueOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::purge_queue);
 
-impl<'a> AwsInstrumentBuilder<'a> for AddPermissionFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for AddPermissionFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::add_permission(queue_url)
@@ -163,7 +163,7 @@ impl<'a> AwsInstrumentBuilder<'a> for AddPermissionFluentBuilder {
 impl InstrumentedFluentBuilderOutput for AddPermissionOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::add_permission);
 
-impl<'a> AwsInstrumentBuilder<'a> for RemovePermissionFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for RemovePermissionFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::remove_permission(queue_url)
@@ -173,7 +173,7 @@ impl InstrumentedFluentBuilderOutput for RemovePermissionOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::remove_permission);
 
 // Global operations
-impl<'a> AwsInstrumentBuilder<'a> for GetQueueUrlFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for GetQueueUrlFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_name = self.get_queue_name().clone().unwrap_or_default();
         let attributes = attributes![
@@ -186,7 +186,7 @@ impl<'a> AwsInstrumentBuilder<'a> for GetQueueUrlFluentBuilder {
 impl InstrumentedFluentBuilderOutput for GetQueueUrlOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::get_queue_url);
 
-impl<'a> AwsInstrumentBuilder<'a> for ListQueuesFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for ListQueuesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SqsSpanBuilder::list_queues()
     }
@@ -194,7 +194,7 @@ impl<'a> AwsInstrumentBuilder<'a> for ListQueuesFluentBuilder {
 impl InstrumentedFluentBuilderOutput for ListQueuesOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::list_queues);
 
-impl<'a> AwsInstrumentBuilder<'a> for ListQueueTagsFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for ListQueueTagsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::list_queue_tags(queue_url)
@@ -203,7 +203,7 @@ impl<'a> AwsInstrumentBuilder<'a> for ListQueueTagsFluentBuilder {
 impl InstrumentedFluentBuilderOutput for ListQueueTagsOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::list_queue_tags);
 
-impl<'a> AwsInstrumentBuilder<'a> for TagQueueFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for TagQueueFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::tag_queue(queue_url)
@@ -212,7 +212,7 @@ impl<'a> AwsInstrumentBuilder<'a> for TagQueueFluentBuilder {
 impl InstrumentedFluentBuilderOutput for TagQueueOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::tag_queue);
 
-impl<'a> AwsInstrumentBuilder<'a> for UntagQueueFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for UntagQueueFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::untag_queue(queue_url)
@@ -221,7 +221,7 @@ impl<'a> AwsInstrumentBuilder<'a> for UntagQueueFluentBuilder {
 impl InstrumentedFluentBuilderOutput for UntagQueueOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::untag_queue);
 
-impl<'a> AwsInstrumentBuilder<'a> for ListDeadLetterSourceQueuesFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for ListDeadLetterSourceQueuesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let queue_url = self.get_queue_url().clone().unwrap_or_default();
         SqsSpanBuilder::list_dead_letter_source_queues(queue_url)
@@ -230,7 +230,7 @@ impl<'a> AwsInstrumentBuilder<'a> for ListDeadLetterSourceQueuesFluentBuilder {
 impl InstrumentedFluentBuilderOutput for ListDeadLetterSourceQueuesOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::list_dead_letter_source_queues);
 
-impl<'a> AwsInstrumentBuilder<'a> for StartMessageMoveTaskFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for StartMessageMoveTaskFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SqsSpanBuilder::start_message_move_task()
     }
@@ -238,7 +238,7 @@ impl<'a> AwsInstrumentBuilder<'a> for StartMessageMoveTaskFluentBuilder {
 impl InstrumentedFluentBuilderOutput for StartMessageMoveTaskOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::start_message_move_task);
 
-impl<'a> AwsInstrumentBuilder<'a> for CancelMessageMoveTaskFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for CancelMessageMoveTaskFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SqsSpanBuilder::cancel_message_move_task()
     }
@@ -246,7 +246,7 @@ impl<'a> AwsInstrumentBuilder<'a> for CancelMessageMoveTaskFluentBuilder {
 impl InstrumentedFluentBuilderOutput for CancelMessageMoveTaskOutput {}
 instrument_aws_operation!(aws_sdk_sqs::operation::cancel_message_move_task);
 
-impl<'a> AwsInstrumentBuilder<'a> for ListMessageMoveTasksFluentBuilder {
+impl<'a> AwsBuilderInstrument<'a> for ListMessageMoveTasksFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         SqsSpanBuilder::list_message_move_tasks()
     }

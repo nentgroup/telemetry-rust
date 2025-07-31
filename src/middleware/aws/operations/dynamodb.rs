@@ -150,11 +150,6 @@ dynamodb_global_operation!(describe_backup);
 dynamodb_global_operation!(describe_export);
 dynamodb_global_operation!(describe_import);
 
-// PartiQL operations
-dynamodb_global_operation!(execute_statement);
-dynamodb_global_operation!(batch_execute_statement);
-dynamodb_global_operation!(execute_transaction);
-
 // table operations (by name)
 dynamodb_table_operation!(create_backup);
 dynamodb_table_operation!(create_table);
@@ -208,3 +203,8 @@ dynamodb_batch_operation!(batch_get_item);
 dynamodb_batch_operation!(batch_write_item);
 dynamodb_batch_operation!(transact_get_items);
 dynamodb_batch_operation!(transact_write_items);
+
+// PartiQL operations
+dynamodb_batch_operation!(execute_statement);
+dynamodb_batch_operation!(batch_execute_statement);
+dynamodb_batch_operation!(execute_transaction);

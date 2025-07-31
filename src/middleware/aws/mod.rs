@@ -37,7 +37,57 @@ pub use operations::*;
 /// It provides convenient methods for setting span attributes and recording
 /// AWS operation status upon its completion, including AWS request ID and optional error.
 ///
+/// # Usage
+///
+/// `AwsSpan` can be used for manual instrumentation when you need fine-grained
+/// control over span lifecycle. But for most use cases, consider using the higher-level
+/// traits like [`AwsInstrument`] or [`AwsBuilderInstrument`] which provide automatic
+/// instrumentation.
+///
 /// Should be constructed using [`AwsSpanBuilder`] by calling [`AwsSpanBuilder::start`].
+///
+/// # Example
+///
+/// ```rust
+/// use aws_sdk_dynamodb::{Client as DynamoClient, types::AttributeValue};
+/// use telemetry_rust::{KeyValue, middleware::aws::DynamodbSpanBuilder, semconv};
+///
+/// async fn query_table() -> Result<i32, Box<dyn std::error::Error>> {
+///     let config = aws_config::load_from_env().await;
+///     let dynamo_client = DynamoClient::new(&config);
+///
+///     // Create and start a span manually
+///     let mut span = DynamodbSpanBuilder::query("table_name")
+///         .attribute(KeyValue::new(semconv::AWS_DYNAMODB_INDEX_NAME, "my_index"))
+///         .start();
+///
+///     let response = dynamo_client
+///         .query()
+///         .table_name("table_name")
+///         .index_name("my_index")
+///         .key_condition_expression("PK = :pk")
+///         .expression_attribute_values(":pk", AttributeValue::S("Test".to_string()))
+///         .send()
+///         .await;
+///
+///     // Add attributes from response
+///     if let Some(output) = response.as_ref().ok() {
+///         let count = output.count() as i64;
+///         let scanned_count = output.scanned_count() as i64;
+///         span.set_attributes([
+///             KeyValue::new(semconv::AWS_DYNAMODB_COUNT, count),
+///             KeyValue::new(semconv::AWS_DYNAMODB_SCANNED_COUNT, scanned_count),
+///         ]);
+///     }
+///
+///     // The span automatically handles success/error and request ID extraction
+///     span.end(&response);
+///
+///     let response = response?;
+///     println!("DynamoDB items: {:#?}", response.items());
+///     Ok(response.count())
+/// }
+/// ```
 pub struct AwsSpan {
     span: BoxedSpan,
 }
@@ -137,6 +187,14 @@ impl From<BoxedSpan> for AwsSpan {
 ///
 /// This builder provides a fluent interface for constructing [`AwsSpan`] with
 /// required attributes and proper span kinds for different types of AWS operations.
+/// It automatically sets standard RPC attributes following OpenTelemetry semantic
+/// conventions for AWS services.
+///
+/// # Usage
+///
+/// This builder can be used with [`AwsInstrument`] trait to instrument any AWS operation,
+/// or to manually create [`AwsSpan`] if you need control over span lifecycle.
+/// For automatic instrumentation, use [`AwsBuilderInstrument`] trait.
 pub struct AwsSpanBuilder<'a> {
     inner: SpanBuilder,
     tracer: BoxedTracer,

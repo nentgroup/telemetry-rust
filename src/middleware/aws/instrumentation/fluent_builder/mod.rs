@@ -183,10 +183,9 @@ where
 {
     fn on_result(mut self, result: &Result<T, E>) {
         if let Ok(output) = result {
-            let attributes = output.extract_attributes();
-            self.0.span.set_attributes(attributes);
+            self.0.set_attributes(output.extract_attributes());
         }
-        self.0.end(result);
+        self.0.on_result(result)
     }
 }
 

@@ -26,7 +26,7 @@ impl<'a> AwsBuilderInstrument<'a> for SendMessageBatchFluentBuilder {
         let attributes = attributes![
             self.get_entries()
                 .as_ref()
-                .map(|entries| entries.len() as i64)
+                .map(|entries| entries.len())
                 .as_attribute(semconv::MESSAGING_BATCH_MESSAGE_COUNT)
         ];
         SqsSpanBuilder::send_message_batch(queue_url).attributes(attributes)
@@ -75,7 +75,7 @@ impl<'a> AwsBuilderInstrument<'a> for DeleteMessageBatchFluentBuilder {
         let attributes = attributes![
             self.get_entries()
                 .as_ref()
-                .map(|entries| entries.len() as i64)
+                .map(|entries| entries.len())
                 .as_attribute(semconv::MESSAGING_BATCH_MESSAGE_COUNT)
         ];
         SqsSpanBuilder::delete_message_batch(queue_url).attributes(attributes)
@@ -99,7 +99,7 @@ impl<'a> AwsBuilderInstrument<'a> for ChangeMessageVisibilityBatchFluentBuilder 
         let attributes = attributes![
             self.get_entries()
                 .as_ref()
-                .map(|entries| entries.len() as i64)
+                .map(|entries| entries.len())
                 .as_attribute(semconv::MESSAGING_BATCH_MESSAGE_COUNT)
         ];
         SqsSpanBuilder::change_message_visibility_batch(queue_url).attributes(attributes)

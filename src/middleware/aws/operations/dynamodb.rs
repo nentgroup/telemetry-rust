@@ -205,6 +205,6 @@ dynamodb_batch_operation!(transact_get_items);
 dynamodb_batch_operation!(transact_write_items);
 
 // PartiQL operations
-dynamodb_batch_operation!(execute_statement);
+dynamodb_table_operation!(execute_statement);
 dynamodb_batch_operation!(batch_execute_statement);
 dynamodb_batch_operation!(execute_transaction);

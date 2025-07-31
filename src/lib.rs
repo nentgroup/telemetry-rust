@@ -13,21 +13,33 @@
 //! - Context Propagation for incoming and outgoing HTTP requests
 //! - Axum middleware to instrument http services
 //! - AWS Lambda instrumentation layer
-//! - AWS SDK instrumentation
+//! - AWS SDK instrumentation with automatic attribute extraction
 //! - Integration testing tools
 //!
 //! # Available Feature Flags
 //!
+//! ## Core Features
 //! - `axum`: Axum web framework middleware support
-//! - `aws-span`: AWS SDK span creation utilities
-//! - `aws-instrumentation`: Instrumentation for AWS SDK operations
-//! - `aws-stream-instrumentation`: Instrumentation for AWS SDK pagination streams
-//! - `aws-lambda`: AWS Lambda runtime middleware
-//! - `aws`: All AWS features (span + instrumentation + stream instrumentation)
-//! - `aws-full`: All AWS features including Lambda
-//! - `future`: Future instrumentation utilities
 //! - `test`: Testing utilities for OpenTelemetry validation
 //! - `zipkin`: Zipkin context propagation support (enabled by default)
+//! - `future`: Future instrumentation utilities (mostly used internally)
+//!
+//! ## AWS Features
+//! - `aws-span`: AWS SDK span creation utilities
+//! - `aws-instrumentation`: Manual instrumentation for AWS SDK operations
+//! - `aws-stream-instrumentation`: Instrumentation for AWS SDK pagination streams
+//! - `aws-fluent-builder-instrumentation`: Automatic fluent builder instrumentation core
+//! - `aws-lambda`: AWS Lambda runtime middleware
+//!
+//! ## AWS Service-Specific Features
+//! - `aws-dynamodb`: DynamoDB automatic fluent builder instrumentation
+//! - `aws-firehose`: Firehose automatic fluent builder instrumentation
+//! - `aws-sns`: SNS automatic fluent builder instrumentation
+//! - `aws-sqs`: SQS automatic fluent builder instrumentation
+//!
+//! ## Feature Bundles
+//! - `aws`: All core AWS features (span + instrumentation + stream instrumentation)
+//! - `aws-full`: All AWS features including Lambda and all service-specific instrumentations
 //! - `full`: All features enabled
 //!
 //! # Quick Start

@@ -42,18 +42,23 @@ async fn graceful_shutdown(provider: TracerProvider) {
 
 ### `AwsBuilderInstrument` trait
 
-Fully automated instrumentation of AWS SDK fluent builders.
-Available with `instrument` feature flag.
+Fully automated instrumentation of AWS SDK fluent builders with attributes extraction from both the request and response.
+Available with `aws-instrumentation` feature flag.
 
 ```rust
 let res = dynamo_client
     .get_item()
     .table_name("table_name")
     .set_key(primary_key)
-    .instrument() // all span attributes are extracted automatically from fluent builder
+    .instrument()
     .send()
     .await;
+// Automatically extracts:
+// - Request attributes from fluent builder: table name, consistent read, projection expression, etc.
+// - Output attributes: consumed capacity, item found status, etc.
 ```
+
+The trait automatically extracts relevant attributes from both the request (fluent builder) and response (operation output) following OpenTelemetry semantic conventions for AWS services.
 
 ### `AwsInstrument` trait
 

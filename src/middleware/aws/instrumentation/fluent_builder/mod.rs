@@ -14,7 +14,70 @@ mod sqs;
 /// A trait for AWS service clients that can be instrumented with OpenTelemetry tracing.
 ///
 /// This trait provides methods to build spans for AWS operations and instrument the
-/// fluent builders returned by AWS SDK operations.
+/// fluent builders returned by AWS SDK operations. The instrumentation automatically
+/// extracts both input attributes (from the fluent builder configuration) and output
+/// attributes (from the operation response) following OpenTelemetry semantic conventions.
+///
+/// # Example
+///
+/// ```rust
+/// use aws_sdk_dynamodb::{Client as DynamoClient, types::AttributeValue};
+/// use telemetry_rust::middleware::aws::AwsBuilderInstrument;
+///
+/// async fn query_table() -> Result<i32, Box<dyn std::error::Error>> {
+///     let config = aws_config::load_from_env().await;
+///     let dynamo_client = DynamoClient::new(&config);
+///
+///     let resp = dynamo_client
+///         .query()
+///         .table_name("table_name")
+///         .index_name("my_index")
+///         .key_condition_expression("PK = :pk")
+///         .expression_attribute_values(":pk", AttributeValue::S("Test".to_string()))
+///         .consistent_read(true)
+///         .projection_expression("id,name")
+///         .instrument()
+///         .send()
+///         .await?;
+///
+///     // Automatically extracts span attributes from the builder:
+///     // - aws.dynamodb.table_name: "table_name"
+///     // - aws.dynamodb.index_name: "my_index"
+///     // - aws.dynamodb.consistent_read: true
+///     // - aws.dynamodb.projection: "id,name"
+///     //
+///     // And from the AWS output:
+///     // - aws.dynamodb.count: number of items returned
+///     // - aws.dynamodb.scanned_count: number of items scanned
+///
+///     println!("DynamoDB items: {:#?}", resp.items());
+///     Ok(resp.count())
+/// }
+/// ```
+///
+/// # Comparison with Manual Instrumentation
+///
+/// This trait provides automatic instrumentation as an alternative to manual instrumentation
+/// using [`AwsInstrument`]. The automatic approach extracts attributes based on OpenTelemetry
+/// semantic conventions without requiring explicit attribute specification:
+///
+/// ```rust,ignore
+/// // Automatic instrumentation (recommended)
+/// dynamo_client
+///     .get_item()
+///     .table_name("table")
+///     .instrument() // All attributes extracted automatically
+///     .send()
+///     .await?;
+///
+/// // Manual instrumentation (more control, more verbose)
+/// dynamo_client
+///     .get_item()
+///     .table_name("table")
+///     .send()
+///     .instrument(DynamodbSpanBuilder::get_item("table"))
+///     .await?;
+/// ```
 pub trait AwsBuilderInstrument<'a>
 where
     Self: Sized,

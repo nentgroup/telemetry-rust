@@ -72,6 +72,55 @@ impl AwsSpan {
         }
         span.set_status(status);
     }
+
+    /// Sets a single attribute on the span.
+    ///
+    /// This method allows you to add custom attributes to the span after it has been created.
+    /// This is useful for adding dynamic attributes that become available during operation execution.
+    ///
+    /// For more information see [`BoxedSpan::set_attribute`]
+    ///
+    /// # Arguments
+    ///
+    /// * `attribute` - The key-value attribute to add to the span
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use telemetry_rust::{KeyValue, middleware::aws::AwsSpanBuilder};
+    ///
+    /// let mut span = AwsSpanBuilder::client("DynamoDB", "GetItem", []).start();
+    /// span.set_attribute(KeyValue::new("custom.attribute", "value"));
+    /// ```
+    pub fn set_attribute(&mut self, attribute: KeyValue) {
+        self.span.set_attribute(attribute);
+    }
+
+    /// Sets multiple attributes on the span.
+    ///
+    /// This method allows you to add multiple custom attributes to the span at once.
+    /// This is more efficient than calling `set_attribute` multiple times.
+    ///
+    /// For more information see [`BoxedSpan::set_attributes`]
+    ///
+    /// # Arguments
+    ///
+    /// * `attributes` - An iterator of key-value attributes to add to the span
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use telemetry_rust::{KeyValue, middleware::aws::AwsSpanBuilder, semconv};
+    ///
+    /// let mut span = AwsSpanBuilder::client("DynamoDB", "GetItem", []).start();
+    /// span.set_attributes([
+    ///     KeyValue::new(semconv::DB_NAMESPACE, "my_table"),
+    ///     KeyValue::new("custom.attribute", "value"),
+    /// ]);
+    /// ```
+    pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = KeyValue>) {
+        self.span.set_attributes(attributes);
+    }
 }
 
 impl From<BoxedSpan> for AwsSpan {

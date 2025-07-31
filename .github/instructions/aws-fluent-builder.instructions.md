@@ -41,7 +41,8 @@ Always check these official semantic conventions docs for the specific AWS servi
 - **SNS**: https://opentelemetry.io/docs/specs/semconv/messaging/sns/
 - **SQS**: https://opentelemetry.io/docs/specs/semconv/messaging/sqs/
 - **S3**: https://opentelemetry.io/docs/specs/semconv/object-stores/s3/
-- **General AWS**: https://opentelemetry.io/docs/specs/semconv/cloud/aws/
+- **General Messaging**: https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/
+- **General AWS**: https://opentelemetry.io/docs/specs/semconv/cloud-providers/aws-sdk/
 - **HTTP**: https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 
 ### Semantic Conventions Crate

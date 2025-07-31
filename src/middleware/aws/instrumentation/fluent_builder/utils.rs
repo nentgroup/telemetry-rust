@@ -55,20 +55,24 @@ impl AsAttribute for Option<Vec<String>> {
     }
 }
 
-impl AsAttribute for Option<aws_sdk_dynamodb::types::Select> {
-    fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
-        use aws_sdk_dynamodb::types::Select::*;
+#[cfg(feature = "aws-dynamodb")]
+mod dynamodb {
+    use super::*;
+    use aws_sdk_dynamodb::types::Select;
 
-        self.as_ref().map(|value| {
-            let value: StringValue = match value {
-                AllAttributes => "ALL_ATTRIBUTES".into(),
-                AllProjectedAttributes => "ALL_PROJECTED_ATTRIBUTES".into(),
-                Count => "COUNT".into(),
-                SpecificAttributes => "SPECIFIC_ATTRIBUTES".into(),
-                other => other.as_str().to_owned().into(),
-            };
-            KeyValue::new(key, value)
-        })
+    impl AsAttribute for Option<Select> {
+        fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
+            self.as_ref().map(|value| {
+                let value: StringValue = match value {
+                    Select::AllAttributes => "ALL_ATTRIBUTES".into(),
+                    Select::AllProjectedAttributes => "ALL_PROJECTED_ATTRIBUTES".into(),
+                    Select::Count => "COUNT".into(),
+                    Select::SpecificAttributes => "SPECIFIC_ATTRIBUTES".into(),
+                    other => other.as_str().to_owned().into(),
+                };
+                KeyValue::new(key, value)
+            })
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::{Context, middleware::aws::*};
+use crate::{Context, future::InstrumentedFutureContext, middleware::aws::*};
 
 pub(super) mod utils;
 
@@ -74,9 +74,32 @@ impl<'a, T: AwsInstrumentBuilder<'a>> InstrumentedFluentBuilder<'a, T> {
     }
 }
 
+pub(super) struct FluentBuilderSpan(AwsSpan);
+
+pub(super) trait InstrumentedFluentBuilderOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        None
+    }
+}
+
+impl<T, E> InstrumentedFutureContext<Result<T, E>> for FluentBuilderSpan
+where
+    T: RequestId + InstrumentedFluentBuilderOutput,
+    E: RequestId + Error,
+{
+    fn on_result(mut self, result: &Result<T, E>) {
+        if let Ok(output) = result {
+            let attributes = output.extract_attributes();
+            self.0.span.set_attributes(attributes);
+        }
+        self.0.end(result);
+    }
+}
+
 /// Generates [`super::InstrumentedFluentBuilder`] implementation for AWS SDK operations.
 macro_rules! instrument_aws_operation {
     ($sdk:ident::operation::$op:ident, $builder:ident, $output:ident, $error:ident) => {
+        use $sdk::operation::$op::$output;
         use $sdk::operation::$op::builders::$builder;
         impl
             super::InstrumentedFluentBuilder<'_, $sdk::operation::$op::builders::$builder>
@@ -91,7 +114,11 @@ macro_rules! instrument_aws_operation {
                 $sdk::operation::$op::$output,
                 $sdk::error::SdkError<$sdk::operation::$op::$error>,
             > {
-                self.inner.send().instrument(self.span).await
+                let span = self.span.start();
+                $crate::future::InstrumentedFuture::new(
+                    self.inner.send(),
+                    super::FluentBuilderSpan(span),
+                ).await
             }
         }
     };

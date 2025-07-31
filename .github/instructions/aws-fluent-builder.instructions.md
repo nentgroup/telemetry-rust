@@ -158,7 +158,7 @@ pub trait InstrumentedFluentBuilderOutput {
     /// 
     /// # Returns
     /// 
-    /// A vector of key-value pairs representing attributes to add to the span.
+    /// An iterator of key-value pairs representing attributes to add to the span.
     /// Use semantic convention constants from `semconv` when available.
     ///
     /// # Guidelines
@@ -167,8 +167,11 @@ pub trait InstrumentedFluentBuilderOutput {
     /// - Extract meaningful operational metrics (counts, capacities, IDs, etc.)
     /// - Include resource identifiers when present in outputs
     /// - Use Option types gracefully - missing data should not cause failures
-    /// - Return empty Vec if no useful attributes can be extracted
-    fn extract_attributes(&self) -> Vec<KeyValue>;
+    /// - Return an empty iterator if no useful attributes can be extracted
+    /// - Prefer returning arrays over Vec for simple cases
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        None
+    }
 }
 ```
 
@@ -178,31 +181,28 @@ Output attribute extraction should complement the existing input attribute extra
 
 ```rust
 impl InstrumentedFluentBuilderOutput for aws_sdk_dynamodb::operation::query::QueryOutput {
-    fn extract_attributes(&self) -> Vec<KeyValue> {
-        let mut attributes = Vec::new();
-        
-        // Always extract count metrics when available
-        if let Some(count) = self.count() {
-            attributes.push(KeyValue::new("aws.dynamodb.count", count as i64));
-        }
-        
-        if let Some(scanned_count) = self.scanned_count() {
-            attributes.push(KeyValue::new("aws.dynamodb.scanned_count", scanned_count as i64));
-        }
-        
-        // Extract consumed capacity information
-        if let Some(consumed_capacity) = self.consumed_capacity() {
-            if let Some(capacity_units) = consumed_capacity.capacity_units() {
-                attributes.push(KeyValue::new("aws.dynamodb.consumed_capacity", capacity_units));
-            }
-            
-            // Include table and index names from consumed capacity
-            if let Some(table_name) = consumed_capacity.table_name() {
-                attributes.push(semconv::AWS_DYNAMODB_TABLE_NAME.string(table_name.to_string()));
-            }
-        }
-        
-        attributes
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        [
+            KeyValue::new("aws.dynamodb.count", self.count() as i64),
+            KeyValue::new("aws.dynamodb.scanned_count", self.scanned_count() as i64),
+        ]
+    }
+}
+```
+
+For more complex extraction with conditional attributes:
+
+```rust
+impl InstrumentedFluentBuilderOutput for aws_sdk_dynamodb::operation::batch_write_item::BatchWriteItemOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.unprocessed_items().as_ref()
+                .filter(|items| !items.is_empty())
+                .map(|items| KeyValue::new("aws.dynamodb.unprocessed_items", items.len() as i64)),
+            self.consumed_capacity().as_ref()
+                .filter(|cc| !cc.is_empty())
+                .map(|cc| KeyValue::new("aws.dynamodb.consumed_capacity_entries", cc.len() as i64)),
+        ]
     }
 }
 ```
@@ -211,52 +211,88 @@ impl InstrumentedFluentBuilderOutput for aws_sdk_dynamodb::operation::query::Que
 
 **DynamoDB**: Extract counts, consumed capacity, table/index names, pagination tokens
 ```rust
-// Query/Scan results
-self.count().map(|c| KeyValue::new("aws.dynamodb.count", c as i64))
-self.scanned_count().map(|c| KeyValue::new("aws.dynamodb.scanned_count", c as i64))
-self.consumed_capacity().and_then(|cc| cc.capacity_units()).map(|cu| KeyValue::new("aws.dynamodb.consumed_capacity", cu))
+// Query/Scan results - simple array return
+[
+    KeyValue::new("aws.dynamodb.count", self.count() as i64),
+    KeyValue::new("aws.dynamodb.scanned_count", self.scanned_count() as i64),
+]
 
-// Batch operations
-self.unprocessed_keys().map(|uk| KeyValue::new("aws.dynamodb.unprocessed_keys", uk.len() as i64))
+// Batch operations - using attributes! macro for conditional attributes
+attributes![
+    self.unprocessed_keys().as_ref()
+        .filter(|uk| !uk.is_empty())
+        .map(|uk| KeyValue::new("aws.dynamodb.unprocessed_keys", uk.len() as i64)),
+]
 
 // PartiQL operations  
-self.items().map(|items| KeyValue::new("aws.dynamodb.item_count", items.len() as i64))
+attributes![
+    self.items().as_ref()
+        .filter(|items| !items.is_empty())
+        .map(|items| KeyValue::new("aws.dynamodb.item_count", items.len() as i64)),
+]
 ```
 
 **SNS**: Extract message IDs, batch counts, topic information
 ```rust
-// Publish operations
-self.message_id().map(|id| KeyValue::new("messaging.message.id", id.to_string()))
+// Publish operations - simple array return
+[
+    KeyValue::new("messaging.message.id", self.message_id().unwrap_or_default().to_string()),
+]
 
-// Batch operations
-self.successful().map(|s| KeyValue::new("messaging.batch.successful_count", s.len() as i64))
-self.failed().map(|f| KeyValue::new("messaging.batch.failed_count", f.len() as i64))
+// Batch operations - using attributes! macro
+attributes![
+    self.successful().as_ref()
+        .filter(|s| !s.is_empty())
+        .map(|s| KeyValue::new("messaging.batch.successful_count", s.len() as i64)),
+    self.failed().as_ref()
+        .filter(|f| !f.is_empty())
+        .map(|f| KeyValue::new("messaging.batch.failed_count", f.len() as i64)),
+]
 
 // Topic operations
-self.topic_arn().map(|arn| semconv::MESSAGING_DESTINATION_NAME.string(arn.to_string()))
+attributes![
+    self.topic_arn().as_ref()
+        .map(|arn| semconv::MESSAGING_DESTINATION_NAME.string(arn.to_string())),
+]
 ```
 
 **SQS**: Extract message IDs, batch counts, receipt handles
 ```rust
-// Send operations
-self.message_id().map(|id| KeyValue::new("messaging.message.id", id.to_string()))
+// Send operations - simple array return
+[
+    KeyValue::new("messaging.message.id", self.message_id().unwrap_or_default().to_string()),
+]
 
-// Receive operations  
-self.messages().map(|msgs| KeyValue::new("messaging.batch.message_count", msgs.len() as i64))
+// Receive operations - using attributes! macro
+attributes![
+    self.messages().as_ref()
+        .filter(|msgs| !msgs.is_empty())
+        .map(|msgs| KeyValue::new("messaging.batch.message_count", msgs.len() as i64)),
+]
 
 // Batch operations
-self.successful().map(|s| KeyValue::new("messaging.batch.successful_count", s.len() as i64))
+attributes![
+    self.successful().as_ref()
+        .filter(|s| !s.is_empty())
+        .map(|s| KeyValue::new("messaging.batch.successful_count", s.len() as i64)),
+]
 ```
 
 **Firehose**: Extract record IDs, batch counts, encryption status
 ```rust
-// Put operations
-self.record_id().map(|id| KeyValue::new("aws.firehose.record_id", id.to_string()))
-self.encrypted().map(|enc| KeyValue::new("aws.firehose.encrypted", enc))
+// Put operations - simple array return
+[
+    KeyValue::new("aws.firehose.record_id", self.record_id().unwrap_or_default().to_string()),
+    KeyValue::new("aws.firehose.encrypted", self.encrypted().unwrap_or(false)),
+]
 
-// Batch operations
-self.record_count().map(|count| KeyValue::new("aws.firehose.record_count", count as i64))
-self.failed_put_count().map(|count| KeyValue::new("aws.firehose.failed_put_count", count as i64))
+// Batch operations - using attributes! macro
+attributes![
+    self.record_count().as_ref()
+        .map(|count| KeyValue::new("aws.firehose.record_count", *count as i64)),
+    self.failed_put_count().as_ref()
+        .map(|count| KeyValue::new("aws.firehose.failed_put_count", *count as i64)),
+]
 ```
 
 #### Semantic Convention Compliance
@@ -271,21 +307,65 @@ Always prioritize semantic conventions over custom attributes:
 
 #### AsAttribute Utility Extension
 
-The existing `AsAttribute` trait has been extended to support common output field types:
+The existing `AsAttribute` trait has been extended to support common output field types and works well with the `attributes!` macro:
 
 ```rust
-// For Option<&str> fields
-self.some_string_field().as_attribute("custom.attribute.name")
+// For simple cases, return arrays directly
+[
+    KeyValue::new("custom.count", self.some_count() as i64),
+    KeyValue::new("custom.flag", self.some_flag()),
+]
 
-// For numeric fields
-self.some_count().map(|c| KeyValue::new("custom.count", c as i64))
-
-// For boolean fields  
-self.some_flag().as_attribute("custom.flag.name")
-
-// For collection lengths
-self.some_list().map(|list| KeyValue::new("custom.list.count", list.len() as i64))
+// For conditional attributes, use the attributes! macro with AsAttribute
+attributes![
+    self.some_string_field().as_attribute("custom.attribute.name"),
+    self.some_count().as_ref()
+        .map(|c| KeyValue::new("custom.count", *c as i64)),
+    self.some_flag().as_attribute("custom.flag.name"),
+    self.some_list().as_ref()
+        .filter(|list| !list.is_empty())
+        .map(|list| KeyValue::new("custom.list.count", list.len() as i64)),
+]
 ```
+
+#### The `attributes!` Macro
+
+The `attributes!` macro is a utility that simplifies handling optional attributes:
+
+```rust
+// Macro definition
+macro_rules! attributes {
+    ($($expr:expr),* $(,)?) => {
+        [$($expr,)*].into_iter().flatten()
+    };
+}
+```
+
+**Usage patterns:**
+
+1. **Mixed optional and required attributes:**
+```rust
+attributes![
+    // Required attribute
+    Some(KeyValue::new("always.present", "value")),
+    // Optional attributes that may return None
+    self.optional_field().as_attribute("optional.field"),
+    self.optional_list().as_ref()
+        .filter(|list| !list.is_empty())
+        .map(|list| KeyValue::new("list.count", list.len() as i64)),
+]
+```
+
+2. **Multiple conditional attributes:**
+```rust
+attributes![
+    self.count().as_ref().map(|c| KeyValue::new("count", *c as i64)),
+    self.message_id().as_ref().map(|id| KeyValue::new("message.id", id.to_string())),
+    self.encrypted().as_ref().map(|enc| KeyValue::new("encrypted", *enc)),
+]
+```
+
+The macro automatically filters out `None` values using `flatten()`, making it perfect for optional attributes.
 
 #### Macro Integration
 
@@ -380,25 +460,23 @@ impl<'a> AwsInstrumentBuilder<'a> for {OperationName}FluentBuilder {
 
 ```rust
 impl InstrumentedFluentBuilderOutput for aws_sdk_{service}::operation::{operation_name}::{OperationName}Output {
-    fn extract_attributes(&self) -> Vec<KeyValue> {
-        let mut attributes = Vec::new();
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        // For simple cases with fixed attributes, return arrays
+        [
+            KeyValue::new("{service}.some_count", self.some_count().unwrap_or(0) as i64),
+            KeyValue::new("{service}.resource_id", self.resource_id().unwrap_or_default().to_string()),
+        ]
         
-        // Extract meaningful operational metrics following semantic conventions
-        if let Some(count) = self.some_count() {
-            attributes.push(KeyValue::new("{service}.some_count", count as i64));
-        }
-        
-        // Extract resource identifiers
-        if let Some(resource_id) = self.resource_id() {
-            attributes.push(semconv::CLOUD_RESOURCE_ID.string(resource_id.to_string()));
-        }
-        
-        // Extract batch/collection metrics
-        if let Some(items) = self.items() {
-            attributes.push(KeyValue::new("{service}.item_count", items.len() as i64));
-        }
-        
-        attributes
+        // For conditional attributes, use the attributes! macro
+        attributes![
+            self.some_optional_count().as_ref()
+                .map(|count| KeyValue::new("{service}.some_count", *count as i64)),
+            self.resource_id().as_ref()
+                .map(|id| semconv::CLOUD_RESOURCE_ID.string(id.to_string())),
+            self.items().as_ref()
+                .filter(|items| !items.is_empty())
+                .map(|items| KeyValue::new("{service}.item_count", items.len() as i64)),
+        ]
     }
 }
 ```
@@ -427,6 +505,36 @@ instrument_aws_operation!(
 1. **Input attributes** (AwsInstrumentBuilder) - Always implement first
 2. **Output attributes** (InstrumentedFluentBuilderOutput) - Implement for operations with meaningful result metrics
 3. **Macro call** - Add last to tie everything together
+
+#### E. Choosing Return Types
+
+**Use simple arrays `[...]` when:**
+- All attributes are always present (non-optional fields)
+- Simple fixed number of attributes
+- No conditional logic needed
+
+```rust
+// Example: Query/Scan operations always have count and scanned_count
+[
+    KeyValue::new(semconv::AWS_DYNAMODB_COUNT, self.count() as i64),
+    KeyValue::new(semconv::AWS_DYNAMODB_SCANNED_COUNT, self.scanned_count() as i64),
+]
+```
+
+**Use `attributes![...]` macro when:**
+- Some attributes are optional or conditional
+- Need to filter empty collections
+- Mix of required and optional attributes
+
+```rust
+// Example: Batch operations with optional unprocessed items
+attributes![
+    Some(KeyValue::new("total.items", self.total_items() as i64)),
+    self.unprocessed_items().as_ref()
+        .filter(|items| !items.is_empty())
+        .map(|items| KeyValue::new("unprocessed.count", items.len() as i64)),
+]
+```
 
 **Note**: Not every operation needs output attribute extraction. Skip it for operations that return minimal or non-meaningful data (e.g., simple delete operations).
 
@@ -488,20 +596,15 @@ impl<'a> AwsInstrumentBuilder<'a> for GetItemFluentBuilder {
 }
 
 impl InstrumentedFluentBuilderOutput for aws_sdk_dynamodb::operation::get_item::GetItemOutput {
-    fn extract_attributes(&self) -> Vec<KeyValue> {
-        let mut attributes = Vec::new();
-        
-        // Extract consumed capacity information
-        if let Some(consumed_capacity) = self.consumed_capacity() {
-            if let Some(capacity_units) = consumed_capacity.capacity_units() {
-                attributes.push(KeyValue::new("aws.dynamodb.consumed_capacity", capacity_units));
-            }
-        }
-        
-        // Indicate whether item was found
-        attributes.push(KeyValue::new("aws.dynamodb.item_found", self.item().is_some()));
-        
-        attributes
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            // Extract consumed capacity information
+            self.consumed_capacity().as_ref()
+                .and_then(|cc| cc.capacity_units())
+                .map(|cu| KeyValue::new("aws.dynamodb.consumed_capacity", cu)),
+            // Indicate whether item was found
+            Some(KeyValue::new("aws.dynamodb.item_found", self.item().is_some())),
+        ]
     }
 }
 
@@ -527,19 +630,16 @@ impl<'a> AwsInstrumentBuilder<'a> for PublishBatchFluentBuilder {
 }
 
 impl InstrumentedFluentBuilderOutput for aws_sdk_sns::operation::publish_batch::PublishBatchOutput {
-    fn extract_attributes(&self) -> Vec<KeyValue> {
-        let mut attributes = Vec::new();
-        
-        // Extract success/failure counts
-        if let Some(successful) = self.successful() {
-            attributes.push(KeyValue::new("messaging.batch.successful_count", successful.len() as i64));
-        }
-        
-        if let Some(failed) = self.failed() {
-            attributes.push(KeyValue::new("messaging.batch.failed_count", failed.len() as i64));
-        }
-        
-        attributes
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            // Extract success/failure counts
+            self.successful().as_ref()
+                .filter(|s| !s.is_empty())
+                .map(|s| KeyValue::new("messaging.batch.successful_count", s.len() as i64)),
+            self.failed().as_ref()
+                .filter(|f| !f.is_empty())
+                .map(|f| KeyValue::new("messaging.batch.failed_count", f.len() as i64)),
+        ]
     }
 }
 

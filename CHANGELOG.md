@@ -1,5 +1,10 @@
 # Changelog
 
+## v5.3.0
+
+- Add missing DynamoDB operations instrumentation https://github.com/nentgroup/telemetry-rust/pull/138
+- Support SQS: https://github.com/nentgroup/telemetry-rust/pull/139
+
 ## v5.2.0
 
 - Implement `AwsStreamInstrument` trait to instrument AWS pagination streams https://github.com/nentgroup/telemetry-rust/pull/134

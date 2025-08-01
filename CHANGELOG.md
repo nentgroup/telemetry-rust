@@ -4,6 +4,8 @@
 
 - New AWS SDK instrumentation with automatic attribute extraction https://github.com/nentgroup/telemetry-rust/pull/140
 
+This release is not breaking, but `aws-full` feature now adds AWS SDK dependencies.
+
 ## v5.3.0
 
 - Add missing DynamoDB operations instrumentation https://github.com/nentgroup/telemetry-rust/pull/138

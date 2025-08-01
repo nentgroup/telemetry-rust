@@ -1,6 +1,6 @@
 # Changelog
 
-## v5.4.0
+## v6.0.0
 
 - New AWS SDK instrumentation with automatic attribute extraction https://github.com/nentgroup/telemetry-rust/pull/140
 

@@ -21,6 +21,8 @@ where
 /// This trait provides a convenient way to wrap AWS SDK futures with OpenTelemetry
 /// instrumentation, automatically handling span creation, error recording, and cleanup.
 ///
+/// For automatic span attributes extraction, use [`AwsBuilderInstrument`][`super::AwsBuilderInstrument`] trait.
+///
 /// # Example
 ///
 /// ```rust

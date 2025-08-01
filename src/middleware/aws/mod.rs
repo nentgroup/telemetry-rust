@@ -33,8 +33,61 @@ pub use operations::*;
 
 /// A wrapper around an OpenTelemetry span specifically designed for AWS operations.
 ///
-/// This struct provides convenient methods for handling AWS-specific span attributes
-/// and status updates, particularly for recording request IDs and error handling.
+/// This struct represents an active span for an AWS SDK operation.
+/// It provides convenient methods for setting span attributes and recording
+/// AWS operation status upon its completion, including AWS request ID and optional error.
+///
+/// # Usage
+///
+/// `AwsSpan` can be used for manual instrumentation when you need fine-grained
+/// control over span lifecycle. But for most use cases, consider using the higher-level
+/// traits like [`AwsInstrument`] or [`AwsBuilderInstrument`] which provide automatic
+/// instrumentation.
+///
+/// Should be constructed using [`AwsSpanBuilder`] by calling [`AwsSpanBuilder::start`].
+///
+/// # Example
+///
+/// ```rust
+/// use aws_sdk_dynamodb::{Client as DynamoClient, types::AttributeValue};
+/// use telemetry_rust::{KeyValue, middleware::aws::DynamodbSpanBuilder, semconv};
+///
+/// async fn query_table() -> Result<i32, Box<dyn std::error::Error>> {
+///     let config = aws_config::load_from_env().await;
+///     let dynamo_client = DynamoClient::new(&config);
+///
+///     // Create and start a span manually
+///     let mut span = DynamodbSpanBuilder::query("table_name")
+///         .attribute(KeyValue::new(semconv::AWS_DYNAMODB_INDEX_NAME, "my_index"))
+///         .start();
+///
+///     let response = dynamo_client
+///         .query()
+///         .table_name("table_name")
+///         .index_name("my_index")
+///         .key_condition_expression("PK = :pk")
+///         .expression_attribute_values(":pk", AttributeValue::S("Test".to_string()))
+///         .send()
+///         .await;
+///
+///     // Add attributes from response
+///     if let Some(output) = response.as_ref().ok() {
+///         let count = output.count() as i64;
+///         let scanned_count = output.scanned_count() as i64;
+///         span.set_attributes([
+///             KeyValue::new(semconv::AWS_DYNAMODB_COUNT, count),
+///             KeyValue::new(semconv::AWS_DYNAMODB_SCANNED_COUNT, scanned_count),
+///         ]);
+///     }
+///
+///     // The span automatically handles success/error and request ID extraction
+///     span.end(&response);
+///
+///     let response = response?;
+///     println!("DynamoDB items: {:#?}", response.items());
+///     Ok(response.count())
+/// }
+/// ```
 pub struct AwsSpan {
     span: BoxedSpan,
 }
@@ -72,6 +125,55 @@ impl AwsSpan {
         }
         span.set_status(status);
     }
+
+    /// Sets a single attribute on the span.
+    ///
+    /// This method allows you to add custom attributes to the span after it has been created.
+    /// This is useful for adding dynamic attributes that become available during operation execution.
+    ///
+    /// For more information see [`BoxedSpan::set_attribute`]
+    ///
+    /// # Arguments
+    ///
+    /// * `attribute` - The [`KeyValue`] attribute to add to the span
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use telemetry_rust::{KeyValue, middleware::aws::AwsSpanBuilder};
+    ///
+    /// let mut span = AwsSpanBuilder::client("DynamoDB", "GetItem", []).start();
+    /// span.set_attribute(KeyValue::new("custom.attribute", "value"));
+    /// ```
+    pub fn set_attribute(&mut self, attribute: KeyValue) {
+        self.span.set_attribute(attribute);
+    }
+
+    /// Sets multiple attributes on the span.
+    ///
+    /// This method allows you to add multiple custom attributes to the span at once.
+    /// This is more efficient than calling `set_attribute` multiple times.
+    ///
+    /// For more information see [`BoxedSpan::set_attributes`]
+    ///
+    /// # Arguments
+    ///
+    /// * `attributes` - An iterator of [`KeyValue`] attributes to add to the span
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use telemetry_rust::{KeyValue, middleware::aws::AwsSpanBuilder, semconv};
+    ///
+    /// let mut span = AwsSpanBuilder::client("DynamoDB", "GetItem", []).start();
+    /// span.set_attributes([
+    ///     KeyValue::new(semconv::DB_NAMESPACE, "my_table"),
+    ///     KeyValue::new("custom.attribute", "value"),
+    /// ]);
+    /// ```
+    pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = KeyValue>) {
+        self.span.set_attributes(attributes);
+    }
 }
 
 impl From<BoxedSpan> for AwsSpan {
@@ -83,8 +185,16 @@ impl From<BoxedSpan> for AwsSpan {
 
 /// Builder for creating AWS-specific OpenTelemetry spans.
 ///
-/// This builder provides a fluent interface for constructing spans with AWS-specific
-/// attributes and proper span kinds for different types of AWS operations.
+/// This builder provides a fluent interface for constructing [`AwsSpan`] with
+/// required attributes and proper span kinds for different types of AWS operations.
+/// It automatically sets standard RPC attributes following OpenTelemetry semantic
+/// conventions for AWS services.
+///
+/// # Usage
+///
+/// This builder can be used with [`AwsInstrument`] trait to instrument any AWS operation,
+/// or to manually create [`AwsSpan`] if you need control over span lifecycle.
+/// For automatic instrumentation, use [`AwsBuilderInstrument`] trait.
 pub struct AwsSpanBuilder<'a> {
     inner: SpanBuilder,
     tracer: BoxedTracer,
@@ -175,7 +285,7 @@ impl<'a> AwsSpanBuilder<'a> {
     ///
     /// # Arguments
     ///
-    /// * `iter` - An iterator of key-value attributes to add to the span
+    /// * `iter` - An iterator of [`KeyValue`] attributes to add to the span
     pub fn attributes(mut self, iter: impl IntoIterator<Item = KeyValue>) -> Self {
         if let Some(attributes) = &mut self.inner.attributes {
             attributes.extend(iter);
@@ -189,28 +299,28 @@ impl<'a> AwsSpanBuilder<'a> {
     ///
     /// # Arguments
     ///
-    /// * `attribute` - The key-value attribute to add to the span
+    /// * `attribute` - The [`KeyValue`] attribute to add to the span
     #[inline]
     pub fn attribute(self, attribute: KeyValue) -> Self {
         self.attributes(std::iter::once(attribute))
     }
 
-    /// Sets the parent context for the span.
+    /// Sets the parent [`Context`] for the span.
     ///
     /// # Arguments
     ///
-    /// * `context` - The OpenTelemetry context to use as the parent
+    /// * `context` - The OpenTelemetry [`Context`] to use as the parent
     #[inline]
     pub fn context(mut self, context: &'a Context) -> Self {
         self.context = Some(context);
         self
     }
 
-    /// Optionally sets the parent context for the span.
+    /// Optionally sets the parent [`Context`] for the span.
     ///
     /// # Arguments
     ///
-    /// * `context` - An optional OpenTelemetry context to use as the parent
+    /// * `context` - An optional OpenTelemetry [`Context`] to use as the parent
     #[inline]
     pub fn set_context(mut self, context: Option<&'a Context>) -> Self {
         self.context = context;
@@ -224,7 +334,7 @@ impl<'a> AwsSpanBuilder<'a> {
             .into()
     }
 
-    /// Starts the span and returns an AwsSpan.
+    /// Starts the span and returns an [`AwsSpan`].
     ///
     /// This method creates and starts the span using either the explicitly set context
     /// or the current tracing span's context as the parent.

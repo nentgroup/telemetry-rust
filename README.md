@@ -40,7 +40,30 @@ async fn graceful_shutdown(provider: TracerProvider) {
 
 ## AWS SDK instrumentation
 
-### `AwsInstrumented` trait
+### `AwsBuilderInstrument` trait
+
+Fully automated instrumentation of AWS SDK fluent builders with attributes extraction from both the request and response.
+Available with `aws-instrumentation` feature flag.
+
+```rust
+let res = dynamo_client
+    .get_item()
+    .table_name("table_name")
+    .set_key(primary_key)
+    .instrument()
+    .send()
+    .await;
+// Automatically extracts:
+// - Request attributes from fluent builder: table name, consistent read, projection expression, etc.
+// - Output attributes: consumed capacity, item found status, etc.
+```
+
+The trait automatically extracts relevant attributes from both the request (fluent builder) and response (operation output) following OpenTelemetry semantic conventions for AWS services.
+
+### `AwsInstrument` trait
+
+Manual instrumentation of AWS SDK futures.
+Available with `aws-instrumentation` feature flag.
 
 ```rust
 // DynamoDB instrumentation
@@ -79,6 +102,29 @@ let res = firehose_client
     .send()
     .instrument(FirehoseSpanBuilder::put_record("stream_name"))
     .await;
+```
+
+### `AwsStreamInstrument` trait
+
+Manual instrumentation of AWS SDK pagination streams.
+Available with `aws-instrumentation` feature flag.
+
+```rust
+let items = dynamodb_client
+    .query()
+    .table_name(&table_name)
+    .index_name(&index_name)
+    .key_condition_expression("PK = :pk")
+    .expression_attribute_values(":pk", AttributeValue::S("Hello".to_string()))
+    .into_paginator()
+    .items()
+    .send()
+    .instrument(
+        DynamodbSpanBuilder::query(table_name)
+            .attribute(KeyValue::new(semconv::AWS_DYNAMODB_INDEX_NAME, index_name)),
+    )
+    .try_collect::<Vec<_>>()
+    .await?;
 ```
 
 ### Low level API

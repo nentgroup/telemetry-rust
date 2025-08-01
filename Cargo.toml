@@ -41,14 +41,18 @@ http-body-util = { version = "0.1.1", optional = true }
 aws-types = { version = "1", optional = true }
 aws-smithy-async = { version = "1.2.5", optional = true }
 aws-smithy-types-convert = { version = "0.60.9", features = ["convert-streams"], optional = true }
+aws-sdk-dynamodb = { version = "1.86.0", optional = true }
+aws-sdk-firehose = { version = "1.86.0", optional = true }
+aws-sdk-sns = { version = "1.79.0", optional = true }
+aws-sdk-sqs = { version = "1.78.0", optional = true }
 lambda_runtime = { version = "0", optional = true }
 paste = { version = "1.0.14", optional = true }
 thiserror = "2.0.12"
 
 [dev-dependencies]
 axum = "0.8.0"
-aws-sdk-dynamodb = "1.58.0"
 aws-config = { version = "1.5.13", features = ["behavior-version-latest"] }
+aws-sdk-dynamodb = "*"
 assert2 = "0.3"
 rstest = "0.26"
 tokio = "1.41"
@@ -63,9 +67,14 @@ axum = ["dep:tower", "dep:futures-util", "dep:pin-project-lite"]
 aws-span = ["dep:aws-types", "dep:paste"]
 aws-instrumentation = ["aws-span", "future"]
 aws-stream-instrumentation = ["aws-span", "dep:pin-project-lite", "dep:aws-smithy-async", "dep:aws-smithy-types-convert", "dep:futures-util"]
+aws-fluent-builder-instrumentation = ["aws-instrumentation", "dep:paste"]
 aws-lambda = ["dep:tower", "dep:lambda_runtime", "future"]
+aws-dynamodb = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-dynamodb"]
+aws-firehose = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-firehose"]
+aws-sns = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-sns"]
+aws-sqs = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-sqs"]
 aws = ["aws-span", "aws-instrumentation", "aws-stream-instrumentation"]
-aws-full = ["aws", "aws-lambda"]
+aws-full = ["aws", "aws-lambda", "aws-dynamodb", "aws-firehose", "aws-sns", "aws-sqs"]
 
 [package.metadata.release]
 allow-branch = ["main"]

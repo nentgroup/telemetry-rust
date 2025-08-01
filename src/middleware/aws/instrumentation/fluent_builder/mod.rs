@@ -61,9 +61,14 @@ mod sqs;
 /// using [`AwsInstrument`]. The automatic approach extracts attributes based on OpenTelemetry
 /// semantic conventions without requiring explicit attribute specification:
 ///
-/// ```rust,ignore
+/// ```rust
+/// # use aws_sdk_dynamodb::Client as DynamoClient;
+/// # use telemetry_rust::middleware::aws::{AwsBuilderInstrument, AwsInstrument, DynamodbSpanBuilder};
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// # let config = aws_config::load_from_env().await;
+/// # let dynamo_client = DynamoClient::new(&config);
 /// // Automatic instrumentation (recommended)
-/// dynamo_client
+/// let _ = dynamo_client
 ///     .get_item()
 ///     .table_name("table")
 ///     .instrument() // All attributes extracted automatically
@@ -71,12 +76,14 @@ mod sqs;
 ///     .await?;
 ///
 /// // Manual instrumentation (more control, more verbose)
-/// dynamo_client
+/// let _ = dynamo_client
 ///     .get_item()
 ///     .table_name("table")
 ///     .send()
 ///     .instrument(DynamodbSpanBuilder::get_item("table"))
 ///     .await?;
+/// # Ok(())
+/// # }
 /// ```
 pub trait AwsBuilderInstrument<'a>
 where
@@ -151,18 +158,7 @@ pub(super) struct FluentBuilderSpan(AwsSpan);
 /// conventions for the specific AWS service. The extracted attributes will be added
 /// to the span after the operation completes successfully.
 ///
-/// # Examples
-///
-/// ```rust,ignore
-/// impl InstrumentedFluentBuilderOutput for QueryOutput {
-///     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
-///         [
-///             self.count().as_attribute(semconv::AWS_DYNAMODB_COUNT),
-///             self.scanned_count().as_attribute(semconv::AWS_DYNAMODB_SCANNED_COUNT),
-///         ].into_iter().flatten()
-///     }
-/// }
-/// ```
+/// Check `fluent_builder/*.rs` files for usage examples.
 pub(super) trait InstrumentedFluentBuilderOutput {
     /// Extracts OpenTelemetry attributes from the AWS operation output.
     ///

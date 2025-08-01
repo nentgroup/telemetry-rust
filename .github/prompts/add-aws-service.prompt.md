@@ -8,12 +8,18 @@ Your goal is to add complete AWS SDK instrumentation for a new service by creati
 
 Ask for the AWS service name if not provided (e.g., "S3", "Lambda", "EC2").
 
-Requirements for new service instrumentation:
-* **Operations File**: Create `src/middleware/aws/operations/{service}.rs` with all operations from AWS API documentation
-* **Fluent Builder File**: Create `src/middleware/aws/instrumentation/fluent_builder/{service}.rs` with complete instrumentation
-* **Semantic Conventions**: Follow OpenTelemetry semantic conventions for the service type
-* **Module Integration**: Update relevant mod.rs files to include the new service
-* **1:1 Coverage**: Ensure complete mapping between AWS API operations and implementations
+## Key Requirements
+
+1. **Research**: Find AWS API documentation and OpenTelemetry semantic conventions for the service
+2. **Operations File**: Create `src/middleware/aws/operations/{service}.rs` with all AWS API operations
+3. **Fluent Builder File**: Create `src/middleware/aws/instrumentation/fluent_builder/{service}.rs` with complete instrumentation
+4. **Complete Coverage**: Ensure 1:1 mapping between AWS API operations and implementations
+5. **Follow Patterns**: Use existing services as reference for implementation patterns
+6. **Semantic Conventions**: Use appropriate OpenTelemetry semantic conventions for the service type
+7. **Input & Output Attributes**: Implement both `AwsBuilderInstrument` and `InstrumentedFluentBuilderOutput` where appropriate
+8. **Module Integration**: Update relevant `mod.rs` files and feature flags
+
+## Implementation Pattern
 
 For operations file:
 - Include AWS API reference link in header comment
@@ -21,13 +27,17 @@ For operations file:
 - Follow semantic conventions for span builders and attributes
 
 For fluent builder file:
-- Implement `AwsInstrumentBuilder` for each operation's fluent builder type
-- Add `instrument_aws_operation!` macro calls for each operation
-- Extract semantic attributes using fluent builder getters and `semconv::` constants
-- Handle type name mismatches with explicit macro forms when needed
+- Implement `AwsBuilderInstrument` for input attribute extraction
+- Implement `InstrumentedFluentBuilderOutput` for output metrics (when meaningful)
+- Add `instrument_aws_operation!` macro call
+- Use `semconv::` constants for semantic conventions compliance
 
-Research semantic conventions for the service type:
-- Database services: focus on table/resource names and query attributes
-- Messaging services: use appropriate `MessagingOperationKind` and destination names
-- Storage services: include bucket/object identifiers
-- Compute services: focus on resource identifiers and operation types
+## Verification
+
+Follow the complete verification process:
+- Build check with AWS features
+- Lint check with no warnings
+- Test execution
+- Documentation build
+
+Refer to the AWS fluent builder instructions for detailed implementation guidance.

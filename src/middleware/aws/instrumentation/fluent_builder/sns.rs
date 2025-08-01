@@ -5,7 +5,7 @@ use crate::semconv;
 
 impl<'a> AwsBuilderInstrument<'a> for PublishFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
-        let topic_arn = self.get_target_arn().clone().unwrap_or_default();
+        let topic_arn = self.get_topic_arn().clone().unwrap_or_default();
         SnsSpanBuilder::publish(topic_arn)
     }
 }

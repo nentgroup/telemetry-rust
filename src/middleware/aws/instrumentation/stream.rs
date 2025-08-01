@@ -138,35 +138,42 @@ where
 /// All instrumented streams automatically include the `aws.pagination_stream = true`
 /// attribute to help identify streaming operations in traces.
 ///
+/// # Integration with [`AwsBuilderInstrument`][`crate::middleware::aws::AwsBuilderInstrument`]
+///
+/// The recommended pattern is to use [`AwsBuilderInstrument::build_aws_span`][crate::middleware::aws::AwsBuilderInstrument::build_aws_span] to capture
+/// all the operation parameters before converting fluent builder into a paginator stream.
+///
 /// # Examples
 ///
 /// ```rust
 /// use aws_sdk_dynamodb::{Client as DynamoClient, types::AttributeValue};
 /// use futures_util::TryStreamExt;
-/// use telemetry_rust::{
-///     KeyValue,
-///     middleware::aws::{AwsStreamInstrument, DynamodbSpanBuilder},
-///     semconv,
-/// };
+/// use telemetry_rust::middleware::aws::{AwsBuilderInstrument, AwsStreamInstrument};
 ///
 /// async fn query_table() -> Result<usize, Box<dyn std::error::Error>> {
 ///     let config = aws_config::load_from_env().await;
 ///     let dynamo_client = DynamoClient::new(&config);
-///     let items =
-///         dynamo_client
-///             .query()
-///             .table_name("table_name")
-///             .index_name("my_index")
-///             .key_condition_expression("PK = :pk")
-///             .expression_attribute_values(":pk", AttributeValue::S("Test".to_string()))
-///             .into_paginator()
-///             .items()
-///             .send()
-///             .instrument(DynamodbSpanBuilder::query("table_name").attribute(
-///                 KeyValue::new(semconv::AWS_DYNAMODB_INDEX_NAME, "my_index"),
-///             ))
-///             .try_collect::<Vec<_>>()
-///             .await?;
+///
+///     // Build the query with all parameters
+///     let query = dynamo_client
+///         .query()
+///         .table_name("table_name")
+///         .index_name("my_index")
+///         .key_condition_expression("PK = :pk")
+///         .expression_attribute_values(":pk", AttributeValue::S("Test".to_string()));
+///
+///     // Extract span from fluent builder (includes all input attributes)
+///     let span = query.build_aws_span();
+///
+///     // Use the span to instrument the paginator stream
+///     let items = query
+///         .into_paginator()
+///         .items()
+///         .send()
+///         .instrument(span)
+///         .try_collect::<Vec<_>>()
+///         .await?;
+///
 ///     println!("DynamoDB items: {items:#?}");
 ///     Ok(items.len())
 /// }

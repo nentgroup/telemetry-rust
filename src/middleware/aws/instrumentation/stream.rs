@@ -135,6 +135,9 @@ where
 /// It is designed for AWS pagination streams, but it is implemented for any
 /// [`TryStream`][`futures_util::TryStream`] yielding AWS SDK errors.
 ///
+/// The entire stream gets represented by a single [`AwsSpan`] regardless of the number
+/// of AWS SDK requests sent by the SDK to produce it.
+///
 /// All instrumented streams automatically include the `aws.pagination_stream = true`
 /// attribute to help identify streaming operations in traces.
 ///
@@ -165,7 +168,7 @@ where
 ///     // Extract span from fluent builder (includes all input attributes)
 ///     let span = query.build_aws_span();
 ///
-///     // Use the span to instrument the paginator stream
+///     // Use the span to instrument the paginator stream.
 ///     let items = query
 ///         .into_paginator()
 ///         .items()

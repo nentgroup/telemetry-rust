@@ -711,7 +711,7 @@ cargo build --features aws-full
 
 ### 2. Test Check  
 ```bash
-cargo test --lib --features aws-full
+cargo test --features aws-full
 ```
 
 ### 3. Lint Check

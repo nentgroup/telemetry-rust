@@ -20,7 +20,7 @@ where
     /// An implementation that collects items into a temporary vector,
     /// which is then sorted and deduped.
     ///
-    /// This implementation has an *O*(*n* \* log(*n*)) complexity due to [`sort_unstable`] being used,
+    /// This implementation has an `O(n * log(n))` complexity due to [`sort_unstable`] being used,
     /// but for small collections it should be more efficient than using a [`std::collections::HashSet`].
     fn uniq_owned(self) -> impl IntoIterator<Item = T::Owned> {
         let mut input = self.into_iter().collect::<Vec<_>>();

@@ -60,7 +60,7 @@ fn parse_partiql_statement(statement: &str) -> Option<TableReference<'_>> {
 
 /// Parses a table identifier that may include an index (e.g., "table"."index")
 fn parse_table_identifier(id: &str) -> TableReference {
-    let (name, index_name) = if id.starts_with('"') && id.ends_with('"') {
+    let (name, index_name) = if id.starts_with('"') && id.ends_with('"') && id.len() >= 2 {
         let mut parts = id[1..id.len() - 1].split(r#"".""#);
         (parts.next().unwrap_or_default(), parts.next())
     } else {

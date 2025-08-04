@@ -368,12 +368,32 @@ impl InstrumentedFluentBuilderOutput for ExecuteStatementOutput {
 instrument_aws_operation!(aws_sdk_dynamodb::operation::execute_statement);
 
 impl<'a> AwsBuilderInstrument<'a> for BatchExecuteStatementFluentBuilder {
-    /// Table names are not automatically extracted from PartiQL statement
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
-        DynamodbSpanBuilder::batch_execute_statement(None::<StringValue>)
+        let table_names = self
+            .get_statements()
+            .iter()
+            .flatten()
+            .map(|op| TableReference::from(op.statement()).name)
+            .collect::<HashSet<_>>();
+
+        let attributes = attributes![
+            self.get_statements()
+                .as_ref()
+                .map(|statements| statements.len())
+                .as_attribute(semconv::DB_OPERATION_BATCH_SIZE)
+        ];
+
+        DynamodbSpanBuilder::batch_execute_statement(table_names).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for BatchExecuteStatementOutput {}
+impl InstrumentedFluentBuilderOutput for BatchExecuteStatementOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        let errors = self.responses().iter().fold(0, |acc, resp| {
+            if resp.error().is_some() { acc + 1 } else { acc }
+        });
+        [KeyValue::new("db.operation.batch.errors", errors)]
+    }
+}
 instrument_aws_operation!(aws_sdk_dynamodb::operation::batch_execute_statement);
 
 impl<'a> AwsBuilderInstrument<'a> for ExecuteTransactionFluentBuilder {

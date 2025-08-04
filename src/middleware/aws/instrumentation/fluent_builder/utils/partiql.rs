@@ -2,7 +2,7 @@ use super::AsAttribute;
 use crate::{KeyValue, semconv};
 
 /// Represents a parsed table reference from a PartiQL statement
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Default)]
 pub(crate) struct TableReference<'a> {
     pub name: &'a str,
     index_name: Option<&'a str>,

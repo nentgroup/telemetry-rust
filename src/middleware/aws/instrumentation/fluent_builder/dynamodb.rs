@@ -409,10 +409,12 @@ impl<'a> AwsBuilderInstrument<'a> for BatchExecuteStatementFluentBuilder {
 }
 impl InstrumentedFluentBuilderOutput for BatchExecuteStatementOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
-        let errors = self.responses().iter().fold(0, |acc, resp| {
-            if resp.error().is_some() { acc + 1 } else { acc }
-        });
-        [KeyValue::new("db.operation.batch.errors", errors)]
+        let errors = self
+            .responses()
+            .iter()
+            .filter_map(|resp| resp.error())
+            .count();
+        attributes![errors.as_attribute("db.operation.batch.errors")]
     }
 }
 instrument_aws_operation!(aws_sdk_dynamodb::operation::batch_execute_statement);

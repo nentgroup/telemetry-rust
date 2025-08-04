@@ -6,7 +6,6 @@ use crate::semconv;
 /// Utility trait to deduplicate elements in an iterator and convert them to owned values.
 ///
 /// This trait is used to extract unique table names from batch operations.
-/// ```
 trait ToUniqOwned<'a, T: ToOwned + ?Sized + 'a>: IntoIterator<Item = &'a T> {
     /// Consumes the iterator, returning a new iterator over unique owned elements.
     fn uniq_owned(self) -> impl IntoIterator<Item = T::Owned>;

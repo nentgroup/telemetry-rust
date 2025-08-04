@@ -343,17 +343,28 @@ instrument_aws_operation!(aws_sdk_dynamodb::operation::restore_table_to_point_in
 
 // PartiQL operations
 impl<'a> AwsBuilderInstrument<'a> for ExecuteStatementFluentBuilder {
-    /// Table name are not automatically extracted from PartiQL statement
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
+        let table = self
+            .get_statement()
+            .as_deref()
+            .map(TableReference::from)
+            .unwrap_or_default();
+
         let attributes = attributes![
+            table.index_name,
             self.get_consistent_read()
                 .as_attribute(semconv::AWS_DYNAMODB_CONSISTENT_READ),
             self.get_limit().as_attribute(semconv::AWS_DYNAMODB_LIMIT),
         ];
-        DynamodbSpanBuilder::execute_statement("").attributes(attributes)
+
+        DynamodbSpanBuilder::execute_statement(table.name).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for ExecuteStatementOutput {}
+impl InstrumentedFluentBuilderOutput for ExecuteStatementOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![self.items().len().as_attribute(semconv::AWS_DYNAMODB_COUNT)]
+    }
+}
 instrument_aws_operation!(aws_sdk_dynamodb::operation::execute_statement);
 
 impl<'a> AwsBuilderInstrument<'a> for BatchExecuteStatementFluentBuilder {

@@ -102,6 +102,15 @@ let res = firehose_client
     .send()
     .instrument(FirehoseSpanBuilder::put_record("stream_name"))
     .await;
+
+// S3 instrumentation
+let res = s3_client
+    .get_object()
+    .bucket("my_bucket")
+    .key("my_key")
+    .send()
+    .instrument(S3SpanBuilder::get_object("my_bucket"))
+    .await;
 ```
 
 ### `AwsStreamInstrument` trait
@@ -170,14 +179,15 @@ Only the following AWS targets are fully supported at the moment:
  * SNS
  * SQS
  * Firehose
+ * S3
 
 But a generic `AwsSpanBuilder` could be used to instrument any other AWS SDK:
 
 ```rust
-let s3_span = AwsSpanBuilder::client(
-    "S3",
-    "GetObject",
-    vec![KeyValue::new(semconv::AWS_S3_BUCKET, "my_bucket")],
+let lambda_span = AwsSpanBuilder::client(
+    "Lambda",
+    "Invoke",
+    vec![KeyValue::new("aws.lambda.function_name", "my_function")],
 )
 .start();
 ```

@@ -6,7 +6,7 @@ description: 'Verify complete AWS operation coverage against API documentation'
 
 Your goal is to verify that all AWS operations for a specific service are completely instrumented by checking coverage at three levels: AWS API documentation, operations file macros, and fluent builder implementations.
 
-Ask for the AWS service name if not provided (e.g., "SNS", "DynamoDB", "Firehose").
+Ask for the AWS service name if not provided (e.g., "SNS", "DynamoDB", "Firehose", "S3").
 
 Requirements for verification:
 * **API Reference Analysis**: Extract and follow the API reference link from the operations file to compare against official AWS documentation

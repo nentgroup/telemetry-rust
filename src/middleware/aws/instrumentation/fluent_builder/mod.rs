@@ -6,6 +6,8 @@ pub(super) mod utils;
 mod dynamodb;
 #[cfg(feature = "aws-firehose")]
 mod firehose;
+#[cfg(feature = "aws-s3")]
+mod s3;
 #[cfg(feature = "aws-sns")]
 mod sns;
 #[cfg(feature = "aws-sqs")]

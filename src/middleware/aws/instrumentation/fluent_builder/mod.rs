@@ -142,6 +142,31 @@ impl<'a, T: AwsBuilderInstrument<'a>> InstrumentedFluentBuilder<'a, T> {
         self.span = self.span.set_context(context);
         self
     }
+
+    /// Adds multiple OpenTelemetry attributes to the span.
+    ///
+    /// This method allows calling [`AwsSpanBuilder::attributes`] on the underlying [`AwsSpanBuilder`]
+    /// for adding custom or additional metadata to the AWS operation span.
+    ///
+    /// # Arguments
+    /// * `iter` - An iterator of [`KeyValue`] attributes to add to the span
+    pub fn attributes(mut self, iter: impl IntoIterator<Item = KeyValue>) -> Self {
+        self.span = self.span.attributes(iter);
+        self
+    }
+
+    /// Adds a single OpenTelemetry attribute to the span.
+    ///
+    /// This method allows calling [`AwsSpanBuilder::attribute`] on the underlying [`AwsSpanBuilder`]
+    /// for adding custom or additional metadata to the AWS operation span.
+    ///
+    /// # Arguments
+    /// * `attribute` - The [`KeyValue`] attribute to add to the span
+    #[inline]
+    pub fn attribute(mut self, attribute: KeyValue) -> Self {
+        self.span = self.span.attribute(attribute);
+        self
+    }
 }
 
 pub(super) struct FluentBuilderSpan(AwsSpan);

@@ -45,6 +45,7 @@ aws-sdk-dynamodb = { version = "1.86.0", optional = true }
 aws-sdk-firehose = { version = "1.86.0", optional = true }
 aws-sdk-sns = { version = "1.79.0", optional = true }
 aws-sdk-sqs = { version = "1.78.0", optional = true }
+aws-sdk-s3 = { version = "1.86.0", optional = true }
 lambda_runtime = { version = "0", optional = true }
 paste = { version = "1.0.14", optional = true }
 thiserror = "2.0.12"
@@ -73,8 +74,9 @@ aws-dynamodb = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-dynamodb"]
 aws-firehose = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-firehose"]
 aws-sns = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-sns"]
 aws-sqs = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-sqs"]
+aws-s3 = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-s3"]
 aws = ["aws-span", "aws-instrumentation", "aws-stream-instrumentation"]
-aws-full = ["aws", "aws-lambda", "aws-dynamodb", "aws-firehose", "aws-sns", "aws-sqs"]
+aws-full = ["aws", "aws-lambda", "aws-dynamodb", "aws-firehose", "aws-sns", "aws-sqs", "aws-s3"]
 
 [package.metadata.release]
 allow-branch = ["main"]

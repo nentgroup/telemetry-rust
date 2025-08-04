@@ -10,6 +10,8 @@ mod firehose;
 mod sns;
 #[cfg(feature = "aws-sqs")]
 mod sqs;
+#[cfg(feature = "aws-s3")]
+mod s3;
 
 /// A trait for AWS service clients that can be instrumented with OpenTelemetry tracing.
 ///

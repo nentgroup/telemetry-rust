@@ -4,11 +4,13 @@ pub(super) use super::AwsSpanBuilder;
 
 mod dynamodb;
 mod firehose;
+mod s3;
 mod sns;
 mod sqs;
 
 pub use dynamodb::DynamodbSpanBuilder;
 pub use firehose::FirehoseSpanBuilder;
+pub use s3::S3SpanBuilder;
 pub use sns::SnsSpanBuilder;
 pub use sqs::SqsSpanBuilder;
 

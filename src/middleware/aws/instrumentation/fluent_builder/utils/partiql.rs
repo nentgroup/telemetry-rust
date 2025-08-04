@@ -46,7 +46,7 @@ fn parse_partiql_statement(statement: &str) -> Option<TableReference<'_>> {
 
     if let Some(clause) = next_clause {
         loop {
-            // Drop all tokens untill we find the clause we are looking for
+            // Drop all tokens until we find the clause we are looking for
             if tokens.next()?.eq_ignore_ascii_case(clause) {
                 break;
             }

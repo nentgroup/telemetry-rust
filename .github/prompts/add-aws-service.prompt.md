@@ -28,7 +28,7 @@ For operations file:
 
 For fluent builder file:
 - Implement `AwsBuilderInstrument` for input attribute extraction
-- Implement `InstrumentedFluentBuilderOutput` for output metrics (when meaningful)
+- Implement `InstrumentedFluentBuilderOutput` for output metrics
 - Add `instrument_aws_operation!` macro call
 - Use `semconv::` constants for semantic conventions compliance
 

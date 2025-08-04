@@ -503,7 +503,7 @@ instrument_aws_operation!(
 #### D. Implementation Priority
 
 1. **Input attributes** (AwsBuilderInstrument) - Always implement first
-2. **Output attributes** (InstrumentedFluentBuilderOutput) - Implement for operations with meaningful result metrics
+2. **Output attributes** (InstrumentedFluentBuilderOutput) - Implement for operations with meaningful result metrics, or add a blank implementation
 3. **Macro call** - Add last to tie everything together
 
 #### E. Choosing Return Types
@@ -701,6 +701,88 @@ Or use compiler errors to identify correct names - the error message will sugges
 
 **Solution**: Ensure each `instrument_aws_operation!` call uses unique, correctly-named types.
 
+### Unused Import Warnings from instrument_aws_operation! Macro
+
+**Problem**: Getting clippy warnings about unused imports when using `instrument_aws_operation!` macro
+
+**Root Cause**: The `instrument_aws_operation!` macro automatically imports all necessary types (fluent builders, output types, error types) from the corresponding AWS SDK into the current scope. When you use fully qualified type names in trait implementations, the imported types become unused, causing clippy warnings.
+
+**Solution**: Use simple type names in trait implementations instead of fully qualified paths:
+
+```rust
+// ❌ WRONG - Causes unused import warnings
+impl<'a> AwsBuilderInstrument<'a> for aws_sdk_s3::operation::get_object::builders::GetObjectFluentBuilder {
+    // implementation
+}
+impl InstrumentedFluentBuilderOutput for aws_sdk_s3::operation::get_object::GetObjectOutput {
+    // implementation  
+}
+
+// ✅ CORRECT - Uses macro-imported types
+impl<'a> AwsBuilderInstrument<'a> for GetObjectFluentBuilder {
+    // implementation
+}
+impl InstrumentedFluentBuilderOutput for GetObjectOutput {
+    // implementation
+}
+```
+
+**Key Rule**: Never use qualified paths like `aws_sdk_{service}::operation::{operation}::builders::{Operation}FluentBuilder` in trait implementations when using the `instrument_aws_operation!` macro. The macro brings all these types into scope automatically.
+
+### Missing InstrumentedFluentBuilderOutput Implementations
+
+**Problem**: Compiler errors about missing trait implementations for output types
+
+**Root Cause**: Forgetting to implement the `InstrumentedFluentBuilderOutput` trait for AWS operation output types.
+
+**Solution**: Every operation that has an `AwsBuilderInstrument` implementation must also have a corresponding `InstrumentedFluentBuilderOutput` implementation:
+
+```rust
+// For operations with meaningful output attributes
+impl InstrumentedFluentBuilderOutput for GetObjectOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.content_length().as_ref()
+                .map(|length| KeyValue::new("aws.s3.object.size", *length)),
+            self.e_tag().as_attribute("aws.s3.object.etag"),
+        ]
+    }
+}
+
+// For operations with no meaningful output attributes
+impl InstrumentedFluentBuilderOutput for DeleteObjectOutput {}
+```
+
+**Key Rule**: If an operation doesn't have meaningful output attributes to extract, implement the trait with an empty body to use the default implementation rather than implementing `extract_attributes` returning `None`.
+
+### Feature Guard Redundancy
+
+**Problem**: Unnecessary `#[cfg(feature = "aws-{service}")]` directives throughout implementation files
+
+**Solution**: Remove redundant feature guards from individual implementations. Feature guarding should only be done at the module level:
+
+```rust
+// ❌ WRONG - Redundant feature guards
+#[cfg(feature = "aws-s3")]
+impl<'a> AwsBuilderInstrument<'a> for GetObjectFluentBuilder { ... }
+
+#[cfg(feature = "aws-s3")]  
+impl InstrumentedFluentBuilderOutput for GetObjectOutput { ... }
+
+#[cfg(feature = "aws-s3")]
+instrument_aws_operation!(aws_sdk_s3::operation::get_object);
+
+// ✅ CORRECT - Clean implementations  
+impl<'a> AwsBuilderInstrument<'a> for GetObjectFluentBuilder { ... }
+impl InstrumentedFluentBuilderOutput for GetObjectOutput { ... }
+instrument_aws_operation!(aws_sdk_s3::operation::get_object);
+```
+
+**Key Rules**: 
+- Operations files (`src/middleware/aws/operations/*.rs`) don't need feature guards - they're lightweight span builders
+- Fluent builder files are already feature-guarded at the module level in `mod.rs`
+- Only guard entire modules, not individual implementations
+
 ## Verification Process
 
 ### 1. Build Check
@@ -761,29 +843,66 @@ grep -n "MessagingOperationKind" src/middleware/aws/operations/{service}.rs
 10. **Test thoroughly** - build, test, and lint must all pass
 11. **Group related operations** with comments for maintainability
 12. **Prioritize operational metrics** - Extract counts, capacities, IDs, and other metrics that provide telemetry value
+13. **Consistent implementation ordering** - For each operation, implement in this exact order: `AwsBuilderInstrument`, `InstrumentedFluentBuilderOutput`, `instrument_aws_operation!` macro
+14. **Group implementations tightly** - Remove unnecessary blank lines between the three components of each operation to create logical groups
+15. **Use simple type names** - Never use fully qualified type paths in trait implementations when using `instrument_aws_operation!` macro
 
 ## File Organization
 
-Organize implementations by logical groups, with input and output implementations together:
+Organize implementations by logical groups, with each operation's three components grouped tightly together in this exact order:
 
 ```rust
-// Publishing operations
-impl<'a> AwsBuilderInstrument<'a> for PublishFluentBuilder { ... }
-impl InstrumentedFluentBuilderOutput for aws_sdk_sns::operation::publish::PublishOutput { ... }
+// Object operations
+impl<'a> AwsBuilderInstrument<'a> for GetObjectFluentBuilder {
+    fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
+        // Input attribute extraction
+    }
+}
+impl InstrumentedFluentBuilderOutput for GetObjectOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        // Output attribute extraction
+    }
+}
+instrument_aws_operation!(aws_sdk_s3::operation::get_object);
 
-impl<'a> AwsBuilderInstrument<'a> for PublishBatchFluentBuilder { ... }
-impl InstrumentedFluentBuilderOutput for aws_sdk_sns::operation::publish_batch::PublishBatchOutput { ... }
+impl<'a> AwsBuilderInstrument<'a> for PutObjectFluentBuilder {
+    fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
+        // Input attribute extraction  
+    }
+}
+impl InstrumentedFluentBuilderOutput for PutObjectOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        // Output attribute extraction
+    }
+}
+instrument_aws_operation!(aws_sdk_s3::operation::put_object);
 
-// Topic management operations  
-impl<'a> AwsBuilderInstrument<'a> for CreateTopicFluentBuilder { ... }
-impl InstrumentedFluentBuilderOutput for aws_sdk_sns::operation::create_topic::CreateTopicOutput { ... }
+// Bucket operations
+impl<'a> AwsBuilderInstrument<'a> for CreateBucketFluentBuilder {
+    fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
+        // Input attribute extraction
+    }
+}
+impl InstrumentedFluentBuilderOutput for CreateBucketOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        // Output attribute extraction
+    }
+}
+instrument_aws_operation!(aws_sdk_s3::operation::create_bucket);
 
-impl<'a> AwsBuilderInstrument<'a> for DeleteTopicFluentBuilder { ... }
-// No output extraction needed for delete operations
-
-// SMS sandbox operations
-impl<'a> AwsBuilderInstrument<'a> for CreateSMSSandboxPhoneNumberFluentBuilder { ... }
-// ... etc
+impl<'a> AwsBuilderInstrument<'a> for DeleteBucketFluentBuilder {
+    fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
+        // Input attribute extraction
+    }
+}
+impl InstrumentedFluentBuilderOutput for DeleteBucketOutput {}  // Empty for operations with no meaningful output
+instrument_aws_operation!(aws_sdk_s3::operation::delete_bucket);
 ```
+
+**Key Organization Principles:**
+- **Tight grouping**: No blank lines between the three components of each operation
+- **Consistent ordering**: Always `AwsBuilderInstrument` → `InstrumentedFluentBuilderOutput` → `instrument_aws_operation!`
+- **Logical sections**: Group related operations with comments (e.g., "Object operations", "Bucket operations")
+- **Simple type names**: Use `GetObjectFluentBuilder` not `aws_sdk_s3::operation::get_object::builders::GetObjectFluentBuilder`
 
 This systematic approach ensures complete, consistent, and maintainable AWS SDK instrumentation with both input and output telemetry coverage.

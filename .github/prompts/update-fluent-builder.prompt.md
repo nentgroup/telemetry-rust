@@ -6,7 +6,7 @@ description: 'Update AWS fluent builder instrumentations for semantic compliance
 
 Your goal is to update AWS SDK fluent builder instrumentations in `src/middleware/aws/instrumentation/fluent_builder/{service}.rs` to ensure complete coverage, OpenTelemetry semantic convention compliance, and compatibility with the current AWS SDK.
 
-Ask for the AWS service name if not provided (e.g., "SNS", "DynamoDB", "Firehose").
+Ask for the AWS service name if not provided (e.g., "SNS", "DynamoDB", "Firehose", "S3").
 
 Requirements for fluent builder instrumentations:
 * **Complete Coverage**: Every operation in the corresponding operations file must have both `AwsBuilderInstrument` implementation and `instrument_aws_operation!` macro call

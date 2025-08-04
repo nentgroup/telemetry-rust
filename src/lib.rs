@@ -36,6 +36,7 @@
 //! - `aws-firehose`: Firehose automatic fluent builders instrumentation
 //! - `aws-sns`: SNS automatic fluent builders instrumentation
 //! - `aws-sqs`: SQS automatic fluent builders instrumentation
+//! - `aws-s3`: S3 automatic fluent builders instrumentation
 //!
 //! ## Feature Bundles
 //! - `aws`: All core AWS features (span + instrumentation + stream instrumentation)

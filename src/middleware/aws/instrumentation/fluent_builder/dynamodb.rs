@@ -397,9 +397,22 @@ impl InstrumentedFluentBuilderOutput for BatchExecuteStatementOutput {
 instrument_aws_operation!(aws_sdk_dynamodb::operation::batch_execute_statement);
 
 impl<'a> AwsBuilderInstrument<'a> for ExecuteTransactionFluentBuilder {
-    /// Table names are not automatically extracted from PartiQL statement
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
-        DynamodbSpanBuilder::execute_transaction(None::<StringValue>)
+        let table_names = self
+            .get_transact_statements()
+            .iter()
+            .flatten()
+            .map(|t| TableReference::from(t.statement()).name)
+            .collect::<HashSet<_>>();
+
+        let attributes = attributes![
+            self.get_transact_statements()
+                .as_ref()
+                .map(|statements| statements.len())
+                .as_attribute(semconv::DB_OPERATION_BATCH_SIZE)
+        ];
+
+        DynamodbSpanBuilder::execute_transaction(table_names).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for ExecuteTransactionOutput {}

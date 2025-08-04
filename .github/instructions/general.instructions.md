@@ -24,7 +24,12 @@ cargo clippy --all-features --all-targets -- -D warnings
 cargo test --all-features
 ```
 
-### 4. Verify documentation builds correctly
+### 4. Make sure code is properly formatted
+```bash
+cargo fmt
+```
+
+### 5. Verify documentation builds correctly
 ```bash
 cargo doc --all-features --no-deps
 ```

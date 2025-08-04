@@ -37,6 +37,7 @@ fn parse_partiql_statement(statement: &str) -> Option<TableReference<'_>> {
     let mut tokens = statement.split_whitespace();
     let first_token = tokens.next()?;
 
+    // Determine the next clause we should look for based on the first token we see in the statement
     let next_clause = STATEMENTS.into_iter().find_map(|(clause, next_clause)| {
         first_token
             .eq_ignore_ascii_case(clause)
@@ -45,12 +46,14 @@ fn parse_partiql_statement(statement: &str) -> Option<TableReference<'_>> {
 
     if let Some(clause) = next_clause {
         loop {
+            // Drop all tokens untill we find the clause we are looking for
             if tokens.next()?.eq_ignore_ascii_case(clause) {
                 break;
             }
         }
     }
 
+    // Table name should be in the next token in the statement
     let table_token = tokens.next()?;
     Some(parse_table_identifier(table_token))
 }

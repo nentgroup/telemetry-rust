@@ -3,7 +3,12 @@
 use super::{utils::*, *};
 use crate::semconv;
 
+/// Utility trait to deduplicate elements in an iterator and convert them to owned values.
+///
+/// This trait is used to extract unique table names from batch operations.
+/// ```
 trait ToUniqOwned<'a, T: ToOwned + ?Sized + 'a>: IntoIterator<Item = &'a T> {
+    /// Consumes the iterator, returning a new iterator over unique owned elements.
     fn uniq_owned(self) -> impl IntoIterator<Item = T::Owned>;
 }
 
@@ -12,6 +17,11 @@ where
     T: Ord + ToOwned + ?Sized + 'a,
     I: IntoIterator<Item = &'a T>,
 {
+    /// An implementation that collects items into a temporary vector,
+    /// which is then sorted and deduped.
+    ///
+    /// This implementation has an *O*(*n* \* log(*n*)) complexity due to [`sort_unstable`] being used,
+    /// but for small collections it should be more efficient than using a [`std::collections::HashSet`].
     fn uniq_owned(self) -> impl IntoIterator<Item = T::Owned> {
         let mut input = self.into_iter().collect::<Vec<_>>();
         input.sort_unstable();

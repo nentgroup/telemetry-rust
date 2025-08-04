@@ -351,13 +351,14 @@ impl<'a> AwsBuilderInstrument<'a> for ExecuteStatementFluentBuilder {
             .unwrap_or_default();
 
         let attributes = attributes![
-            table.index_name,
+            table.index_name(),
             self.get_consistent_read()
                 .as_attribute(semconv::AWS_DYNAMODB_CONSISTENT_READ),
             self.get_limit().as_attribute(semconv::AWS_DYNAMODB_LIMIT),
         ];
 
-        DynamodbSpanBuilder::execute_statement(table.name).attributes(attributes)
+        DynamodbSpanBuilder::execute_statement(table.name.to_owned())
+            .attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for ExecuteStatementOutput {
@@ -374,7 +375,9 @@ impl<'a> AwsBuilderInstrument<'a> for BatchExecuteStatementFluentBuilder {
             .iter()
             .flatten()
             .map(|op| TableReference::from(op.statement()).name)
-            .collect::<HashSet<_>>();
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .map(ToOwned::to_owned);
 
         let attributes = attributes![
             self.get_statements()
@@ -403,7 +406,9 @@ impl<'a> AwsBuilderInstrument<'a> for ExecuteTransactionFluentBuilder {
             .iter()
             .flatten()
             .map(|t| TableReference::from(t.statement()).name)
-            .collect::<HashSet<_>>();
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .map(ToOwned::to_owned);
 
         let attributes = attributes![
             self.get_transact_statements()

@@ -3,22 +3,24 @@ use crate::{KeyValue, semconv};
 
 /// Represents a parsed table reference from a PartiQL statement
 #[derive(Debug, Clone, Default, PartialEq)]
-pub(crate) struct TableReference {
-    pub name: String,
-    pub index_name: Option<KeyValue>,
+pub(crate) struct TableReference<'a> {
+    pub name: &'a str,
+    index_name: Option<&'a str>,
 }
 
-impl TableReference {
-    pub fn new(table_part: impl Into<String>, index_part: impl AsAttribute) -> Self {
-        Self {
-            name: table_part.into(),
-            index_name: index_part.as_attribute(semconv::AWS_DYNAMODB_INDEX_NAME),
-        }
+impl<'a> TableReference<'a> {
+    pub fn new(name: &'a str, index_name: Option<&'a str>) -> Self {
+        Self { name, index_name }
+    }
+
+    pub fn index_name(&self) -> Option<KeyValue> {
+        self.index_name
+            .as_attribute(semconv::AWS_DYNAMODB_INDEX_NAME)
     }
 }
 
-impl From<&str> for TableReference {
-    fn from(value: &str) -> Self {
+impl<'a> From<&'a str> for TableReference<'a> {
+    fn from(value: &'a str) -> Self {
         parse_partiql_statement(value).unwrap_or_default()
     }
 }
@@ -31,7 +33,7 @@ const STATEMENTS: [(&str, Option<&str>); 4] = [
 ];
 
 /// Extracts table name and optional index name from PartiQL statements.
-fn parse_partiql_statement(statement: &str) -> Option<TableReference> {
+fn parse_partiql_statement(statement: &str) -> Option<TableReference<'_>> {
     let mut tokens = statement.split_whitespace();
     let first_token = tokens.next()?;
 
@@ -55,14 +57,14 @@ fn parse_partiql_statement(statement: &str) -> Option<TableReference> {
 
 /// Parses a table identifier that may include an index (e.g., "table"."index")
 fn parse_table_identifier(id: &str) -> TableReference {
-    let (table_part, index_part) = if id.starts_with('"') && id.ends_with('"') {
+    let (name, index_name) = if id.starts_with('"') && id.ends_with('"') {
         let mut parts = id[1..id.len() - 1].split(r#"".""#);
         (parts.next().unwrap_or_default(), parts.next())
     } else {
         (id, None)
     };
 
-    TableReference::new(table_part, index_part)
+    TableReference::new(name, index_name)
 }
 
 #[cfg(test)]
@@ -131,8 +133,6 @@ mod tests {
     ) {
         let table = TableReference::from(statement);
         assert!(table.name == expected_table_name);
-
-        let index_name = table.index_name.map(|kv| kv.value.as_str().to_string());
-        assert!(index_name.as_deref() == expected_index_name);
+        assert!(table.index_name == expected_index_name);
     }
 }

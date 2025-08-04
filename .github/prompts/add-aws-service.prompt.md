@@ -18,6 +18,7 @@ Ask for the AWS service name if not provided (e.g., "S3", "Lambda", "EC2").
 6. **Semantic Conventions**: Use appropriate OpenTelemetry semantic conventions for the service type
 7. **Input & Output Attributes**: Implement both `AwsBuilderInstrument` and `InstrumentedFluentBuilderOutput` where appropriate
 8. **Module Integration**: Update relevant `mod.rs` files and feature flags
+9. **Documentation**: Update crate documentation and `README.md`
 
 ## Implementation Pattern
 

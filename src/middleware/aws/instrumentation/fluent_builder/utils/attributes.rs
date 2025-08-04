@@ -1,7 +1,7 @@
 use crate::{Key, KeyValue, StringValue, Value};
 
 /// A trait for converting fluent builder properties into OpenTelemetry key-value attributes.
-pub(super) trait AsAttribute {
+pub(crate) trait AsAttribute {
     fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue>;
 }
 
@@ -95,4 +95,4 @@ macro_rules! attributes {
     };
 }
 
-pub(super) use attributes;
+pub(crate) use attributes;

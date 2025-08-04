@@ -1,6 +1,6 @@
 use crate::{Context, future::InstrumentedFutureContext, middleware::aws::*};
 
-pub(super) mod utils;
+mod utils;
 
 #[cfg(feature = "aws-dynamodb")]
 mod dynamodb;

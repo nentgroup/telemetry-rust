@@ -6,23 +6,23 @@ use crate::semconv;
 /// Utility trait to deduplicate elements in an iterator and convert them to owned values.
 ///
 /// This trait is used to extract unique table names from batch operations.
-trait ToUniqOwned<'a, T: ToOwned + ?Sized + 'a>: IntoIterator<Item = &'a T> {
+trait ToUniqOwned<'a, T: ToOwned + ?Sized + 'a>: Iterator<Item = &'a T> {
     /// Consumes the iterator, returning a new iterator over unique owned elements.
-    fn uniq_owned(self) -> impl IntoIterator<Item = T::Owned>;
+    fn uniq_owned(self) -> impl Iterator<Item = T::Owned>;
 }
 
 impl<'a, T, I> ToUniqOwned<'a, T> for I
 where
     T: Ord + ToOwned + ?Sized + 'a,
-    I: IntoIterator<Item = &'a T>,
+    I: Iterator<Item = &'a T>,
 {
     /// An implementation that collects items into a temporary vector,
     /// which is then sorted and deduped.
     ///
     /// This implementation has an `O(n * log(n))` complexity due to [`core::slice::sort::unstable`] being used,
     /// but for small collections it should be more efficient than using a [`std::collections::HashSet`].
-    fn uniq_owned(self) -> impl IntoIterator<Item = T::Owned> {
-        let mut input = self.into_iter().collect::<Vec<_>>();
+    fn uniq_owned(self) -> impl Iterator<Item = T::Owned> {
+        let mut input = self.collect::<Vec<_>>();
         input.sort_unstable();
         input.dedup();
         input.into_iter().map(ToOwned::to_owned)

@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.1.0
+
+ - Support PartiQL instrumentation https://github.com/nentgroup/telemetry-rust/pull/146
+
 ## v6.0.0
 
 - New AWS SDK instrumentation with automatic attribute extraction https://github.com/nentgroup/telemetry-rust/pull/140

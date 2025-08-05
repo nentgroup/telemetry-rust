@@ -148,25 +148,76 @@ pub(super) struct FluentBuilderSpan(AwsSpan);
 
 /// A trait for extracting OpenTelemetry attributes from AWS operation output objects.
 ///
-/// This trait allows AWS SDK operation outputs to provide additional span attributes
-/// that are only available after the operation completes, such as consumed capacity,
-/// result counts, and other response metadata that enhances observability.
+/// This trait enables AWS SDK operation outputs to contribute additional telemetry data
+/// to spans after operations complete. It's automatically used by [`AwsBuilderInstrument`]
+/// to extract meaningful span attributes like item counts, error rates,
+/// and other response metadata that enhances observability.
+///
+/// # Usage
+///
+/// Can be used together with [`AwsBuilderInstrument::build_aws_span`] when access to the
+/// underlying [`AwsSpan`] is required.
+///
+/// # Example
+///
+/// ```rust
+/// use aws_sdk_dynamodb::{Client as DynamoClient, types::ReturnConsumedCapacity};
+/// use telemetry_rust::{
+///     KeyValue,
+///     middleware::aws::{AwsBuilderInstrument, InstrumentedFluentBuilderOutput},
+///     semconv,
+/// };
+///
+/// async fn query_table() -> Result<usize, Box<dyn std::error::Error>> {
+///     let config = aws_config::load_from_env().await;
+///     let dynamo_client = DynamoClient::new(&config);
+///
+///     let statement = "SELECT * FROM test";
+///     let query = dynamo_client
+///         .execute_statement()
+///         .statement(statement)
+///         .return_consumed_capacity(ReturnConsumedCapacity::Total);
+///
+///     let mut span = query
+///         // Extract span from fluent builder
+///         .build_aws_span()
+///         // Set additional attributes
+///         .attribute(KeyValue::new(semconv::DB_QUERY_TEXT, statement))
+///         // Start the span
+///         .start();
+///
+///     let result = query.send().await;
+///     if let Ok(output) = result.as_ref() {
+///         // Extract span attributes from ExecuteStatement output
+///         span.set_attributes(output.extract_attributes());
+///         // Set additional attributes
+///         span.set_attribute(KeyValue::new(
+///             semconv::AWS_DYNAMODB_CONSUMED_CAPACITY,
+///             format!("{:?}", output.consumed_capacity().unwrap()),
+///         ));
+///     }
+///     // End the span
+///     span.end(&result);
+///
+///     let items = result?.items.unwrap_or_default();
+///
+///     println!("DynamoDB items: {items:#?}");
+///     Ok(items.len())
+/// }
+/// ```
 ///
 /// # Implementation Notes
 ///
 /// Implementations should extract relevant attributes following OpenTelemetry semantic
 /// conventions for the specific AWS service. The extracted attributes will be added
 /// to the span after the operation completes successfully.
-///
-/// Check `fluent_builder/*.rs` files for usage examples.
-pub(super) trait InstrumentedFluentBuilderOutput {
+pub trait InstrumentedFluentBuilderOutput {
     /// Extracts OpenTelemetry attributes from the AWS operation output.
     ///
-    /// Returns an iterator of key-value pairs that will be added to the span
-    /// as attributes. Implementations should follow OpenTelemetry semantic
-    /// conventions for the specific AWS service.
+    /// Return an iterator of [`KeyValue`] pairs representing span attributes.
     ///
-    /// The default implementation returns no attributes.
+    /// The default implementation returns no attributes, which is appropriate for
+    /// operations that don't have meaningful response metrics to extract.
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         None
     }

@@ -1,23 +1,21 @@
-//! AWS Lambda instrumentation utilities.
-//!
-//! This module provides instrumentation layer for AWS Lambda functions.
-
-use crate::{
-    future::{InstrumentedFuture, InstrumentedFutureContext},
-    semconv,
-};
+use crate::future::{InstrumentedFuture, InstrumentedFutureContext};
 use lambda_runtime::LambdaInvocation;
-use opentelemetry::trace::SpanKind;
 use opentelemetry_sdk::trace::SdkTracerProvider as TracerProvider;
-use std::task::{Context as TaskContext, Poll};
+use std::{
+    sync::Arc,
+    task::{Context as TaskContext, Poll},
+};
 use tower::{Layer, Service};
 use tracing::{Instrument, instrument::Instrumented};
-use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
+
+use super::context::LambdaServiceContext;
 
 /// OpenTelemetry layer for AWS Lambda functions.
 ///
 /// This layer provides automatic tracing instrumentation for AWS Lambda functions,
 /// creating spans for each invocation with appropriate FaaS semantic attributes.
+/// The layer uses context providers to create trigger-specific spans with the
+/// correct OpenTelemetry attributes.
 ///
 /// # Example
 ///
@@ -38,8 +36,13 @@ use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 ///     // Grab TracerProvider after telemetry initialisation
 ///     let provider = init_tracing!(tracing::Level::WARN);
 ///
-///     // Create lambda telemetry layer
+///     // Create generic lambda telemetry layer
 ///     let telemetry_layer = OtelLambdaLayer::new(provider);
+///
+///     // Or create specialized layers for specific event source type:
+///     // let telemetry_layer = OtelLambdaLayer::http(provider);
+///     // let telemetry_layer = OtelLambdaLayer::sqs(provider, Some("arn:aws:sqs:..."));
+///     // let telemetry_layer = OtelLambdaLayer::timer(provider, Some("0/5 * * * ? *"));
 ///
 ///     // Run lambda runtime with telemetry layer
 ///     Runtime::new(service_fn(handle))
@@ -52,27 +55,42 @@ use tracing_opentelemetry_instrumentation_sdk::TRACING_TARGET;
 ///     Ok(())
 /// }
 /// ```
-pub struct OtelLambdaLayer {
+pub struct OtelLambdaLayer<C> {
+    context: Arc<C>,
     provider: TracerProvider,
 }
 
-impl OtelLambdaLayer {
-    /// Creates a new OpenTelemetry layer for Lambda functions.
+impl<C> OtelLambdaLayer<C> {
+    /// Creates a new OpenTelemetry layer with a custom context provider.
+    ///
+    /// This method allows you to create a layer with any custom context that
+    /// implements [`LambdaServiceContext`]. For most use cases, you should use
+    /// the specialized factory methods like [`OtelLambdaLayer::new`],
+    /// [`OtelLambdaLayer::http`], [`OtelLambdaLayer::pubsub`], etc.
     ///
     /// # Arguments
     ///
-    /// * `provider` - The tracer provider to use for creating spans
-    pub fn new(provider: TracerProvider) -> Self {
-        Self { provider }
+    /// * `context` - A context provider that implements [`LambdaServiceContext`] trait
+    /// * `provider` - The [`TracerProvider`] to use for creating spans
+    ///
+    /// # Returns
+    ///
+    /// A configured [`OtelLambdaLayer`] with the provided context
+    pub fn with_context(context: C, provider: TracerProvider) -> Self {
+        Self {
+            context: Arc::new(context),
+            provider,
+        }
     }
 }
 
-impl<S> Layer<S> for OtelLambdaLayer {
-    type Service = OtelLambdaService<S>;
+impl<S, C> Layer<S> for OtelLambdaLayer<C> {
+    type Service = OtelLambdaService<S, C>;
 
     fn layer(&self, inner: S) -> Self::Service {
         OtelLambdaService {
             inner,
+            context: self.context.clone(),
             provider: self.provider.clone(),
             coldstart: true,
         }
@@ -91,21 +109,23 @@ impl<T> InstrumentedFutureContext<T> for TracerProvider {
 ///
 /// This service wraps Lambda services to provide automatic invocation tracing
 /// with proper span lifecycle management and cold start detection.
-pub struct OtelLambdaService<S> {
+pub struct OtelLambdaService<S, C> {
     inner: S,
+    context: Arc<C>,
     provider: TracerProvider,
     coldstart: bool,
 }
 
-impl<S> Drop for OtelLambdaService<S> {
+impl<S, C> Drop for OtelLambdaService<S, C> {
     fn drop(&mut self) {
         crate::shutdown_tracer_provider(&self.provider)
     }
 }
 
-impl<S, R> Service<LambdaInvocation> for OtelLambdaService<S>
+impl<S, R, C> Service<LambdaInvocation> for OtelLambdaService<S, C>
 where
     S: Service<LambdaInvocation, Response = R>,
+    C: LambdaServiceContext,
 {
     type Response = R;
     type Error = S::Error;
@@ -116,18 +136,7 @@ where
     }
 
     fn call(&mut self, req: LambdaInvocation) -> Self::Future {
-        let span = tracing::trace_span!(
-            target: TRACING_TARGET,
-            "Lambda function invocation",
-            // TODO: set correct otel.kind and faas.trigger
-            // see https://opentelemetry.io/docs/specs/semconv/faas/aws-lambda/
-            "otel.kind" = ?SpanKind::Server,
-            "otel.name" = req.context.env_config.function_name,
-            { semconv::FAAS_TRIGGER } = "other",
-            { semconv::AWS_LAMBDA_INVOKED_ARN } = req.context.invoked_function_arn,
-            { semconv::FAAS_INVOCATION_ID } = req.context.request_id,
-            { semconv::FAAS_COLDSTART } = self.coldstart,
-        );
+        let span = self.context.create_span(&req, self.coldstart);
 
         self.coldstart = false;
 

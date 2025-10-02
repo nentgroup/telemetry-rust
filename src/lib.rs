@@ -325,10 +325,10 @@ macro_rules! init_tracing {
 #[inline]
 pub fn shutdown_tracer_provider(provider: &TracerProvider) {
     if let Err(err) = provider.force_flush() {
-        tracing::warn!("failed to flush tracer provider: {err:?}");
+        tracing::warn!(?err, "failed to flush tracer provider");
     }
     if let Err(err) = provider.shutdown() {
-        tracing::warn!("failed to shutdown tracer provider: {err:?}");
+        tracing::warn!(?err, "failed to shutdown tracer provider");
     } else {
         tracing::info!("tracer provider is shutdown")
     }

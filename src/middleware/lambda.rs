@@ -82,7 +82,7 @@ impl<S> Layer<S> for OtelLambdaLayer {
 impl<T> InstrumentedFutureContext<T> for TracerProvider {
     fn on_result(self, _: &T) {
         if let Err(err) = self.force_flush() {
-            tracing::warn!("failed to flush tracer provider: {err:?}");
+            tracing::warn!(?err, "failed to flush tracer provider");
         }
     }
 }

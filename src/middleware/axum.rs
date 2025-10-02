@@ -147,7 +147,7 @@ where
             let span = otel_http::http_server::make_span_from_request(&req);
             let matched_path = req.extensions().get::<P>();
             let route = matched_path.map_or("", self.matched_path_as_str);
-            let method = otel_http::http_method(req.method());
+            let method = req.method();
             // let client_ip = parse_x_forwarded_for(req.headers())
             //     .or_else(|| {
             //         req.extensions()
@@ -159,7 +159,9 @@ where
             span.record("otel.name", format!("{method} {route}").trim());
             // span.record("trace_id", find_trace_id_from_tracing(&span));
             // span.record("client.address", client_ip);
-            span.set_parent(otel_http::extract_context(req.headers()));
+            if let Err(err) = span.set_parent(otel_http::extract_context(req.headers())) {
+                tracing::warn!(?err, "span context cannot be set");
+            };
             span
         } else {
             tracing::Span::none()

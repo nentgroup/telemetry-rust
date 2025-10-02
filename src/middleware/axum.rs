@@ -159,7 +159,9 @@ where
             span.record("otel.name", format!("{method} {route}").trim());
             // span.record("trace_id", find_trace_id_from_tracing(&span));
             // span.record("client.address", client_ip);
-            span.set_parent(otel_http::extract_context(req.headers()));
+            if let Err(error) = span.set_parent(otel_http::extract_context(req.headers())) {
+                tracing::warn!(?error, "span context cannot be set");
+            };
             span
         } else {
             tracing::Span::none()

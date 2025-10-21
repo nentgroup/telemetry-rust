@@ -190,7 +190,7 @@ fn propagator_from_string(v: &str) -> Result<Propagator, TraceError> {
         ))),
         #[cfg(not(feature = "zipkin"))]
         "b3" => Err(TraceError::from(
-            "unsupported propagator form env OTEL_PROPAGATORS: 'b3', try to enable compile feature 'zipkin'",
+            "unsupported propagator from env OTEL_PROPAGATORS: 'b3', try to enable compile feature 'zipkin'",
         )),
         #[cfg(feature = "zipkin")]
         "b3multi" => Ok(Box::new(B3Propagator::with_encoding(
@@ -198,16 +198,16 @@ fn propagator_from_string(v: &str) -> Result<Propagator, TraceError> {
         ))),
         #[cfg(not(feature = "zipkin"))]
         "b3multi" => Err(TraceError::from(
-            "unsupported propagator form env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'",
+            "unsupported propagator from env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'",
         )),
         #[cfg(feature = "xray")]
         "xray" => Ok(Box::new(XrayPropagator::new())),
         #[cfg(not(feature = "xray"))]
         "xray" => Err(TraceError::from(
-            "unsupported propagator form env OTEL_PROPAGATORS: 'xray', try to enable compile feature 'xray'",
+            "unsupported propagator from env OTEL_PROPAGATORS: 'xray', try to enable compile feature 'xray'",
         )),
         unknown => Err(TraceError::from(format!(
-            "unsupported propagator form env OTEL_PROPAGATORS: {unknown:?}"
+            "unsupported propagator from env OTEL_PROPAGATORS: {unknown:?}"
         ))),
     }
 }

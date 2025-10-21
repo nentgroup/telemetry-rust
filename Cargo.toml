@@ -47,6 +47,7 @@ aws-sdk-sns = { version = "1.79.0", optional = true }
 aws-sdk-sqs = { version = "1.78.0", optional = true }
 lambda_runtime = { version = "0", optional = true }
 paste = { version = "1.0.14", optional = true }
+opentelemetry-aws = { version = "0.19", optional = true }
 thiserror = "2.0.12"
 
 [dev-dependencies]
@@ -61,6 +62,7 @@ tokio = "1.41"
 full = ["aws-full", "axum", "test"]
 default = ["zipkin"]
 zipkin = ["dep:opentelemetry-zipkin"]
+xray = ["dep:opentelemetry-aws"]
 future = ["dep:pin-project-lite"]
 test = ["dep:bytes", "dep:opentelemetry_api", "dep:rand", "dep:http-body-util", "dep:hyper"]
 axum = ["dep:tower", "dep:futures-util", "dep:pin-project-lite"]
@@ -74,7 +76,7 @@ aws-firehose = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-firehose"]
 aws-sns = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-sns"]
 aws-sqs = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-sqs"]
 aws = ["aws-span", "aws-instrumentation", "aws-stream-instrumentation"]
-aws-full = ["aws", "aws-lambda", "aws-dynamodb", "aws-firehose", "aws-sns", "aws-sqs"]
+aws-full = ["aws", "xray", "aws-lambda", "aws-dynamodb", "aws-firehose", "aws-sns", "aws-sqs"]
 
 [package.metadata.release]
 allow-branch = ["main"]

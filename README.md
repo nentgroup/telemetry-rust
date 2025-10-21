@@ -210,7 +210,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
 The following context propagation formats are supported:
 
 - `tracecontext`: W3C Trace Context (default)
-- `baggage`: W3C Baggage 
+- `baggage`: W3C Baggage
 - `b3`: B3 single header (requires `zipkin` feature)
 - `b3multi`: B3 multiple headers (requires `zipkin` feature)
 - `xray`: AWS X-Ray (requires `xray` feature)

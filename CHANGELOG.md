@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.3.0
+
+- Add support for AWS X-Ray context propagation https://github.com/nentgroup/telemetry-rust/pull/151
+
 ## v6.2.0
 
 - Update opentelemetry SDK to `0.31` https://github.com/nentgroup/telemetry-rust/pull/149

@@ -7,6 +7,8 @@ use opentelemetry::{
         text_map_propagator::FieldIter,
     },
 };
+#[cfg(feature = "xray")]
+use opentelemetry_aws::trace::XrayPropagator;
 use opentelemetry_sdk::{
     propagation::{BaggagePropagator, TraceContextPropagator},
     trace::TraceError,
@@ -98,6 +100,7 @@ impl TextMapSplitPropagator {
     /// - `baggage`: W3C Baggage propagator
     /// - `b3`: B3 single header propagator (requires "zipkin" feature)
     /// - `b3multi`: B3 multiple header propagator (requires "zipkin" feature)
+    /// - `xray`: AWS X-Ray propagator (requires "xray" feature)
     /// - `none`: No-op propagator
     ///
     /// # Returns
@@ -196,6 +199,12 @@ fn propagator_from_string(v: &str) -> Result<Propagator, TraceError> {
         #[cfg(not(feature = "zipkin"))]
         "b3multi" => Err(TraceError::from(
             "unsupported propagator form env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'",
+        )),
+        #[cfg(feature = "xray")]
+        "xray" => Ok(Box::new(XrayPropagator::new())),
+        #[cfg(not(feature = "xray"))]
+        "xray" => Err(TraceError::from(
+            "unsupported propagator form env OTEL_PROPAGATORS: 'xray', try to enable compile feature 'xray'",
         )),
         unknown => Err(TraceError::from(format!(
             "unsupported propagator form env OTEL_PROPAGATORS: {unknown:?}"

@@ -22,6 +22,7 @@
 //! - `axum`: Axum web framework middleware support
 //! - `test`: Testing utilities for OpenTelemetry validation
 //! - `zipkin`: Zipkin context propagation support (enabled by default)
+//! - `xray`: AWS X-Ray context propagation support
 //! - `future`: Future instrumentation utilities (mostly used internally)
 //!
 //! ## AWS Features
@@ -39,7 +40,7 @@
 //!
 //! ## Feature Bundles
 //! - `aws`: All core AWS features (span + instrumentation + stream instrumentation)
-//! - `aws-full`: All AWS features including Lambda and all service-specific instrumentations
+//! - `aws-full`: All AWS features including Lambda, all service-specific instrumentations, and X-Ray propagation
 //! - `full`: All features enabled
 //!
 //! # Quick Start

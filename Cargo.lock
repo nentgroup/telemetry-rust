@@ -1793,6 +1793,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "opentelemetry-aws"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09fbe9af6b9403e7fe43c11cc341d320d7cf5e779c6708b41415228af1921045"
+dependencies = [
+ "opentelemetry",
+ "opentelemetry_sdk",
+ "tracing",
+]
+
+[[package]]
 name = "opentelemetry-http"
 version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2585,6 +2596,7 @@ dependencies = [
  "hyper 1.7.0",
  "lambda_runtime",
  "opentelemetry",
+ "opentelemetry-aws",
  "opentelemetry-http",
  "opentelemetry-otlp",
  "opentelemetry-semantic-conventions",

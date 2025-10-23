@@ -140,6 +140,7 @@ impl TextMapSplitPropagator {
         };
         let propagators = propagators
             .iter()
+            .rev()
             .map(|s| propagator_from_string(s))
             .collect::<Result<Vec<_>, _>>()?;
         let extract_propagator = Box::new(TextMapCompositePropagator::new(propagators));

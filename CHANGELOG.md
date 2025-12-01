@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.4.0
+
+- Update `lambda_runtime` to `v1` https://github.com/nentgroup/telemetry-rust/pull/165
+
 ## v6.3.0
 
 - Add support for AWS X-Ray context propagation https://github.com/nentgroup/telemetry-rust/pull/151

@@ -170,6 +170,7 @@ Only the following AWS targets are fully supported at the moment:
  * SNS
  * SQS
  * Firehose
+ * SageMaker Runtime
 
 But a generic `AwsSpanBuilder` could be used to instrument any other AWS SDK:
 

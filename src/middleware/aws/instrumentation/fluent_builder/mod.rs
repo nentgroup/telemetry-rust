@@ -6,6 +6,8 @@ mod utils;
 mod dynamodb;
 #[cfg(feature = "aws-firehose")]
 mod firehose;
+#[cfg(feature = "aws-sagemaker-runtime")]
+mod sagemaker_runtime;
 #[cfg(feature = "aws-sns")]
 mod sns;
 #[cfg(feature = "aws-sqs")]

@@ -12,6 +12,9 @@ pub use firehose::FirehoseSpanBuilder;
 pub use sns::SnsSpanBuilder;
 pub use sqs::SqsSpanBuilder;
 
+mod sagemaker_runtime;
+pub use sagemaker_runtime::SageMakerRuntimeSpanBuilder;
+
 /// Messaging operation type
 ///
 /// Represents well-known `messaging.operation.type` values from

@@ -1,6 +1,6 @@
 ---
-mode: 'agent'
-tools: ['codebase', 'editFiles', 'fetch', 'githubRepo', 'problems', 'runCommands', 'runTasks', 'search', 'usages']
+agent: 'agent'
+tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'web/githubRepo', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'execute/createAndRunTask', 'search', 'search/usages']
 description: 'Add complete AWS service instrumentation from scratch'
 ---
 

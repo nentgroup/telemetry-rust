@@ -36,8 +36,7 @@
 //! - `aws-dynamodb`: DynamoDB automatic fluent builders instrumentation
 //! - `aws-firehose`: Firehose automatic fluent builders instrumentation
 //! - `aws-sns`: SNS automatic fluent builders instrumentation
-//! - `aws-sqs`: SQS automatic fluent builders instrumentation
-//!
+//! - `aws-sqs`: SQS automatic fluent builders instrumentation/// - `aws-sagemaker-runtime`: SageMaker Runtime automatic fluent builders instrumentation//!
 //! ## Feature Bundles
 //! - `aws`: All core AWS features (span + instrumentation + stream instrumentation)
 //! - `aws-full`: All AWS features including Lambda, all service-specific instrumentations, and X-Ray propagation

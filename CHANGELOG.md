@@ -1,5 +1,10 @@
 # Changelog
 
+## v6.5.0
+
+- Telemetry for SageMaker runtime https://github.com/nentgroup/telemetry-rust/pull/170
+- Agent files updated to latest VS Code specification https://github.com/nentgroup/telemetry-rust/pull/170
+
 ## v6.4.0
 
 - Update `lambda_runtime` to `v1` https://github.com/nentgroup/telemetry-rust/pull/165

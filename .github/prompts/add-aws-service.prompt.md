@@ -26,6 +26,7 @@ For operations file:
 - Include AWS API reference link in header comment
 - Use appropriate operation macros based on service type
 - Follow semantic conventions for span builders and attributes
+- Follow import statement pattern
 
 For fluent builder file:
 - Implement `AwsBuilderInstrument` for input attribute extraction

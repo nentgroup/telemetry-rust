@@ -169,6 +169,7 @@ Only the following AWS targets are fully supported at the moment:
  * DynamoDB
  * SNS
  * SQS
+ * S3
  * Firehose
  * SageMaker Runtime
 

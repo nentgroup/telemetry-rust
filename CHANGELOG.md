@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.6.0
+
+- Telemetry for S3 https://github.com/nentgroup/telemetry-rust/pull/171
+
 ## v6.5.0
 
 - Telemetry for SageMaker runtime https://github.com/nentgroup/telemetry-rust/pull/170

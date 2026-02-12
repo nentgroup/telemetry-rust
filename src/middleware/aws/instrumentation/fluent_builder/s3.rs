@@ -10,6 +10,7 @@ impl<'a> AwsBuilderInstrument<'a> for GetObjectFluentBuilder {
         let attributes = attributes![
             self.get_part_number()
                 .as_attribute(semconv::AWS_S3_PART_NUMBER),
+            self.get_version_id().as_attribute("aws.s3.version_id"),
         ];
         S3SpanBuilder::get_object(bucket, key).attributes(attributes)
     }
@@ -29,7 +30,11 @@ impl<'a> AwsBuilderInstrument<'a> for PutObjectFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::put_object(bucket, key)
+        let attributes = attributes![
+            self.get_content_length()
+                .as_attribute("aws.s3.content_length"),
+        ];
+        S3SpanBuilder::put_object(bucket, key).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for PutObjectOutput {
@@ -49,6 +54,7 @@ impl<'a> AwsBuilderInstrument<'a> for HeadObjectFluentBuilder {
         let attributes = attributes![
             self.get_part_number()
                 .as_attribute(semconv::AWS_S3_PART_NUMBER),
+            self.get_version_id().as_attribute("aws.s3.version_id"),
         ];
         S3SpanBuilder::head_object(bucket, key).attributes(attributes)
     }
@@ -75,14 +81,25 @@ impl<'a> AwsBuilderInstrument<'a> for CopyObjectFluentBuilder {
         S3SpanBuilder::copy_object(bucket, key).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for CopyObjectOutput {}
+impl InstrumentedFluentBuilderOutput for CopyObjectOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.copy_object_result()
+                .and_then(|r| r.e_tag())
+                .as_attribute("aws.s3.e_tag"),
+            self.version_id().as_attribute("aws.s3.version_id"),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::copy_object);
 
 impl<'a> AwsBuilderInstrument<'a> for DeleteObjectFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::delete_object(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::delete_object(bucket, key).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for DeleteObjectOutput {
@@ -235,7 +252,15 @@ impl<'a> AwsBuilderInstrument<'a> for UploadPartCopyFluentBuilder {
         S3SpanBuilder::upload_part_copy(bucket, key).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for UploadPartCopyOutput {}
+impl InstrumentedFluentBuilderOutput for UploadPartCopyOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.copy_part_result()
+                .and_then(|r| r.e_tag())
+                .as_attribute("aws.s3.e_tag"),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::upload_part_copy);
 
 impl<'a> AwsBuilderInstrument<'a> for CompleteMultipartUploadFluentBuilder {
@@ -249,7 +274,10 @@ impl<'a> AwsBuilderInstrument<'a> for CompleteMultipartUploadFluentBuilder {
 }
 impl InstrumentedFluentBuilderOutput for CompleteMultipartUploadOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
-        attributes![self.e_tag().as_attribute("aws.s3.e_tag")]
+        attributes![
+            self.e_tag().as_attribute("aws.s3.e_tag"),
+            self.version_id().as_attribute("aws.s3.version_id"),
+        ]
     }
 }
 instrument_aws_operation!(aws_sdk_s3::operation::complete_multipart_upload);

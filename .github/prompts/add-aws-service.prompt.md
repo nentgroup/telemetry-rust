@@ -4,7 +4,7 @@ tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'web/githubRepo', 'rea
 description: 'Add complete AWS service instrumentation from scratch'
 ---
 
-Your goal is to add complete AWS SDK instrumentation for a new service by creating both operations and fluent builder files following established patterns from existing services (SNS, DynamoDB, Firehose).
+Your goal is to add complete AWS SDK instrumentation for a new service by creating both operations and fluent builder files following established patterns from existing services (S3, SNS, DynamoDB, Firehose, SQS).
 
 Ask for the AWS service name if not provided (e.g., "S3", "Lambda", "EC2").
 

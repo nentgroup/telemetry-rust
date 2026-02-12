@@ -19,7 +19,7 @@ impl InstrumentedFluentBuilderOutput for GetObjectOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         attributes![
             self.content_length().as_attribute("aws.s3.content_length"),
-            self.e_tag().as_attribute("aws.s3.e_tag"),
+            self.e_tag().as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
         ]
     }
@@ -40,7 +40,7 @@ impl<'a> AwsBuilderInstrument<'a> for PutObjectFluentBuilder {
 impl InstrumentedFluentBuilderOutput for PutObjectOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         attributes![
-            self.e_tag().as_attribute("aws.s3.e_tag"),
+            self.e_tag().as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
         ]
     }
@@ -63,7 +63,7 @@ impl InstrumentedFluentBuilderOutput for HeadObjectOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         attributes![
             self.content_length().as_attribute("aws.s3.content_length"),
-            self.e_tag().as_attribute("aws.s3.e_tag"),
+            self.e_tag().as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
         ]
     }
@@ -86,7 +86,7 @@ impl InstrumentedFluentBuilderOutput for CopyObjectOutput {
         attributes![
             self.copy_object_result()
                 .and_then(|r| r.e_tag())
-                .as_attribute("aws.s3.e_tag"),
+                .as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
         ]
     }
@@ -123,10 +123,10 @@ impl InstrumentedFluentBuilderOutput for DeleteObjectsOutput {
         attributes![
             self.deleted()
                 .len()
-                .as_attribute("aws.s3.delete.deleted_count"),
+                .as_attribute("aws.s3.delete_objects.deleted_count"),
             self.errors()
                 .len()
-                .as_attribute("aws.s3.delete.error_count"),
+                .as_attribute("aws.s3.delete_objects.error_count"),
         ]
     }
 }
@@ -237,7 +237,7 @@ impl<'a> AwsBuilderInstrument<'a> for UploadPartFluentBuilder {
 }
 impl InstrumentedFluentBuilderOutput for UploadPartOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
-        attributes![self.e_tag().as_attribute("aws.s3.e_tag")]
+        attributes![self.e_tag().as_attribute("aws.s3.etag")]
     }
 }
 instrument_aws_operation!(aws_sdk_s3::operation::upload_part);
@@ -261,7 +261,7 @@ impl InstrumentedFluentBuilderOutput for UploadPartCopyOutput {
         attributes![
             self.copy_part_result()
                 .and_then(|r| r.e_tag())
-                .as_attribute("aws.s3.e_tag"),
+                .as_attribute("aws.s3.etag"),
         ]
     }
 }
@@ -279,7 +279,7 @@ impl<'a> AwsBuilderInstrument<'a> for CompleteMultipartUploadFluentBuilder {
 impl InstrumentedFluentBuilderOutput for CompleteMultipartUploadOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         attributes![
-            self.e_tag().as_attribute("aws.s3.e_tag"),
+            self.e_tag().as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
         ]
     }
@@ -423,7 +423,7 @@ impl<'a> AwsBuilderInstrument<'a> for GetObjectAttributesFluentBuilder {
 impl InstrumentedFluentBuilderOutput for GetObjectAttributesOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         attributes![
-            self.e_tag().as_attribute("aws.s3.e_tag"),
+            self.e_tag().as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
         ]
     }

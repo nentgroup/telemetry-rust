@@ -146,7 +146,9 @@ impl<'a> AwsBuilderInstrument<'a> for RestoreObjectFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::restore_object(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::restore_object(bucket, key).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for RestoreObjectOutput {}
@@ -227,6 +229,8 @@ impl<'a> AwsBuilderInstrument<'a> for UploadPartFluentBuilder {
             self.get_upload_id().as_attribute(semconv::AWS_S3_UPLOAD_ID),
             self.get_part_number()
                 .as_attribute(semconv::AWS_S3_PART_NUMBER),
+            self.get_content_length()
+                .as_attribute("aws.s3.content_length"),
         ];
         S3SpanBuilder::upload_part(bucket, key).attributes(attributes)
     }
@@ -371,7 +375,12 @@ instrument_aws_operation!(aws_sdk_s3::operation::list_directory_buckets);
 
 impl<'a> AwsBuilderInstrument<'a> for WriteGetObjectResponseFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
-        S3SpanBuilder::write_get_object_response()
+        let attributes = attributes![
+            self.get_content_length()
+                .as_attribute("aws.s3.content_length"),
+            self.get_version_id().as_attribute("aws.s3.version_id"),
+        ];
+        S3SpanBuilder::write_get_object_response().attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for WriteGetObjectResponseOutput {}
@@ -382,7 +391,9 @@ impl<'a> AwsBuilderInstrument<'a> for GetObjectAclFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::get_object_acl(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::get_object_acl(bucket, key).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for GetObjectAclOutput {}
@@ -392,7 +403,9 @@ impl<'a> AwsBuilderInstrument<'a> for PutObjectAclFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::put_object_acl(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::put_object_acl(bucket, key).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for PutObjectAclOutput {}
@@ -402,10 +415,19 @@ impl<'a> AwsBuilderInstrument<'a> for GetObjectAttributesFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::get_object_attributes(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::get_object_attributes(bucket, key).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for GetObjectAttributesOutput {}
+impl InstrumentedFluentBuilderOutput for GetObjectAttributesOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.e_tag().as_attribute("aws.s3.e_tag"),
+            self.version_id().as_attribute("aws.s3.version_id"),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::get_object_attributes);
 
 // Object tagging operations
@@ -413,30 +435,48 @@ impl<'a> AwsBuilderInstrument<'a> for GetObjectTaggingFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::get_object_tagging(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::get_object_tagging(bucket, key).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for GetObjectTaggingOutput {}
+impl InstrumentedFluentBuilderOutput for GetObjectTaggingOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![self.version_id().as_attribute("aws.s3.version_id"),]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::get_object_tagging);
 
 impl<'a> AwsBuilderInstrument<'a> for PutObjectTaggingFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::put_object_tagging(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::put_object_tagging(bucket, key).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for PutObjectTaggingOutput {}
+impl InstrumentedFluentBuilderOutput for PutObjectTaggingOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![self.version_id().as_attribute("aws.s3.version_id"),]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::put_object_tagging);
 
 impl<'a> AwsBuilderInstrument<'a> for DeleteObjectTaggingFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::delete_object_tagging(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::delete_object_tagging(bucket, key).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for DeleteObjectTaggingOutput {}
+impl InstrumentedFluentBuilderOutput for DeleteObjectTaggingOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![self.version_id().as_attribute("aws.s3.version_id"),]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::delete_object_tagging);
 
 // Object lock and retention operations
@@ -444,7 +484,9 @@ impl<'a> AwsBuilderInstrument<'a> for GetObjectLegalHoldFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::get_object_legal_hold(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::get_object_legal_hold(bucket, key).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for GetObjectLegalHoldOutput {}
@@ -454,7 +496,9 @@ impl<'a> AwsBuilderInstrument<'a> for PutObjectLegalHoldFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::put_object_legal_hold(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::put_object_legal_hold(bucket, key).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for PutObjectLegalHoldOutput {}
@@ -464,7 +508,9 @@ impl<'a> AwsBuilderInstrument<'a> for GetObjectRetentionFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::get_object_retention(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::get_object_retention(bucket, key).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for GetObjectRetentionOutput {}
@@ -474,7 +520,9 @@ impl<'a> AwsBuilderInstrument<'a> for PutObjectRetentionFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        S3SpanBuilder::put_object_retention(bucket, key)
+        let attributes =
+            attributes![self.get_version_id().as_attribute("aws.s3.version_id"),];
+        S3SpanBuilder::put_object_retention(bucket, key).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for PutObjectRetentionOutput {}

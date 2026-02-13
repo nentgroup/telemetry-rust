@@ -35,6 +35,7 @@
 //! ## AWS Service-Specific Features
 //! - `aws-dynamodb`: DynamoDB automatic fluent builders instrumentation
 //! - `aws-firehose`: Firehose automatic fluent builders instrumentation
+//! - `aws-s3`: S3 automatic fluent builders instrumentation
 //! - `aws-sns`: SNS automatic fluent builders instrumentation
 //! - `aws-sqs`: SQS automatic fluent builders instrumentation
 //! - `aws-sagemaker-runtime`: SageMaker Runtime automatic fluent builders instrumentation

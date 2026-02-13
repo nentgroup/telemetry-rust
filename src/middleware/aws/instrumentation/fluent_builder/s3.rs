@@ -19,8 +19,15 @@ impl InstrumentedFluentBuilderOutput for GetObjectOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         attributes![
             self.content_length().as_attribute("aws.s3.content_length"),
+            self.content_type().as_attribute("aws.s3.content_type"),
             self.e_tag().as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
+            self.last_modified()
+                .map(|lm| KeyValue::new("aws.s3.last_modified", lm.to_string())),
+            self.server_side_encryption().map(|sse| KeyValue::new(
+                "aws.s3.server_side_encryption",
+                sse.as_str().to_owned()
+            )),
         ]
     }
 }
@@ -42,6 +49,10 @@ impl InstrumentedFluentBuilderOutput for PutObjectOutput {
         attributes![
             self.e_tag().as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
+            self.server_side_encryption().map(|sse| KeyValue::new(
+                "aws.s3.server_side_encryption",
+                sse.as_str().to_owned()
+            )),
         ]
     }
 }
@@ -63,8 +74,15 @@ impl InstrumentedFluentBuilderOutput for HeadObjectOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         attributes![
             self.content_length().as_attribute("aws.s3.content_length"),
+            self.content_type().as_attribute("aws.s3.content_type"),
             self.e_tag().as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
+            self.last_modified()
+                .map(|lm| KeyValue::new("aws.s3.last_modified", lm.to_string())),
+            self.server_side_encryption().map(|sse| KeyValue::new(
+                "aws.s3.server_side_encryption",
+                sse.as_str().to_owned()
+            )),
         ]
     }
 }
@@ -88,6 +106,10 @@ impl InstrumentedFluentBuilderOutput for CopyObjectOutput {
                 .and_then(|r| r.e_tag())
                 .as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
+            self.server_side_encryption().map(|sse| KeyValue::new(
+                "aws.s3.server_side_encryption",
+                sse.as_str().to_owned()
+            )),
         ]
     }
 }
@@ -115,7 +137,12 @@ instrument_aws_operation!(aws_sdk_s3::operation::delete_object);
 impl<'a> AwsBuilderInstrument<'a> for DeleteObjectsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
-        S3SpanBuilder::delete_objects(bucket)
+        let attributes =
+            attributes![self.get_delete().as_ref().map(|del| KeyValue::new(
+                "aws.s3.delete_objects.request_count",
+                del.objects().len() as i64
+            )),];
+        S3SpanBuilder::delete_objects(bucket).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for DeleteObjectsOutput {
@@ -178,21 +205,36 @@ instrument_aws_operation!(aws_sdk_s3::operation::get_object_torrent);
 impl<'a> AwsBuilderInstrument<'a> for ListObjectsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
-        S3SpanBuilder::list_objects(bucket)
+        let attributes = attributes![
+            self.get_prefix().as_attribute("aws.s3.prefix"),
+            self.get_max_keys().as_attribute("aws.s3.max_keys"),
+        ];
+        S3SpanBuilder::list_objects(bucket).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for ListObjectsOutput {}
+impl InstrumentedFluentBuilderOutput for ListObjectsOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![self.is_truncated().as_attribute("aws.s3.is_truncated"),]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::list_objects);
 
 impl<'a> AwsBuilderInstrument<'a> for ListObjectsV2FluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
-        S3SpanBuilder::list_objects_v2(bucket)
+        let attributes = attributes![
+            self.get_prefix().as_attribute("aws.s3.prefix"),
+            self.get_max_keys().as_attribute("aws.s3.max_keys"),
+        ];
+        S3SpanBuilder::list_objects_v2(bucket).attributes(attributes)
     }
 }
 impl InstrumentedFluentBuilderOutput for ListObjectsV2Output {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
-        attributes![self.key_count().as_attribute("aws.s3.key_count")]
+        attributes![
+            self.key_count().as_attribute("aws.s3.key_count"),
+            self.is_truncated().as_attribute("aws.s3.is_truncated"),
+        ]
     }
 }
 instrument_aws_operation!(aws_sdk_s3::operation::list_objects_v2);
@@ -200,10 +242,18 @@ instrument_aws_operation!(aws_sdk_s3::operation::list_objects_v2);
 impl<'a> AwsBuilderInstrument<'a> for ListObjectVersionsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
-        S3SpanBuilder::list_object_versions(bucket)
+        let attributes = attributes![
+            self.get_prefix().as_attribute("aws.s3.prefix"),
+            self.get_max_keys().as_attribute("aws.s3.max_keys"),
+        ];
+        S3SpanBuilder::list_object_versions(bucket).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for ListObjectVersionsOutput {}
+impl InstrumentedFluentBuilderOutput for ListObjectVersionsOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![self.is_truncated().as_attribute("aws.s3.is_truncated"),]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::list_object_versions);
 
 // Multipart upload operations
@@ -216,7 +266,13 @@ impl<'a> AwsBuilderInstrument<'a> for CreateMultipartUploadFluentBuilder {
 }
 impl InstrumentedFluentBuilderOutput for CreateMultipartUploadOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
-        attributes![self.upload_id().as_attribute(semconv::AWS_S3_UPLOAD_ID),]
+        attributes![
+            self.upload_id().as_attribute(semconv::AWS_S3_UPLOAD_ID),
+            self.server_side_encryption().map(|sse| KeyValue::new(
+                "aws.s3.server_side_encryption",
+                sse.as_str().to_owned()
+            )),
+        ]
     }
 }
 instrument_aws_operation!(aws_sdk_s3::operation::create_multipart_upload);
@@ -237,7 +293,13 @@ impl<'a> AwsBuilderInstrument<'a> for UploadPartFluentBuilder {
 }
 impl InstrumentedFluentBuilderOutput for UploadPartOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
-        attributes![self.e_tag().as_attribute("aws.s3.etag")]
+        attributes![
+            self.e_tag().as_attribute("aws.s3.etag"),
+            self.server_side_encryption().map(|sse| KeyValue::new(
+                "aws.s3.server_side_encryption",
+                sse.as_str().to_owned()
+            )),
+        ]
     }
 }
 instrument_aws_operation!(aws_sdk_s3::operation::upload_part);
@@ -262,6 +324,10 @@ impl InstrumentedFluentBuilderOutput for UploadPartCopyOutput {
             self.copy_part_result()
                 .and_then(|r| r.e_tag())
                 .as_attribute("aws.s3.etag"),
+            self.server_side_encryption().map(|sse| KeyValue::new(
+                "aws.s3.server_side_encryption",
+                sse.as_str().to_owned()
+            )),
         ]
     }
 }
@@ -271,8 +337,13 @@ impl<'a> AwsBuilderInstrument<'a> for CompleteMultipartUploadFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        let attributes =
-            attributes![self.get_upload_id().as_attribute(semconv::AWS_S3_UPLOAD_ID),];
+        let attributes = attributes![
+            self.get_upload_id().as_attribute(semconv::AWS_S3_UPLOAD_ID),
+            self.get_multipart_upload().as_ref().map(|mu| KeyValue::new(
+                "aws.s3.multipart.parts_count",
+                mu.parts().len() as i64
+            )),
+        ];
         S3SpanBuilder::complete_multipart_upload(bucket, key).attributes(attributes)
     }
 }
@@ -281,6 +352,11 @@ impl InstrumentedFluentBuilderOutput for CompleteMultipartUploadOutput {
         attributes![
             self.e_tag().as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
+            self.location().as_attribute("aws.s3.location"),
+            self.server_side_encryption().map(|sse| KeyValue::new(
+                "aws.s3.server_side_encryption",
+                sse.as_str().to_owned()
+            )),
         ]
     }
 }
@@ -301,22 +377,41 @@ instrument_aws_operation!(aws_sdk_s3::operation::abort_multipart_upload);
 impl<'a> AwsBuilderInstrument<'a> for ListMultipartUploadsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
-        S3SpanBuilder::list_multipart_uploads(bucket)
+        let attributes = attributes![
+            self.get_prefix().as_attribute("aws.s3.prefix"),
+            self.get_max_uploads().as_attribute("aws.s3.max_uploads"),
+        ];
+        S3SpanBuilder::list_multipart_uploads(bucket).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for ListMultipartUploadsOutput {}
+impl InstrumentedFluentBuilderOutput for ListMultipartUploadsOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![self.is_truncated().as_attribute("aws.s3.is_truncated"),]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::list_multipart_uploads);
 
 impl<'a> AwsBuilderInstrument<'a> for ListPartsFluentBuilder {
     fn build_aws_span(&self) -> AwsSpanBuilder<'a> {
         let bucket = self.get_bucket().clone().unwrap_or_default();
         let key = self.get_key().clone().unwrap_or_default();
-        let attributes =
-            attributes![self.get_upload_id().as_attribute(semconv::AWS_S3_UPLOAD_ID),];
+        let attributes = attributes![
+            self.get_upload_id().as_attribute(semconv::AWS_S3_UPLOAD_ID),
+            self.get_max_parts().as_attribute("aws.s3.max_parts"),
+        ];
         S3SpanBuilder::list_parts(bucket, key).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for ListPartsOutput {}
+impl InstrumentedFluentBuilderOutput for ListPartsOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.parts()
+                .len()
+                .as_attribute("aws.s3.multipart.parts_count"),
+            self.is_truncated().as_attribute("aws.s3.is_truncated"),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::list_parts);
 
 // Bucket management operations
@@ -326,7 +421,11 @@ impl<'a> AwsBuilderInstrument<'a> for CreateBucketFluentBuilder {
         S3SpanBuilder::create_bucket(bucket)
     }
 }
-impl InstrumentedFluentBuilderOutput for CreateBucketOutput {}
+impl InstrumentedFluentBuilderOutput for CreateBucketOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![self.location().as_attribute("aws.s3.bucket.location"),]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::create_bucket);
 
 impl<'a> AwsBuilderInstrument<'a> for DeleteBucketFluentBuilder {
@@ -344,7 +443,11 @@ impl<'a> AwsBuilderInstrument<'a> for HeadBucketFluentBuilder {
         S3SpanBuilder::head_bucket(bucket)
     }
 }
-impl InstrumentedFluentBuilderOutput for HeadBucketOutput {}
+impl InstrumentedFluentBuilderOutput for HeadBucketOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![self.bucket_region().as_attribute("aws.s3.bucket.region"),]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::head_bucket);
 
 impl<'a> AwsBuilderInstrument<'a> for CreateSessionFluentBuilder {
@@ -353,7 +456,14 @@ impl<'a> AwsBuilderInstrument<'a> for CreateSessionFluentBuilder {
         S3SpanBuilder::create_session(bucket)
     }
 }
-impl InstrumentedFluentBuilderOutput for CreateSessionOutput {}
+impl InstrumentedFluentBuilderOutput for CreateSessionOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![self.server_side_encryption().map(|sse| KeyValue::new(
+            "aws.s3.server_side_encryption",
+            sse.as_str().to_owned()
+        )),]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::create_session);
 
 // Global operations
@@ -362,7 +472,11 @@ impl<'a> AwsBuilderInstrument<'a> for ListBucketsFluentBuilder {
         S3SpanBuilder::list_buckets()
     }
 }
-impl InstrumentedFluentBuilderOutput for ListBucketsOutput {}
+impl InstrumentedFluentBuilderOutput for ListBucketsOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![self.buckets().len().as_attribute("aws.s3.bucket.count"),]
+    }
+}
 instrument_aws_operation!(aws_sdk_s3::operation::list_buckets);
 
 impl<'a> AwsBuilderInstrument<'a> for ListDirectoryBucketsFluentBuilder {
@@ -425,6 +539,8 @@ impl InstrumentedFluentBuilderOutput for GetObjectAttributesOutput {
         attributes![
             self.e_tag().as_attribute("aws.s3.etag"),
             self.version_id().as_attribute("aws.s3.version_id"),
+            self.last_modified()
+                .map(|lm| KeyValue::new("aws.s3.last_modified", lm.to_string())),
         ]
     }
 }

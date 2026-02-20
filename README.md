@@ -181,6 +181,8 @@ Only the following AWS targets are fully supported at the moment:
  * S3
  * Firehose
  * SageMaker Runtime
+ * Secrets Manager
+ * SSM (Systems Manager)
 
 But a generic `AwsSpanBuilder` could be used to instrument any other AWS SDK:
 

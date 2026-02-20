@@ -6,15 +6,19 @@ mod dynamodb;
 mod firehose;
 mod s3;
 mod sagemaker_runtime;
+mod secrets_manager;
 mod sns;
 mod sqs;
+mod ssm;
 
 pub use dynamodb::DynamodbSpanBuilder;
 pub use firehose::FirehoseSpanBuilder;
 pub use s3::S3SpanBuilder;
 pub use sagemaker_runtime::SageMakerRuntimeSpanBuilder;
+pub use secrets_manager::SecretsManagerSpanBuilder;
 pub use sns::SnsSpanBuilder;
 pub use sqs::SqsSpanBuilder;
+pub use ssm::SsmSpanBuilder;
 
 /// Messaging operation type
 ///

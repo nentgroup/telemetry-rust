@@ -10,6 +10,8 @@ mod firehose;
 mod s3;
 #[cfg(feature = "aws-sagemaker-runtime")]
 mod sagemaker_runtime;
+#[cfg(feature = "aws-secretsmanager")]
+mod secretsmanager;
 #[cfg(feature = "aws-sns")]
 mod sns;
 #[cfg(feature = "aws-sqs")]

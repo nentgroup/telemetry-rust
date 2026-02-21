@@ -181,14 +181,15 @@ Only the following AWS targets are fully supported at the moment:
  * S3
  * Firehose
  * SageMaker Runtime
+ * SSM Parameter Store
 
 But a generic `AwsSpanBuilder` could be used to instrument any other AWS SDK:
 
 ```rust
-let lambda_span = AwsSpanBuilder::client(
-    "Lambda",
-    "Invoke",
-    vec![KeyValue::new("aws.lambda.function_name", "my_function")],
+let s3_span = AwsSpanBuilder::client(
+    "S3",
+    "GetObject",
+    vec![KeyValue::new(semconv::AWS_S3_BUCKET, "my_bucket")],
 )
 .start();
 ```

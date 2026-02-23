@@ -10,10 +10,14 @@ mod firehose;
 mod s3;
 #[cfg(feature = "aws-sagemaker-runtime")]
 mod sagemaker_runtime;
+#[cfg(feature = "aws-secretsmanager")]
+mod secretsmanager;
 #[cfg(feature = "aws-sns")]
 mod sns;
 #[cfg(feature = "aws-sqs")]
 mod sqs;
+#[cfg(feature = "aws-ssm")]
+mod ssm;
 
 /// A trait for AWS service clients that can be instrumented with OpenTelemetry tracing.
 ///

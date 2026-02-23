@@ -39,6 +39,8 @@
 //! - `aws-sns`: SNS automatic fluent builders instrumentation
 //! - `aws-sqs`: SQS automatic fluent builders instrumentation
 //! - `aws-sagemaker-runtime`: SageMaker Runtime automatic fluent builders instrumentation
+//! - `aws-secretsmanager`: Secrets Manager automatic fluent builders instrumentation
+//! - `aws-ssm`: SSM Parameter Store automatic fluent builders instrumentation
 //!
 //! ## Feature Bundles
 //! - `aws`: All core AWS features (span + instrumentation + stream instrumentation)

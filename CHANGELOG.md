@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.7.0
+
+- Telemetry for SSM Parameter Store and Secrets Manager https://github.com/nentgroup/telemetry-rust/pull/177
+
 ## v6.6.0
 
 - Telemetry for S3 https://github.com/nentgroup/telemetry-rust/pull/171

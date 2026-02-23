@@ -43,10 +43,7 @@ impl<'a> AwsBuilderInstrument<'a> for PutParameterFluentBuilder {
 impl InstrumentedFluentBuilderOutput for PutParameterOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         attributes![
-            Some(KeyValue::new(
-                "aws.ssm.parameter_version",
-                self.version(),
-            )),
+            Some(KeyValue::new("aws.ssm.parameter_version", self.version(),)),
             self.tier()
                 .as_ref()
                 .map(|t| KeyValue::new("aws.ssm.tier", t.as_str().to_owned())),

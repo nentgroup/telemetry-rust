@@ -1,6 +1,6 @@
 [package]
 name = "telemetry-rust"
-version = "6.5.0"
+version = "6.6.0"
 edition = "2024"
 license = "MIT"
 description = "Open Telemetry fox Axum and Tracing"

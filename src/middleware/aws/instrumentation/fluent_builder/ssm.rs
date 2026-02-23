@@ -17,6 +17,9 @@ impl InstrumentedFluentBuilderOutput for GetParameterOutput {
         attributes![
             self.parameter()
                 .map(|p| KeyValue::new("aws.ssm.parameter_version", p.version())),
+            self.parameter()
+                .and_then(|p| p.r#type())
+                .map(|t| KeyValue::new("aws.ssm.type", t.as_str().to_owned())),
         ]
     }
 }
@@ -40,6 +43,10 @@ impl<'a> AwsBuilderInstrument<'a> for PutParameterFluentBuilder {
 impl InstrumentedFluentBuilderOutput for PutParameterOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         attributes![
+            Some(KeyValue::new(
+                "aws.ssm.parameter_version",
+                self.version(),
+            )),
             self.tier()
                 .as_ref()
                 .map(|t| KeyValue::new("aws.ssm.tier", t.as_str().to_owned())),
@@ -69,7 +76,15 @@ impl<'a> AwsBuilderInstrument<'a> for GetParameterHistoryFluentBuilder {
         SsmSpanBuilder::get_parameter_history(name).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for GetParameterHistoryOutput {}
+impl InstrumentedFluentBuilderOutput for GetParameterHistoryOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.parameters()
+                .len()
+                .as_attribute("aws.ssm.parameter_count"),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_ssm::operation::get_parameter_history);
 
 impl<'a> AwsBuilderInstrument<'a> for LabelParameterVersionFluentBuilder {
@@ -85,6 +100,10 @@ impl<'a> AwsBuilderInstrument<'a> for LabelParameterVersionFluentBuilder {
 impl InstrumentedFluentBuilderOutput for LabelParameterVersionOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         attributes![
+            Some(KeyValue::new(
+                "aws.ssm.parameter_version",
+                self.parameter_version(),
+            )),
             self.invalid_labels()
                 .len()
                 .as_attribute("aws.ssm.invalid_labels_count"),
@@ -134,6 +153,9 @@ impl<'a> AwsBuilderInstrument<'a> for GetParametersFluentBuilder {
 impl InstrumentedFluentBuilderOutput for GetParametersOutput {
     fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
         attributes![
+            self.parameters()
+                .len()
+                .as_attribute("aws.ssm.parameter_count"),
             self.invalid_parameters()
                 .len()
                 .as_attribute("aws.ssm.invalid_parameters_count"),
@@ -180,7 +202,15 @@ impl<'a> AwsBuilderInstrument<'a> for GetParametersByPathFluentBuilder {
         SsmSpanBuilder::get_parameters_by_path(path).attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for GetParametersByPathOutput {}
+impl InstrumentedFluentBuilderOutput for GetParametersByPathOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.parameters()
+                .len()
+                .as_attribute("aws.ssm.parameter_count"),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_ssm::operation::get_parameters_by_path);
 
 // List/describe operations
@@ -193,5 +223,13 @@ impl<'a> AwsBuilderInstrument<'a> for DescribeParametersFluentBuilder {
         SsmSpanBuilder::describe_parameters().attributes(attributes)
     }
 }
-impl InstrumentedFluentBuilderOutput for DescribeParametersOutput {}
+impl InstrumentedFluentBuilderOutput for DescribeParametersOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.parameters()
+                .len()
+                .as_attribute("aws.ssm.parameter_count"),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_ssm::operation::describe_parameters);

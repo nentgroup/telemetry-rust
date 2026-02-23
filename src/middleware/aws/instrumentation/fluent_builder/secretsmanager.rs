@@ -142,7 +142,14 @@ impl<'a> AwsBuilderInstrument<'a> for CancelRotateSecretFluentBuilder {
         SecretsManagerSpanBuilder::cancel_rotate_secret(secret_id)
     }
 }
-impl InstrumentedFluentBuilderOutput for CancelRotateSecretOutput {}
+impl InstrumentedFluentBuilderOutput for CancelRotateSecretOutput {
+    fn extract_attributes(&self) -> impl IntoIterator<Item = KeyValue> {
+        attributes![
+            self.version_id()
+                .as_attribute("aws.secretsmanager.version_id"),
+        ]
+    }
+}
 instrument_aws_operation!(aws_sdk_secretsmanager::operation::cancel_rotate_secret);
 
 // Version operations

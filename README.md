@@ -183,6 +183,7 @@ Only the following AWS targets are fully supported at the moment:
  * SageMaker Runtime
  * Secrets Manager
  * SSM Parameter Store
+ * AppConfig Data
 
 But a generic `AwsSpanBuilder` could be used to instrument any other AWS SDK:
 

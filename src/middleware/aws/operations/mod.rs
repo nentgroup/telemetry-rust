@@ -2,6 +2,7 @@ use opentelemetry::trace::SpanKind;
 
 pub(super) use super::AwsSpanBuilder;
 
+mod appconfigdata;
 mod dynamodb;
 mod firehose;
 mod s3;
@@ -11,6 +12,7 @@ mod sns;
 mod sqs;
 mod ssm;
 
+pub use appconfigdata::AppConfigDataSpanBuilder;
 pub use dynamodb::DynamodbSpanBuilder;
 pub use firehose::FirehoseSpanBuilder;
 pub use s3::S3SpanBuilder;

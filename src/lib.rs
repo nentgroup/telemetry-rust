@@ -41,6 +41,7 @@
 //! - `aws-sagemaker-runtime`: SageMaker Runtime automatic fluent builders instrumentation
 //! - `aws-secretsmanager`: Secrets Manager automatic fluent builders instrumentation
 //! - `aws-ssm`: SSM Parameter Store automatic fluent builders instrumentation
+//! - `aws-appconfigdata`: AppConfig Data automatic fluent builders instrumentation
 //!
 //! ## Feature Bundles
 //! - `aws`: All core AWS features (span + instrumentation + stream instrumentation)

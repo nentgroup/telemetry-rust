@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.8.0
+
+- Telemetry for AppConfig Data https://github.com/nentgroup/telemetry-rust/pull/180
+
 ## v6.7.0
 
 - Telemetry for SSM Parameter Store and Secrets Manager https://github.com/nentgroup/telemetry-rust/pull/177

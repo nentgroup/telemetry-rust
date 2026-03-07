@@ -1,6 +1,6 @@
 [package]
 name = "telemetry-rust"
-version = "6.8.0"
+version = "6.5.0"
 edition = "2024"
 license = "MIT"
 description = "Open Telemetry fox Axum and Tracing"
@@ -45,11 +45,11 @@ aws-sdk-dynamodb = { version = "1.86.0", optional = true }
 aws-sdk-firehose = { version = "1.86.0", optional = true }
 aws-sdk-sns = { version = "1.79.0", optional = true }
 aws-sdk-sqs = { version = "1.78.0", optional = true }
-aws-sdk-s3 = { version = "1.116.0", optional = true }
-aws-sdk-sagemakerruntime = { version = "1.92.0", optional = true }
-aws-sdk-secretsmanager = { version = "1.95.0", optional = true }
-aws-sdk-ssm = { version = "1.100.0", optional = true }
-aws-sdk-appconfigdata = { version = "1.96.0", optional = true }
+aws-sdk-s3 = { version = "1", optional = true }
+aws-sdk-sagemakerruntime = { version = "1", optional = true }
+aws-sdk-secretsmanager = { version = "1", optional = true }
+aws-sdk-ssm = { version = "1", optional = true }
+aws-sdk-appconfigdata = { version = "1", optional = true }
 lambda_runtime = { version = "<=1", optional = true }
 paste = { version = "1.0.14", optional = true }
 opentelemetry-aws = { version = "0.19", optional = true }
@@ -58,7 +58,9 @@ thiserror = "2.0.12"
 [dev-dependencies]
 axum = "0.8.0"
 aws-config = { version = "1.5.13", features = ["behavior-version-latest"] }
+aws-sdk-appconfigdata = { version = "1", features = ["test-util"] }
 aws-sdk-dynamodb = "1"
+aws-smithy-mocks = "0.2.6"
 assert2 = "0.3"
 rstest = "0.26"
 tokio = "1.41"
@@ -84,9 +86,9 @@ aws-s3 = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-s3"]
 aws-sagemaker-runtime = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-sagemakerruntime"]
 aws-secretsmanager = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-secretsmanager"]
 aws-ssm = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-ssm"]
-aws-appconfigdata = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-appconfigdata"]
+aws-appconfig = ["aws-fluent-builder-instrumentation", "dep:aws-sdk-appconfigdata"]
 aws = ["aws-span", "aws-instrumentation", "aws-stream-instrumentation"]
-aws-full = ["aws", "xray", "aws-lambda", "aws-dynamodb", "aws-firehose", "aws-s3", "aws-sns", "aws-sqs", "aws-sagemaker-runtime", "aws-secretsmanager", "aws-ssm", "aws-appconfigdata"]
+aws-full = ["aws", "xray", "aws-lambda", "aws-dynamodb", "aws-firehose", "aws-s3", "aws-sns", "aws-sqs", "aws-sagemaker-runtime", "aws-secretsmanager", "aws-ssm", "aws-appconfig"]
 
 [package.metadata.release]
 allow-branch = ["main"]

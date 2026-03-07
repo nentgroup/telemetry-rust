@@ -2,7 +2,8 @@ use crate::{Context, future::InstrumentedFutureContext, middleware::aws::*};
 
 mod utils;
 
-#[cfg(feature = "aws-appconfigdata")]
+#[cfg(feature = "aws-appconfig")]
+#[path = "appconfigdata.rs"]
 mod appconfigdata;
 #[cfg(feature = "aws-dynamodb")]
 mod dynamodb;

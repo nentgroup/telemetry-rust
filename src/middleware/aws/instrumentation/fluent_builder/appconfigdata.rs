@@ -47,3 +47,71 @@ impl InstrumentedFluentBuilderOutput for GetLatestConfigurationOutput {
     }
 }
 instrument_aws_operation!(aws_sdk_appconfigdata::operation::get_latest_configuration);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use aws_sdk_appconfigdata::{
+        Client,
+        operation::{
+            get_latest_configuration::GetLatestConfigurationOutput,
+            start_configuration_session::StartConfigurationSessionOutput,
+        },
+    };
+    use aws_smithy_mocks::{mock, mock_client};
+
+    #[tokio::test]
+    async fn start_configuration_session_instrument_send_accepts_no_arguments() {
+        let rule = mock!(Client::start_configuration_session)
+            .match_requests(|req| {
+                req.application_identifier() == Some("app")
+                    && req.configuration_profile_identifier() == Some("profile")
+                    && req.environment_identifier() == Some("env")
+                    && req.required_minimum_poll_interval_in_seconds() == Some(30)
+            })
+            .then_output(|| {
+                StartConfigurationSessionOutput::builder()
+                    .initial_configuration_token("initial-token")
+                    .build()
+            });
+
+        let client = mock_client!(aws_sdk_appconfigdata, [&rule]);
+
+        let response = client
+            .start_configuration_session()
+            .application_identifier("app")
+            .configuration_profile_identifier("profile")
+            .environment_identifier("env")
+            .required_minimum_poll_interval_in_seconds(30)
+            .instrument()
+            .send()
+            .await
+            .expect("mocked start configuration session should succeed");
+
+        assert_eq!(
+            response.initial_configuration_token(),
+            Some("initial-token")
+        );
+        assert_eq!(rule.num_calls(), 1);
+    }
+
+    #[test]
+    fn get_latest_configuration_extracts_expected_attributes() {
+        let output = GetLatestConfigurationOutput::builder()
+            .content_type("application/json")
+            .version_label("v1")
+            .next_poll_interval_in_seconds(45)
+            .build();
+
+        let attributes = output.extract_attributes().into_iter().collect::<Vec<_>>();
+
+        assert_eq!(
+            attributes,
+            vec![
+                KeyValue::new("aws.appconfigdata.content_type", "application/json"),
+                KeyValue::new("aws.appconfigdata.version_label", "v1"),
+                KeyValue::new("aws.appconfigdata.next_poll_interval_in_seconds", 45_i64),
+            ]
+        );
+    }
+}

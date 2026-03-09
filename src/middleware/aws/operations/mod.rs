@@ -2,7 +2,6 @@ use opentelemetry::trace::SpanKind;
 
 pub(super) use super::AwsSpanBuilder;
 
-#[path = "appconfigdata.rs"]
 mod appconfigdata;
 mod dynamodb;
 mod firehose;

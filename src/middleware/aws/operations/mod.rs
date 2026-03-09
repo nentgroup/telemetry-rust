@@ -14,7 +14,6 @@ mod sqs;
 mod ssm;
 
 pub use appconfigdata::AppConfigDataSpanBuilder;
-pub use appconfigdata::AppConfigDataSpanBuilder as AppConfigSpanBuilder;
 pub use dynamodb::DynamodbSpanBuilder;
 pub use firehose::FirehoseSpanBuilder;
 pub use s3::S3SpanBuilder;

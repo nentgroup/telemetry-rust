@@ -2860,6 +2860,7 @@ dependencies = [
  "aws-sdk-sqs",
  "aws-sdk-ssm",
  "aws-smithy-async",
+ "aws-smithy-types",
  "aws-smithy-types-convert",
  "aws-types",
  "axum",

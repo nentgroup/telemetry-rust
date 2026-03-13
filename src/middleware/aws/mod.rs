@@ -15,6 +15,7 @@
 //! - `aws-instrumentation`: Enables [`Future`] instrumentation via [`AwsInstrument`] trait
 //! - `aws-stream-instrumentation`: Enables [`Stream`][`futures_util::Stream`] instrumentation via [`AwsStreamInstrument`] trait
 
+use aws_smithy_types::error::metadata::ProvideErrorMetadata;
 use aws_types::request_id::RequestId;
 use opentelemetry::{
     global::{self, BoxedSpan, BoxedTracer},
@@ -110,13 +111,17 @@ impl AwsSpan {
     pub fn end<T, E>(self, aws_response: &Result<T, E>)
     where
         T: RequestId,
-        E: RequestId + Error,
+        E: RequestId + ProvideErrorMetadata + Error,
     {
         let mut span = self.span;
         let (status, request_id) = match aws_response {
             Ok(resp) => (Status::Ok, resp.request_id()),
             Err(error) => {
                 span.record_error(&error);
+                if let Some(code) = error.meta().code() {
+                    span.set_attribute(KeyValue::new("error.code", code.to_owned()));
+                    // TODO: check code to determine if this error is an actual error
+                }
                 (Status::error(error.to_string()), error.request_id())
             }
         };

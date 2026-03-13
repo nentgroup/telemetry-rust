@@ -54,6 +54,7 @@ lambda_runtime = { version = "<=1", optional = true }
 paste = { version = "1.0.14", optional = true }
 opentelemetry-aws = { version = "0.19", optional = true }
 thiserror = "2.0.12"
+aws-smithy-types = "1.4.6"
 
 [dev-dependencies]
 axum = "0.8.0"

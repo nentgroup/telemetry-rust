@@ -1,4 +1,5 @@
 use aws_smithy_async::future::pagination_stream::PaginationStream;
+use aws_smithy_types::error::metadata::ProvideErrorMetadata;
 use aws_smithy_types_convert::stream::{PaginationStreamExt, PaginationStreamImplStream};
 use aws_types::request_id::RequestId;
 use futures_util::Stream;
@@ -68,7 +69,10 @@ impl<'a> StreamState<'a> {
         Self::Flowing(span.start())
     }
 
-    fn end<E: RequestId + Error>(self, aws_response: &Result<Void, E>) -> Self {
+    fn end<E: RequestId + ProvideErrorMetadata + Error>(
+        self,
+        aws_response: &Result<Void, E>,
+    ) -> Self {
         let Self::Flowing(span) = self else {
             panic!("Instrumented stream state is not Flowing");
         };
@@ -99,7 +103,7 @@ pin_project! {
 
 impl<T, E, S> Stream for InstrumentedStream<'_, S>
 where
-    E: RequestId + Error,
+    E: RequestId + ProvideErrorMetadata + Error,
     S: Stream<Item = Result<T, E>>,
 {
     type Item = S::Item;
@@ -183,7 +187,7 @@ where
 /// ```
 pub trait AwsStreamInstrument<T, E, S>
 where
-    E: RequestId + Error,
+    E: RequestId + ProvideErrorMetadata + Error,
     S: Stream<Item = Result<T, E>>,
 {
     /// Instruments the stream with OpenTelemetry tracing.
@@ -208,7 +212,7 @@ where
 
 impl<T, E, S> AwsStreamInstrument<T, E, S> for S
 where
-    E: RequestId + Error,
+    E: RequestId + ProvideErrorMetadata + Error,
     S: Stream<Item = Result<T, E>>,
 {
     fn instrument<'a>(
@@ -225,7 +229,7 @@ where
 impl<T, E> AwsStreamInstrument<T, E, PaginationStreamImplStream<Result<T, E>>>
     for PaginationStream<Result<T, E>>
 where
-    E: RequestId + Error,
+    E: RequestId + ProvideErrorMetadata + Error,
 {
     fn instrument<'a>(
         self,

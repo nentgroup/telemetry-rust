@@ -107,7 +107,7 @@ impl AwsSpan {
     /// # Behavior
     ///
     /// - On success: Sets span status to OK and records the request ID
-    /// - On error: Records the error, sets error status, and records the request ID if available
+    /// - On error: Records the error, sets error status, and records the request ID and error code if available
     pub fn end<T, E>(self, aws_response: &Result<T, E>)
     where
         T: RequestId,
@@ -118,9 +118,8 @@ impl AwsSpan {
             Ok(resp) => (Status::Ok, resp.request_id()),
             Err(error) => {
                 span.record_error(&error);
-                if let Some(code) = error.meta().code() {
+                if let Some(code) = error.code() {
                     span.set_attribute(KeyValue::new("error.code", code.to_owned()));
-                    // TODO: check code to determine if this error is an actual error
                 }
                 (Status::error(error.to_string()), error.request_id())
             }
@@ -284,7 +283,7 @@ impl<'a> AwsSpanBuilder<'a> {
         attributes: impl IntoIterator<Item = KeyValue>,
     ) -> Self {
         Self::new(SpanKind::Consumer, service, method, attributes)
-    }
+    }   
 
     /// Adds multiple attributes to the span being built.
     ///

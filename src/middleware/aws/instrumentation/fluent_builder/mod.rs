@@ -1,3 +1,4 @@
+use aws_smithy_types::error::metadata::ProvideErrorMetadata;
 use crate::{Context, future::InstrumentedFutureContext, middleware::aws::*};
 
 mod utils;

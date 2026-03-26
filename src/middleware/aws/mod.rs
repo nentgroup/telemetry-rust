@@ -283,7 +283,7 @@ impl<'a> AwsSpanBuilder<'a> {
         attributes: impl IntoIterator<Item = KeyValue>,
     ) -> Self {
         Self::new(SpanKind::Consumer, service, method, attributes)
-    }   
+    }
 
     /// Adds multiple attributes to the span being built.
     ///

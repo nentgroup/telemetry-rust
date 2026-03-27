@@ -119,7 +119,10 @@ impl AwsSpan {
             Err(error) => {
                 span.record_error(&error);
                 if let Some(code) = error.code() {
-                    span.set_attribute(KeyValue::new("error.code", code.to_owned()));
+                    span.set_attribute(KeyValue::new(
+                        semconv::EXCEPTION_TYPE,
+                        code.to_owned(),
+                    ));
                 }
                 (Status::error(error.to_string()), error.request_id())
             }

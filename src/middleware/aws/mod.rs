@@ -125,7 +125,9 @@ impl AwsSpan {
                     ));
                 }
                 let status = match error.code() {
-                    Some("NotModified") | Some("ConditionalCheckFailedException") => Status::Unset,
+                    Some("NotModified") | Some("ConditionalCheckFailedException") => {
+                        Status::Unset
+                    }
                     _ => Status::error(error.to_string()),
                 };
                 (status, error.request_id())

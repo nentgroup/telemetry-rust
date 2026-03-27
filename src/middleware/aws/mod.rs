@@ -15,6 +15,7 @@
 //! - `aws-instrumentation`: Enables [`Future`] instrumentation via [`AwsInstrument`] trait
 //! - `aws-stream-instrumentation`: Enables [`Stream`][`futures_util::Stream`] instrumentation via [`AwsStreamInstrument`] trait
 
+use aws_smithy_types::error::metadata::ProvideErrorMetadata;
 use aws_types::request_id::RequestId;
 use opentelemetry::{
     global::{self, BoxedSpan, BoxedTracer},
@@ -106,18 +107,30 @@ impl AwsSpan {
     /// # Behavior
     ///
     /// - On success: Sets span status to OK and records the request ID
-    /// - On error: Records the error, sets error status, and records the request ID if available
+    /// - On error: Records the error, sets error status, and records the request ID and error code if available
     pub fn end<T, E>(self, aws_response: &Result<T, E>)
     where
         T: RequestId,
-        E: RequestId + Error,
+        E: RequestId + ProvideErrorMetadata + Error,
     {
         let mut span = self.span;
         let (status, request_id) = match aws_response {
             Ok(resp) => (Status::Ok, resp.request_id()),
             Err(error) => {
                 span.record_error(&error);
-                (Status::error(error.to_string()), error.request_id())
+                if let Some(code) = error.code() {
+                    span.set_attribute(KeyValue::new(
+                        semconv::EXCEPTION_TYPE,
+                        code.to_owned(),
+                    ));
+                }
+                let status = match error.code() {
+                    Some("NotModified") | Some("ConditionalCheckFailedException") => {
+                        Status::Unset
+                    }
+                    _ => Status::error(error.to_string()),
+                };
+                (status, error.request_id())
             }
         };
         if let Some(value) = request_id {

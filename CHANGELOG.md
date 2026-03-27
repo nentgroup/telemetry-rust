@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.9.0
+
+- Add error code to AWS error spans and treat `NotModified`/`ConditionalCheckFailedException` as non-error status https://github.com/nentgroup/telemetry-rust/pull/183
+
 ## v6.8.0
 
 - Telemetry for AppConfig Data https://github.com/nentgroup/telemetry-rust/pull/180

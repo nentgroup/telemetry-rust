@@ -1,3 +1,4 @@
+use aws_smithy_types::error::metadata::ProvideErrorMetadata;
 use aws_types::request_id::RequestId;
 use std::{error::Error, future::Future};
 
@@ -9,7 +10,7 @@ use crate::{
 impl<T, E> InstrumentedFutureContext<Result<T, E>> for AwsSpan
 where
     T: RequestId,
-    E: RequestId + Error,
+    E: RequestId + ProvideErrorMetadata + Error,
 {
     fn on_result(self, result: &Result<T, E>) {
         self.end(result);
@@ -55,7 +56,7 @@ where
 pub trait AwsInstrument<T, E, F>
 where
     T: RequestId,
-    E: RequestId + Error,
+    E: RequestId + ProvideErrorMetadata + Error,
     F: Future<Output = Result<T, E>>,
 {
     /// Instruments the future with an AWS span.
@@ -79,7 +80,7 @@ where
 impl<T, E, F> AwsInstrument<T, E, F> for F
 where
     T: RequestId,
-    E: RequestId + Error,
+    E: RequestId + ProvideErrorMetadata + Error,
     F: Future<Output = Result<T, E>>,
 {
     fn instrument<'a>(

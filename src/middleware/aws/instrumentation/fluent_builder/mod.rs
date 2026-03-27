@@ -1,4 +1,5 @@
 use crate::{Context, future::InstrumentedFutureContext, middleware::aws::*};
+use aws_smithy_types::error::metadata::ProvideErrorMetadata;
 
 mod utils;
 
@@ -236,7 +237,7 @@ pub trait InstrumentedFluentBuilderOutput {
 impl<T, E> InstrumentedFutureContext<Result<T, E>> for FluentBuilderSpan
 where
     T: RequestId + InstrumentedFluentBuilderOutput,
-    E: RequestId + Error,
+    E: RequestId + ProvideErrorMetadata + Error,
 {
     fn on_result(mut self, result: &Result<T, E>) {
         if let Ok(output) = result {

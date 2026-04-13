@@ -30,33 +30,35 @@ pub(crate) struct HttpClientSpanBuilder<'a> {
     parent: Option<&'a Context>,
 }
 
+struct HttpClientRequestParts<'a> {
+    method: &'a Method,
+    headers: &'a HeaderMap,
+    url_full: String,
+    host: Option<&'a str>,
+    scheme: Option<&'a str>,
+    path: &'a str,
+    query: Option<&'a str>,
+    port: Option<u16>,
+}
+
 impl<'a> HttpClientSpanBuilder<'a> {
     pub(crate) fn from_reqwest_request(request: &reqwest_crate::Request) -> Self {
         let url = request.url();
 
-        Self::from_parts(
-            request.method(),
-            request.headers(),
-            url.as_str().to_owned(),
-            url.host_str(),
-            Some(url.scheme()),
-            url.path(),
-            url.query(),
-            url.port_or_known_default(),
-        )
+        Self::from_parts(HttpClientRequestParts {
+            method: request.method(),
+            headers: request.headers(),
+            url_full: url.as_str().to_owned(),
+            host: url.host_str(),
+            scheme: Some(url.scheme()),
+            path: url.path(),
+            query: url.query(),
+            port: url.port_or_known_default(),
+        })
     }
 
-    fn from_parts(
-        method: &Method,
-        headers: &HeaderMap,
-        url_full: String,
-        host: Option<&str>,
-        scheme: Option<&str>,
-        path: &str,
-        query: Option<&str>,
-        port: Option<u16>,
-    ) -> Self {
-        let (semantic_method, original_method) = semantic_method(method);
+    fn from_parts(parts: HttpClientRequestParts<'_>) -> Self {
+        let (semantic_method, original_method) = semantic_method(parts.method);
         let span_name = if semantic_method == OTHER_HTTP_METHOD {
             HTTP_SPAN_NAME
         } else {
@@ -65,15 +67,15 @@ impl<'a> HttpClientSpanBuilder<'a> {
 
         let mut attributes = vec![
             KeyValue::new(semconv::HTTP_REQUEST_METHOD, semantic_method.to_owned()),
-            KeyValue::new(semconv::URL_FULL, url_full),
-            KeyValue::new(semconv::URL_PATH, path.to_owned()),
+            KeyValue::new(semconv::URL_FULL, parts.url_full),
+            KeyValue::new(semconv::URL_PATH, parts.path.to_owned()),
         ];
 
-        if let Some(host) = host {
+        if let Some(host) = parts.host {
             attributes.push(KeyValue::new(semconv::SERVER_ADDRESS, host.to_owned()));
         }
 
-        if let Some(scheme) = scheme {
+        if let Some(scheme) = parts.scheme {
             attributes.push(KeyValue::new(semconv::URL_SCHEME, scheme.to_owned()));
         }
 
@@ -84,15 +86,19 @@ impl<'a> HttpClientSpanBuilder<'a> {
             ));
         }
 
-        if let Some(port) = port {
+        if let Some(port) = parts.port {
             attributes.push(KeyValue::new(semconv::SERVER_PORT, i64::from(port)));
         }
 
-        if let Some(query) = query {
+        if let Some(query) = parts.query {
             attributes.push(KeyValue::new(semconv::URL_QUERY, query.to_owned()));
         }
 
-        if let Some(ua) = headers.get("user-agent").and_then(|v| v.to_str().ok()) {
+        if let Some(ua) = parts
+            .headers
+            .get("user-agent")
+            .and_then(|v| v.to_str().ok())
+        {
             attributes.push(KeyValue::new(semconv::USER_AGENT_ORIGINAL, ua.to_owned()));
         }
 

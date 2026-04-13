@@ -12,6 +12,7 @@
 //! - Formatted logs with tracing metadata
 //! - Context Propagation for incoming and outgoing HTTP requests
 //! - Axum middleware to instrument http services
+//! - Reqwest middleware to instrument outbound HTTP requests
 //! - AWS Lambda instrumentation layer
 //! - AWS SDK instrumentation with automatic attribute extraction
 //! - Integration testing tools
@@ -20,6 +21,7 @@
 //!
 //! ## Core Features
 //! - `axum`: Axum web framework middleware support
+//! - `reqwest`: Reqwest middleware for outbound HTTP client instrumentation
 //! - `test`: Testing utilities for OpenTelemetry validation
 //! - `zipkin`: Zipkin context propagation support (enabled by default)
 //! - `xray`: AWS X-Ray context propagation support

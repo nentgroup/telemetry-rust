@@ -38,6 +38,21 @@ async fn graceful_shutdown(provider: TracerProvider) {
 }
 ```
 
+## Reqwest instrumentation
+
+Async reqwest request builders can be instrumented with the same fluent style as the AWS builders.
+Available with the `reqwest` feature flag.
+
+```rust
+use telemetry_rust::middleware::http::reqwest::ReqwestBuilderInstrument;
+
+let response = reqwest::Client::new()
+    .get("https://example.com/health")
+    .instrument()
+    .send()
+    .await?;
+```
+
 ## AWS SDK instrumentation
 
 ### `AwsBuilderInstrument` trait

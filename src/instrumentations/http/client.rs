@@ -8,6 +8,7 @@ use opentelemetry::{
     trace::{SpanKind, Status, TraceContextExt, Tracer},
 };
 use tracing::Span;
+use tracing_opentelemetry_instrumentation_sdk::http::http_flavor;
 
 use crate::{Context, KeyValue, OpenTelemetrySpanExt, semconv};
 
@@ -146,7 +147,7 @@ impl HttpClientSpan {
         ));
         span.set_attribute(KeyValue::new(
             semconv::NETWORK_PROTOCOL_VERSION,
-            http_flavor(version),
+            http_flavor(version).into_owned(),
         ));
 
         if let Some(addr) = remote_addr {
@@ -188,16 +189,5 @@ fn semantic_method(method: &Method) -> (&str, Option<&str>) {
         "CONNECT" | "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT"
         | "TRACE" => (method.as_str(), None),
         other => (OTHER_HTTP_METHOD, Some(other)),
-    }
-}
-
-fn http_flavor(version: http::Version) -> &'static str {
-    match version {
-        http::Version::HTTP_09 => "0.9",
-        http::Version::HTTP_10 => "1.0",
-        http::Version::HTTP_11 => "1.1",
-        http::Version::HTTP_2 => "2.0",
-        http::Version::HTTP_3 => "3.0",
-        _ => "unknown",
     }
 }

@@ -132,7 +132,6 @@ fn reqwest_error_type(error: &reqwest_crate::Error) -> &'static str {
         "decode"
     } else if error.is_builder() {
         "builder"
-
     } else {
         "_OTHER"
     }

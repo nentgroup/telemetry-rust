@@ -44,7 +44,7 @@ Async reqwest request builders can be instrumented with the same fluent style as
 Available with the `reqwest` feature flag.
 
 ```rust
-use telemetry_rust::middleware::http::reqwest::ReqwestBuilderInstrument;
+use telemetry_rust::instrumentations::http::reqwest::ReqwestBuilderInstrument;
 
 let response = reqwest::Client::new()
     .get("https://example.com/health")

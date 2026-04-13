@@ -3,7 +3,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use telemetry_rust::middleware::http::reqwest::ReqwestBuilderInstrument;
+//! use telemetry_rust::instrumentations::http::reqwest::ReqwestBuilderInstrument;
 //!
 //! # async fn example() -> Result<(), reqwest::Error> {
 //! let response = reqwest::Client::new()
@@ -16,17 +16,15 @@
 //! # }
 //! ```
 
-use ::http::Request as HttpRequest;
 use ::reqwest as reqwest_crate;
-use std::convert::TryFrom;
 use std::future::Future;
 
-use crate::{Context, http, middleware::http::client::HttpClientSpanBuilder};
+use crate::{Context, http, instrumentations::http::client::HttpClientSpanBuilder};
 
 /// A trait for instrumenting async reqwest request builders with OpenTelemetry tracing.
 ///
 /// ```no_run
-/// use telemetry_rust::middleware::http::reqwest::ReqwestBuilderInstrument;
+/// use telemetry_rust::instrumentations::http::reqwest::ReqwestBuilderInstrument;
 ///
 /// # async fn example() -> Result<(), reqwest::Error> {
 /// let response = reqwest::Client::new()
@@ -88,18 +86,16 @@ impl<'a> InstrumentedRequestBuilder<'a> {
         let context = self.context.cloned();
 
         async move {
-            let request = match request_result {
+            let mut request = match request_result {
                 Ok(request) => request,
                 Err(err) => return Err(err),
             };
 
-            let mut request = HttpRequest::try_from(request)?;
-            let span_builder = HttpClientSpanBuilder::from_request(&request)
+            let span_builder = HttpClientSpanBuilder::from_reqwest_request(&request)
                 .set_context(context.as_ref());
             let span = span_builder.start();
 
             http::inject_context_on_context(span.context(), request.headers_mut());
-            let request = reqwest_crate::Request::try_from(request)?;
 
             let result = client.execute(request).await;
             match &result {

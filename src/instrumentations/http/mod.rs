@@ -1,4 +1,4 @@
-//! HTTP client middleware utilities.
+//! HTTP client instrumentation utilities.
 
 #[cfg(feature = "reqwest")]
 mod client;

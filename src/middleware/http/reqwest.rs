@@ -1,7 +1,4 @@
-//! Reqwest client instrumentation utilities.
-//!
-//! Provides fluent-builder instrumentation for async [`reqwest`] request builders,
-//! mirroring the AWS builder ergonomics in this crate.
+//! Async reqwest instrumentation helpers.
 //!
 //! # Example
 //!
@@ -9,15 +6,12 @@
 //! use telemetry_rust::middleware::http::reqwest::ReqwestBuilderInstrument;
 //!
 //! # async fn example() -> Result<(), reqwest::Error> {
-//! let client = reqwest::Client::new();
-//!
-//! let response = client
+//! let response = reqwest::Client::new()
 //!     .get("https://example.com/health")
 //!     .instrument()
 //!     .send()
 //!     .await?;
-//!
-//! println!("status = {}", response.status());
+//! # let _ = response;
 //! # Ok(())
 //! # }
 //! ```
@@ -25,17 +19,30 @@
 use ::http::Request as HttpRequest;
 use ::reqwest as reqwest_crate;
 use std::convert::TryFrom;
+use std::future::Future;
 
-use crate::{
-    Context, OpenTelemetrySpanExt, http, middleware::http::client::HttpClientSpanBuilder,
-};
+use crate::{Context, http, middleware::http::client::HttpClientSpanBuilder};
 
-/// Trait for instrumenting async [`reqwest::RequestBuilder`] values.
+/// A trait for instrumenting async reqwest request builders with OpenTelemetry tracing.
+///
+/// ```no_run
+/// use telemetry_rust::middleware::http::reqwest::ReqwestBuilderInstrument;
+///
+/// # async fn example() -> Result<(), reqwest::Error> {
+/// let response = reqwest::Client::new()
+///     .get("https://example.com/health")
+///     .instrument()
+///     .send()
+///     .await?;
+/// # let _ = response;
+/// # Ok(())
+/// # }
+/// ```
 pub trait ReqwestBuilderInstrument<'a>
 where
     Self: Sized,
 {
-    /// Instruments this request builder with OpenTelemetry tracing.
+    /// Instruments this reqwest builder with OpenTelemetry tracing.
     fn instrument(self) -> InstrumentedRequestBuilder<'a>;
 }
 
@@ -45,7 +52,8 @@ impl<'a> ReqwestBuilderInstrument<'a> for reqwest_crate::RequestBuilder {
     }
 }
 
-/// Wrapper for instrumented async [`reqwest::RequestBuilder`] values.
+/// A wrapper that instruments async reqwest request builders with OpenTelemetry tracing.
+#[must_use = "RequestBuilder does nothing until you call send()"]
 pub struct InstrumentedRequestBuilder<'a> {
     inner: reqwest_crate::RequestBuilder,
     context: Option<&'a Context>,
@@ -66,37 +74,67 @@ impl<'a> InstrumentedRequestBuilder<'a> {
         self
     }
 
-    /// Sets the OpenTelemetry context for this instrumented request.
+    /// Sets the optional OpenTelemetry context for this instrumented request.
     pub fn set_context(mut self, context: Option<&'a Context>) -> Self {
         self.context = context;
         self
     }
 
     /// Sends the request and records an outbound HTTP client span around it.
-    pub async fn send(self) -> Result<reqwest_crate::Response, reqwest_crate::Error> {
-        let (client, request) = self.inner.build_split();
-        let request = request?;
+    pub fn send(
+        self,
+    ) -> impl Future<Output = Result<reqwest_crate::Response, reqwest_crate::Error>> {
+        let (client, request_result) = self.inner.build_split();
+        let context = self.context.cloned();
 
-        let mut request = HttpRequest::try_from(request)?;
-        let parent_context = self
-            .context
-            .cloned()
-            .unwrap_or_else(|| tracing::Span::current().context());
-        http::inject_context_on_context(&parent_context, request.headers_mut());
+        async move {
+            let request = match request_result {
+                Ok(request) => request,
+                Err(err) => return Err(err),
+            };
 
-        let span_builder = HttpClientSpanBuilder::from_request(&request)
-            .set_context(Some(&parent_context));
-        let request = reqwest_crate::Request::try_from(request)?;
-        let span = span_builder.start();
+            let mut request = HttpRequest::try_from(request)?;
+            let span_builder = HttpClientSpanBuilder::from_request(&request)
+                .set_context(context.as_ref());
+            let span = span_builder.start();
 
-        let result = client.execute(request).await;
-        match &result {
-            Ok(response) => {
-                span.end_response_parts(response.status(), response.version(), response.remote_addr())
+            http::inject_context_on_context(span.context(), request.headers_mut());
+            let request = reqwest_crate::Request::try_from(request)?;
+
+            let result = client.execute(request).await;
+            match &result {
+                Ok(response) => {
+                    span.end_response(
+                        response.status(),
+                        response.version(),
+                        response.remote_addr(),
+                    );
+                }
+                Err(error) => span.end_error(reqwest_error_type(error), error),
             }
-            Err(error) => span.end_error(error),
+            result
         }
-        result
+    }
+}
+
+fn reqwest_error_type(error: &reqwest_crate::Error) -> &'static str {
+    if error.is_timeout() {
+        "timeout"
+    } else if error.is_connect() {
+        "connect"
+    } else if error.is_redirect() {
+        "redirect"
+    } else if error.is_request() {
+        "request"
+    } else if error.is_body() {
+        "body"
+    } else if error.is_decode() {
+        "decode"
+    } else if error.is_builder() {
+        "builder"
+
+    } else {
+        "_OTHER"
     }
 }
 
@@ -104,43 +142,104 @@ impl<'a> InstrumentedRequestBuilder<'a> {
 #[allow(clippy::await_holding_lock)]
 mod tests {
     use super::ReqwestBuilderInstrument;
-    use crate::{OpenTelemetryLayer, Value, semconv};
+    use crate::{Context, OpenTelemetryLayer, Value, semconv};
     use assert2::assert;
     use axum::{
         Router,
+        extract::State,
         http::{HeaderMap, StatusCode},
+        response::{IntoResponse, Redirect},
         routing::get,
     };
     use opentelemetry::{
         global,
-        trace::{SpanKind, TraceContextExt},
+        trace::{Span as _, SpanKind, TraceContextExt, Tracer as _, TracerProvider as _},
     };
     use opentelemetry_sdk::{
         propagation::TraceContextPropagator,
         trace::{InMemorySpanExporter, SdkTracerProvider as TracerProvider},
     };
-    use std::{sync::Mutex, time::Duration};
+    use std::sync::{Arc, LazyLock, Mutex};
     use tokio::{net::TcpListener, task::JoinHandle};
     use tracing_opentelemetry::OpenTelemetrySpanExt as _;
     use tracing_subscriber::{Registry, layer::SubscriberExt};
 
-    static TEST_GUARD: Mutex<()> = Mutex::new(());
+    static TEST_GUARD: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+    #[derive(Clone, Default)]
+    struct TestState {
+        traceparents: Arc<Mutex<Vec<(String, String)>>>,
+    }
+
+    impl TestState {
+        fn record(&self, path: &str, headers: &HeaderMap) {
+            if let Some(traceparent) = headers
+                .get("traceparent")
+                .and_then(|value| value.to_str().ok())
+            {
+                self.traceparents
+                    .lock()
+                    .unwrap()
+                    .push((path.to_owned(), traceparent.to_owned()));
+            }
+        }
+
+        fn traceparent_for(&self, path: &str) -> Option<String> {
+            self.traceparents
+                .lock()
+                .unwrap()
+                .iter()
+                .rev()
+                .find(|(recorded_path, _)| recorded_path == path)
+                .map(|(_, traceparent)| traceparent.clone())
+        }
+    }
 
     #[tokio::test(flavor = "current_thread")]
-    async fn reqwest_instrumentation_propagates_traceparent_from_current_span() {
+    async fn instruments_successful_requests() {
         let _lock = test_lock();
         let telemetry = configure_test_tracing();
-        let (addr, server) = spawn_server(Router::new().route(
-            "/traceparent",
-            get(|headers: HeaderMap| async move {
-                headers
-                    .get("traceparent")
-                    .and_then(|value| value.to_str().ok())
-                    .unwrap_or_default()
-                    .to_owned()
-            }),
-        ))
-        .await;
+        let server = spawn_server().await;
+
+        let response = test_client()
+            .get(format!("{}/ok?ready=true", server.base_url))
+            .header(::reqwest::header::USER_AGENT, "telemetry-rust-tests")
+            .instrument()
+            .send()
+            .await
+            .unwrap();
+
+        assert!(response.status() == StatusCode::OK);
+
+        let spans = force_flush_and_get_spans(&telemetry);
+        let span = find_span(&spans, "GET");
+        let traceparent = server.state.traceparent_for("/ok").unwrap();
+        let (trace_id, span_id) = traceparent_ids(&traceparent);
+
+        assert!(span.span_kind == SpanKind::Client);
+        assert!(span.span_context.trace_id().to_string() == trace_id);
+        assert!(span.span_context.span_id().to_string() == span_id);
+        assert!(matches!(span.status, opentelemetry::trace::Status::Unset));
+        assert!(string_attr(span, semconv::HTTP_REQUEST_METHOD) == Some("GET"));
+        assert!(string_attr(span, semconv::URL_SCHEME) == Some("http"));
+        assert!(string_attr(span, semconv::SERVER_ADDRESS) == Some("127.0.0.1"));
+        assert!(string_attr(span, semconv::URL_PATH) == Some("/ok"));
+        assert!(string_attr(span, semconv::URL_QUERY) == Some("ready=true"));
+        assert!(
+            string_attr(span, semconv::USER_AGENT_ORIGINAL)
+                == Some("telemetry-rust-tests")
+        );
+        assert!(i64_attr(span, semconv::HTTP_RESPONSE_STATUS_CODE) == Some(200));
+        assert!(string_attr(span, semconv::NETWORK_PROTOCOL_VERSION).is_some());
+        assert!(string_attr(span, semconv::NETWORK_PEER_ADDRESS).is_some());
+        assert!(i64_attr(span, semconv::NETWORK_PEER_PORT).is_some());
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn propagates_traceparent_with_client_span_id() {
+        let _lock = test_lock();
+        let telemetry = configure_test_tracing();
+        let server = spawn_server().await;
 
         let tracer = global::tracer("reqwest-propagation-test");
         let subscriber = Registry::default().with(OpenTelemetryLayer::new(tracer));
@@ -150,54 +249,10 @@ mod tests {
         let parent_context = parent.context();
         let expected_trace_id = parent_context.span().span_context().trace_id();
 
-        let response = tracing::Instrument::instrument(
-            async {
-                test_client()
-                    .get(format!("http://{addr}/traceparent"))
-                    .instrument()
-                    .send()
-                    .await
-                    .unwrap()
-                    .text()
-                    .await
-                    .unwrap()
-            },
-            parent,
-        )
-        .await;
-
-        let traceparent = response.trim();
-        assert!(traceparent.starts_with("00-"));
-        let mut parts = traceparent.split('-');
-        assert!(parts.next() == Some("00"));
-        assert!(parts.next() == Some(expected_trace_id.to_string().as_str()));
-
-        server.abort();
-        let spans = force_flush_and_get_spans(&telemetry);
-        let client_spans = client_spans(&spans);
-        assert!(client_spans.len() == 1);
-    }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn reqwest_instrumentation_exports_client_span_for_successful_response() {
-        let _lock = test_lock();
-        let telemetry = configure_test_tracing();
-        let (addr, server) =
-            spawn_server(Router::new().route("/ok", get(|| async { "ok" }))).await;
-
-        let tracer = global::tracer("reqwest-exporter-test");
-        let subscriber = Registry::default().with(OpenTelemetryLayer::new(tracer));
-        let _guard = tracing::subscriber::set_default(subscriber);
-
-        let parent = tracing::info_span!("parent");
-        let parent_context = parent.context();
-        let expected_trace_id = parent_context.span().span_context().trace_id();
-        let expected_parent_span_id = parent_context.span().span_context().span_id();
-
         tracing::Instrument::instrument(
             async {
                 test_client()
-                    .get(format!("http://{addr}/ok"))
+                    .get(format!("{}/ok", server.base_url))
                     .instrument()
                     .send()
                     .await
@@ -207,83 +262,161 @@ mod tests {
         )
         .await;
 
-        server.abort();
-
         let spans = force_flush_and_get_spans(&telemetry);
-        let client_spans = client_spans(&spans);
-        assert!(client_spans.len() == 1);
+        let client_span = find_span(&spans, "GET");
+        let traceparent = server.state.traceparent_for("/ok").unwrap();
+        let (trace_id, span_id) = traceparent_ids(&traceparent);
 
-        let span = client_spans[0];
-        assert!(span.span_context.trace_id() == expected_trace_id);
-        assert!(span.parent_span_id == expected_parent_span_id);
-        assert!(span.span_kind == SpanKind::Client);
-        assert!(string_attr(span, semconv::HTTP_REQUEST_METHOD) == Some("GET"));
-        assert!(string_attr(span, semconv::URL_SCHEME) == Some("http"));
-        assert!(string_attr(span, semconv::SERVER_ADDRESS) == Some("127.0.0.1"));
-        assert!(string_attr(span, semconv::URL_PATH) == Some("/ok"));
-        assert!(i64_attr(span, semconv::HTTP_RESPONSE_STATUS_CODE) == Some(200));
-        assert!(matches!(span.status, opentelemetry::trace::Status::Unset));
+        // The traceparent carries the client span's own span-id, not the parent's.
+        assert!(trace_id == expected_trace_id.to_string());
+        assert!(span_id == client_span.span_context.span_id().to_string());
     }
 
     #[tokio::test(flavor = "current_thread")]
-    async fn reqwest_instrumentation_marks_transport_failures_as_errors() {
+    async fn marks_client_error_responses_as_errors() {
         let _lock = test_lock();
         let telemetry = configure_test_tracing();
-        let port = unused_port().await;
+        let server = spawn_server().await;
 
-        let result = test_client_builder()
-            .timeout(Duration::from_millis(250))
-            .build()
-            .unwrap()
-            .get(format!("http://127.0.0.1:{port}/transport-error"))
-            .instrument()
-            .send()
-            .await;
-
-        assert!(result.is_err());
-
-        let spans = force_flush_and_get_spans(&telemetry);
-        let client_spans = client_spans(&spans);
-        assert!(client_spans.len() == 1);
-        assert!(matches!(
-            client_spans[0].status,
-            opentelemetry::trace::Status::Error { .. }
-        ));
-    }
-
-    #[tokio::test(flavor = "current_thread")]
-    async fn reqwest_instrumentation_marks_500_responses_as_errors() {
-        let _lock = test_lock();
-        let telemetry = configure_test_tracing();
-        let (addr, server) = spawn_server(Router::new().route(
-            "/server-error",
-            get(|| async { (StatusCode::INTERNAL_SERVER_ERROR, "boom") }),
-        ))
-        .await;
-
-        test_client()
-            .get(format!("http://{addr}/server-error"))
+        let response = test_client()
+            .get(format!("{}/not-found", server.base_url))
             .instrument()
             .send()
             .await
             .unwrap();
 
-        server.abort();
+        assert!(response.status() == StatusCode::NOT_FOUND);
 
         let spans = force_flush_and_get_spans(&telemetry);
-        let client_spans = client_spans(&spans);
-        assert!(client_spans.len() == 1);
-        assert!(
-            i64_attr(client_spans[0], semconv::HTTP_RESPONSE_STATUS_CODE) == Some(500)
-        );
+        let span = find_span(&spans, "GET");
+
         assert!(matches!(
-            client_spans[0].status,
+            span.status,
+            opentelemetry::trace::Status::Error { .. }
+        ));
+        assert!(i64_attr(span, semconv::HTTP_RESPONSE_STATUS_CODE) == Some(404));
+        assert!(string_attr(span, semconv::ERROR_TYPE) == Some("404"));
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn marks_server_error_responses_as_errors() {
+        let _lock = test_lock();
+        let telemetry = configure_test_tracing();
+        let server = spawn_server().await;
+
+        test_client()
+            .get(format!("{}/server-error", server.base_url))
+            .instrument()
+            .send()
+            .await
+            .unwrap();
+
+        let spans = force_flush_and_get_spans(&telemetry);
+        let span = find_span(&spans, "GET");
+
+        assert!(i64_attr(span, semconv::HTTP_RESPONSE_STATUS_CODE) == Some(500));
+        assert!(string_attr(span, semconv::ERROR_TYPE) == Some("500"));
+        assert!(matches!(
+            span.status,
             opentelemetry::trace::Status::Error { .. }
         ));
     }
 
     #[tokio::test(flavor = "current_thread")]
-    async fn reqwest_instrumentation_does_not_emit_span_for_invalid_builder() {
+    async fn marks_transport_failures_as_errors() {
+        let _lock = test_lock();
+        let telemetry = configure_test_tracing();
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        drop(listener);
+
+        let error = test_client()
+            .get(format!("http://{addr}/unavailable"))
+            .instrument()
+            .send()
+            .await
+            .unwrap_err();
+
+        assert!(error.is_connect());
+
+        let spans = force_flush_and_get_spans(&telemetry);
+        let span = find_span(&spans, "GET");
+
+        assert!(matches!(
+            span.status,
+            opentelemetry::trace::Status::Error { .. }
+        ));
+        assert!(string_attr(span, semconv::ERROR_TYPE) == Some("connect"));
+        assert!(i64_attr(span, semconv::HTTP_RESPONSE_STATUS_CODE).is_none());
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn preserves_original_url_when_redirects_are_followed() {
+        let _lock = test_lock();
+        let telemetry = configure_test_tracing();
+        let server = spawn_server().await;
+
+        let response = test_client()
+            .get(format!("{}/redirect?step=1", server.base_url))
+            .instrument()
+            .send()
+            .await
+            .unwrap();
+
+        assert!(response.url().path() == "/final");
+
+        let spans = force_flush_and_get_spans(&telemetry);
+        let span = find_span(&spans, "GET");
+
+        let expected_url = format!("{}/redirect?step=1", server.base_url);
+        assert!(string_attr(span, semconv::URL_FULL) == Some(expected_url.as_str()));
+        assert!(server.state.traceparent_for("/redirect").is_some());
+        assert!(server.state.traceparent_for("/final").is_some());
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn uses_explicit_parent_context_when_provided() {
+        let _lock = test_lock();
+        let telemetry = configure_test_tracing();
+        let server = spawn_server().await;
+        let tracer = telemetry.provider.tracer("reqwest-tests");
+        let explicit_parent = tracer.start("explicit-parent");
+        let explicit_parent_span_id = explicit_parent.span_context().span_id();
+        let explicit_parent_cx = Context::current_with_span(explicit_parent);
+        let tracing_tracer = telemetry.provider.tracer("tracing-tests");
+        let subscriber = Registry::default()
+            .with(tracing_opentelemetry::layer().with_tracer(tracing_tracer));
+        let guard = tracing::subscriber::set_default(subscriber);
+        let current_parent = tracing::info_span!("current-parent");
+
+        tracing::Instrument::instrument(
+            async {
+                test_client()
+                    .get(format!("{}/ok", server.base_url))
+                    .instrument()
+                    .context(&explicit_parent_cx)
+                    .send()
+                    .await
+                    .unwrap();
+            },
+            current_parent,
+        )
+        .await;
+
+        drop(guard);
+        explicit_parent_cx.span().end();
+
+        let spans = force_flush_and_get_spans(&telemetry);
+        let reqwest_span = find_span(&spans, "GET");
+        let current_span = find_span(&spans, "current-parent");
+
+        assert!(reqwest_span.parent_span_id == explicit_parent_span_id);
+        assert!(reqwest_span.parent_span_id != current_span.span_context.span_id());
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn does_not_emit_span_for_invalid_builder() {
         let _lock = test_lock();
         let telemetry = configure_test_tracing();
 
@@ -301,6 +434,77 @@ mod tests {
         assert!(client_spans(&spans).is_empty());
     }
 
+    // --- helpers ---
+
+    struct TestServer {
+        base_url: String,
+        state: TestState,
+        _handle: JoinHandle<()>,
+    }
+
+    async fn spawn_server() -> TestServer {
+        async fn ok(
+            State(state): State<TestState>,
+            headers: HeaderMap,
+        ) -> impl IntoResponse {
+            state.record("/ok", &headers);
+            StatusCode::OK
+        }
+
+        async fn not_found(
+            State(state): State<TestState>,
+            headers: HeaderMap,
+        ) -> impl IntoResponse {
+            state.record("/not-found", &headers);
+            StatusCode::NOT_FOUND
+        }
+
+        async fn server_error(
+            State(state): State<TestState>,
+            headers: HeaderMap,
+        ) -> impl IntoResponse {
+            state.record("/server-error", &headers);
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+
+        async fn redirect(
+            State(state): State<TestState>,
+            headers: HeaderMap,
+        ) -> impl IntoResponse {
+            state.record("/redirect", &headers);
+            Redirect::temporary("/final")
+        }
+
+        async fn final_route(
+            State(state): State<TestState>,
+            headers: HeaderMap,
+        ) -> impl IntoResponse {
+            state.record("/final", &headers);
+            StatusCode::OK
+        }
+
+        let state = TestState::default();
+        let app = Router::new()
+            .route("/ok", get(ok))
+            .route("/not-found", get(not_found))
+            .route("/server-error", get(server_error))
+            .route("/redirect", get(redirect))
+            .route("/final", get(final_route))
+            .with_state(state.clone());
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let handle = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+
+        TestServer {
+            base_url: format!("http://{addr}"),
+            state,
+            _handle: handle,
+        }
+    }
+
     fn configure_test_tracing() -> TestTelemetry {
         let exporter = InMemorySpanExporter::default();
         let provider = TracerProvider::builder()
@@ -312,11 +516,7 @@ mod tests {
     }
 
     fn test_client() -> ::reqwest::Client {
-        test_client_builder().build().unwrap()
-    }
-
-    fn test_client_builder() -> ::reqwest::ClientBuilder {
-        ::reqwest::Client::builder().no_proxy()
+        ::reqwest::Client::builder().no_proxy().build().unwrap()
     }
 
     fn test_lock() -> std::sync::MutexGuard<'static, ()> {
@@ -337,6 +537,13 @@ mod tests {
             .iter()
             .filter(|span| span.span_kind == SpanKind::Client)
             .collect()
+    }
+
+    fn find_span<'a>(
+        spans: &'a [opentelemetry_sdk::trace::SpanData],
+        name: &str,
+    ) -> &'a opentelemetry_sdk::trace::SpanData {
+        spans.iter().find(|span| span.name == name).unwrap()
     }
 
     fn string_attr<'a>(
@@ -366,26 +573,22 @@ mod tests {
             .map(|kv| &kv.value)
     }
 
-    async fn spawn_server(app: Router) -> (std::net::SocketAddr, JoinHandle<()>) {
-        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        let handle = tokio::spawn(async move {
-            axum::serve(listener, app).await.unwrap();
-        });
-        (addr, handle)
-    }
-
-    async fn unused_port() -> u16 {
-        TcpListener::bind(("127.0.0.1", 0))
-            .await
-            .unwrap()
-            .local_addr()
-            .unwrap()
-            .port()
+    fn traceparent_ids(traceparent: &str) -> (&str, &str) {
+        let mut parts = traceparent.split('-');
+        let _version = parts.next().unwrap();
+        let trace_id = parts.next().unwrap();
+        let span_id = parts.next().unwrap();
+        (trace_id, span_id)
     }
 
     struct TestTelemetry {
         exporter: InMemorySpanExporter,
         provider: TracerProvider,
+    }
+
+    impl Drop for TestTelemetry {
+        fn drop(&mut self) {
+            let _ = self.provider.shutdown();
+        }
     }
 }

@@ -1,52 +1,65 @@
 use std::error::Error;
 use std::net::SocketAddr;
 
-use http::{Request, Uri};
+use http::{Method, Request, Uri};
 use opentelemetry::{
-    global::{self, BoxedSpan, BoxedTracer},
-    trace::{Span as _, SpanBuilder, SpanKind, Status, Tracer},
+    global,
+    trace::{SpanKind, Status, TraceContextExt, Tracer},
 };
 use tracing::Span;
-use tracing_opentelemetry_instrumentation_sdk::http::http_flavor;
 
 use crate::{Context, KeyValue, OpenTelemetrySpanExt, semconv};
 
+const OTHER_HTTP_METHOD: &str = "_OTHER";
+const HTTP_SPAN_NAME: &str = "HTTP";
+
+/// An active HTTP client span with its associated [`Context`].
+///
+/// The context carries the span so that callers can inject trace propagation
+/// headers (e.g. `traceparent`) that reference *this* client span rather than
+/// its parent.
 pub(crate) struct HttpClientSpan {
-    span: BoxedSpan,
+    context: Context,
 }
 
 pub(crate) struct HttpClientSpanBuilder<'a> {
-    inner: SpanBuilder,
-    tracer: BoxedTracer,
-    context: Option<&'a Context>,
+    attributes: Vec<KeyValue>,
+    span_name: String,
+    parent: Option<&'a Context>,
 }
 
 impl<'a> HttpClientSpanBuilder<'a> {
     pub(crate) fn from_request<B>(request: &Request<B>) -> Self {
-        let tracer = global::tracer("http_client");
-        let method = request.method().to_string();
-        let mut attributes =
-            vec![KeyValue::new(semconv::HTTP_REQUEST_METHOD, method.clone())];
+        let (semantic_method, original_method) = semantic_method(request.method());
+        let span_name = if semantic_method == OTHER_HTTP_METHOD {
+            HTTP_SPAN_NAME
+        } else {
+            semantic_method
+        };
+
+        let mut attributes = vec![
+            KeyValue::new(semconv::HTTP_REQUEST_METHOD, semantic_method.to_owned()),
+            KeyValue::new(
+                semconv::SERVER_ADDRESS,
+                request.uri().host().unwrap_or_default().to_owned(),
+            ),
+            KeyValue::new(semconv::URL_FULL, request.uri().to_string()),
+            KeyValue::new(semconv::URL_PATH, request.uri().path().to_owned()),
+        ];
 
         if let Some(scheme) = request.uri().scheme_str() {
             attributes.push(KeyValue::new(semconv::URL_SCHEME, scheme.to_owned()));
         }
-        if let Some(address) = server_address(request.uri()) {
-            attributes.push(KeyValue::new(semconv::SERVER_ADDRESS, address));
-        }
-        if let Some(port) = request.uri().port_u16() {
-            attributes.push(KeyValue::new(semconv::SERVER_PORT, i64::from(port)));
-        }
-        if !request.uri().path().is_empty() {
+
+        if let Some(method) = original_method {
             attributes.push(KeyValue::new(
-                semconv::URL_PATH,
-                request.uri().path().to_owned(),
+                semconv::HTTP_REQUEST_METHOD_ORIGINAL,
+                method.to_owned(),
             ));
         }
 
-        let full_url = request.uri().to_string();
-        if !full_url.is_empty() {
-            attributes.push(KeyValue::new(semconv::URL_FULL, full_url));
+        if let Some(port) = port_or_known_default(request.uri()) {
+            attributes.push(KeyValue::new(semconv::SERVER_PORT, i64::from(port)));
         }
 
         if let Some(query) = request.uri().query() {
@@ -58,61 +71,61 @@ impl<'a> HttpClientSpanBuilder<'a> {
             .get("user-agent")
             .and_then(|v| v.to_str().ok())
         {
-            attributes.push(KeyValue::new(
-                semconv::USER_AGENT_ORIGINAL,
-                ua.to_owned(),
-            ));
+            attributes.push(KeyValue::new(semconv::USER_AGENT_ORIGINAL, ua.to_owned()));
         }
 
-        let inner = tracer
-            .span_builder(method)
-            .with_kind(SpanKind::Client)
-            .with_attributes(attributes);
-
         Self {
-            inner,
-            tracer,
-            context: None,
+            attributes,
+            span_name: span_name.to_owned(),
+            parent: None,
         }
     }
 
     #[inline]
     pub(crate) fn set_context(mut self, context: Option<&'a Context>) -> Self {
-        self.context = context;
+        self.parent = context;
         self
     }
 
-    #[inline(always)]
-    fn start_with_context(self, parent_context: &Context) -> HttpClientSpan {
-        HttpClientSpan {
-            span: self.inner.start_with_context(&self.tracer, parent_context),
-        }
-    }
-
-    #[inline]
     pub(crate) fn start(self) -> HttpClientSpan {
-        match self.context {
-            Some(context) => self.start_with_context(context),
-            None => self.start_with_context(&Span::current().context()),
+        let parent_cx = self
+            .parent
+            .cloned()
+            .unwrap_or_else(|| Span::current().context());
+        let tracer = global::tracer("http_client");
+        let span = tracer
+            .span_builder(self.span_name)
+            .with_kind(SpanKind::Client)
+            .with_attributes(self.attributes)
+            .start_with_context(&tracer, &parent_cx);
+
+        HttpClientSpan {
+            context: parent_cx.with_span(span),
         }
     }
 }
 
 impl HttpClientSpan {
-    pub(crate) fn end_response_parts(
+    /// Returns the context carrying this span, suitable for trace propagation
+    /// injection.
+    pub(crate) fn context(&self) -> &Context {
+        &self.context
+    }
+
+    pub(crate) fn end_response(
         self,
         status: http::StatusCode,
         version: http::Version,
         remote_addr: Option<SocketAddr>,
     ) {
-        let mut span = self.span;
+        let span = self.context.span();
         span.set_attribute(KeyValue::new(
             semconv::HTTP_RESPONSE_STATUS_CODE,
             i64::from(status.as_u16()),
         ));
         span.set_attribute(KeyValue::new(
             semconv::NETWORK_PROTOCOL_VERSION,
-            http_flavor(version).into_owned(),
+            http_flavor(version),
         ));
 
         if let Some(addr) = remote_addr {
@@ -126,25 +139,52 @@ impl HttpClientSpan {
             ));
         }
 
-        if status.is_server_error() {
-            span.set_status(Status::error(status.to_string()));
+        if status.is_client_error() || status.is_server_error() {
+            span.set_attribute(KeyValue::new(
+                semconv::ERROR_TYPE,
+                status.as_u16().to_string(),
+            ));
+            span.set_status(Status::error(""));
         }
+
+        span.end();
     }
 
-    pub(crate) fn end_error<E>(self, error: &E)
+    pub(crate) fn end_error<E>(self, error_type: &str, error: &E)
     where
         E: Error + 'static,
     {
-        let mut span = self.span;
-        span.set_attribute(KeyValue::new(
-            semconv::ERROR_TYPE,
-            std::any::type_name::<E>(),
-        ));
+        let span = self.context.span();
+        span.set_attribute(KeyValue::new(semconv::ERROR_TYPE, error_type.to_owned()));
         span.record_error(error);
         span.set_status(Status::error(error.to_string()));
+        span.end();
     }
 }
 
-fn server_address(uri: &Uri) -> Option<String> {
-    uri.host().map(str::to_owned)
+fn semantic_method(method: &Method) -> (&str, Option<&str>) {
+    match method.as_str() {
+        "CONNECT" | "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT"
+        | "TRACE" => (method.as_str(), None),
+        other => (OTHER_HTTP_METHOD, Some(other)),
+    }
+}
+
+fn port_or_known_default(uri: &Uri) -> Option<u16> {
+    uri.port_u16().or_else(|| match uri.scheme_str() {
+        Some("http") => Some(80),
+        Some("https") => Some(443),
+        _ => None,
+    })
+}
+
+fn http_flavor(version: http::Version) -> &'static str {
+    match version {
+        http::Version::HTTP_09 => "0.9",
+        http::Version::HTTP_10 => "1.0",
+        http::Version::HTTP_11 => "1.1",
+        http::Version::HTTP_2 => "2.0",
+        http::Version::HTTP_3 => "3.0",
+        _ => "unknown",
+    }
 }

@@ -91,7 +91,7 @@ impl HttpClientSpanBuilder {
             .start_with_context(&tracer, parent_cx);
 
         HttpClientSpan {
-            context: parent_cx.clone().with_span(span),
+            context: parent_cx.with_span(span),
         }
     }
 }

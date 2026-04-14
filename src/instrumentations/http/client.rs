@@ -30,11 +30,7 @@ pub(crate) struct HttpClientSpanBuilder {
 }
 
 impl HttpClientSpanBuilder {
-    pub(crate) fn from_parts(
-        method: &Method,
-        headers: &HeaderMap,
-        url: &Url,
-    ) -> Self {
+    pub(crate) fn from_parts(method: &Method, headers: &HeaderMap, url: &Url) -> Self {
         let (semantic_method, original_method) = semantic_method(method);
         let span_name = if semantic_method == OTHER_HTTP_METHOD {
             HTTP_SPAN_NAME

@@ -8,6 +8,7 @@ use opentelemetry::{
 };
 use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::http::http_flavor;
+use url::Url;
 
 use crate::{Context, KeyValue, OpenTelemetrySpanExt, semconv};
 
@@ -29,20 +30,13 @@ pub(crate) struct HttpClientSpanBuilder<'a> {
     parent: Option<&'a Context>,
 }
 
-pub(crate) struct HttpClientRequestParts<'a> {
-    pub(crate) method: &'a Method,
-    pub(crate) headers: &'a HeaderMap,
-    pub(crate) url_full: String,
-    pub(crate) host: Option<&'a str>,
-    pub(crate) scheme: Option<&'a str>,
-    pub(crate) path: &'a str,
-    pub(crate) query: Option<&'a str>,
-    pub(crate) port: Option<u16>,
-}
-
 impl<'a> HttpClientSpanBuilder<'a> {
-    pub(crate) fn from_request_parts(parts: HttpClientRequestParts<'a>) -> Self {
-        let (semantic_method, original_method) = semantic_method(parts.method);
+    pub(crate) fn from_parts(
+        method: &'a Method,
+        headers: &'a HeaderMap,
+        url: &'a Url,
+    ) -> Self {
+        let (semantic_method, original_method) = semantic_method(method);
         let span_name = if semantic_method == OTHER_HTTP_METHOD {
             HTTP_SPAN_NAME
         } else {
@@ -51,15 +45,16 @@ impl<'a> HttpClientSpanBuilder<'a> {
 
         let mut attributes = vec![
             KeyValue::new(semconv::HTTP_REQUEST_METHOD, semantic_method.to_owned()),
-            KeyValue::new(semconv::URL_FULL, parts.url_full),
-            KeyValue::new(semconv::URL_PATH, parts.path.to_owned()),
+            KeyValue::new(semconv::URL_FULL, url.as_str().to_owned()),
+            KeyValue::new(semconv::URL_PATH, url.path().to_owned()),
         ];
 
-        if let Some(host) = parts.host {
+        if let Some(host) = url.host_str() {
             attributes.push(KeyValue::new(semconv::SERVER_ADDRESS, host.to_owned()));
         }
 
-        if let Some(scheme) = parts.scheme {
+        if !url.scheme().is_empty() {
+            let scheme = url.scheme();
             attributes.push(KeyValue::new(semconv::URL_SCHEME, scheme.to_owned()));
         }
 
@@ -70,19 +65,15 @@ impl<'a> HttpClientSpanBuilder<'a> {
             ));
         }
 
-        if let Some(port) = parts.port {
+        if let Some(port) = url.port_or_known_default() {
             attributes.push(KeyValue::new(semconv::SERVER_PORT, i64::from(port)));
         }
 
-        if let Some(query) = parts.query {
+        if let Some(query) = url.query() {
             attributes.push(KeyValue::new(semconv::URL_QUERY, query.to_owned()));
         }
 
-        if let Some(ua) = parts
-            .headers
-            .get("user-agent")
-            .and_then(|v| v.to_str().ok())
-        {
+        if let Some(ua) = headers.get("user-agent").and_then(|v| v.to_str().ok()) {
             attributes.push(KeyValue::new(semconv::USER_AGENT_ORIGINAL, ua.to_owned()));
         }
 

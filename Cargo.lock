@@ -3227,6 +3227,7 @@ dependencies = [
  "tracing-opentelemetry-instrumentation-sdk",
  "tracing-serde",
  "tracing-subscriber",
+ "url",
 ]
 
 [[package]]

@@ -56,6 +56,7 @@ lambda_runtime = { version = "<=1", optional = true }
 paste = { version = "1.0.14", optional = true }
 opentelemetry-aws = { version = "0.19", optional = true }
 thiserror = "2.0.12"
+url = { version = "2", optional = true }
 
 [dev-dependencies]
 axum = "0.8.0"
@@ -75,7 +76,7 @@ xray = ["dep:opentelemetry-aws"]
 future = ["dep:pin-project-lite"]
 test = ["dep:bytes", "dep:opentelemetry_api", "dep:rand", "dep:http-body-util", "dep:hyper"]
 axum = ["dep:tower", "dep:futures-util", "dep:pin-project-lite"]
-reqwest = ["dep:reqwest", "future"]
+reqwest = ["dep:reqwest", "dep:url", "future"]
 aws-span = ["dep:aws-types", "dep:paste"]
 aws-instrumentation = ["aws-span", "future"]
 aws-stream-instrumentation = ["aws-span", "dep:pin-project-lite", "dep:aws-smithy-async", "dep:aws-smithy-types-convert", "dep:futures-util"]

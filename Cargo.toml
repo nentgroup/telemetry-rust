@@ -38,7 +38,7 @@ pin-project-lite = { version = "0.2", optional = true }
 futures-util = { version = "0.3", default-features = false, features = [], optional = true }
 hyper = { package = "hyper", version = "1.3", default-features = false, optional = true }
 http-body-util = { version = "0.1.1", optional = true }
-reqwest = { version = "0.12.24", optional = true }
+reqwest = { version = "0.13.2", optional = true }
 aws-types = { version = "1", optional = true }
 aws-smithy-async = { version = "1.2.5", optional = true }
 aws-smithy-types = "1.4.6"

@@ -86,11 +86,7 @@ impl<'a> InstrumentedRequestBuilder<'a> {
         let context = self.context.cloned();
 
         async move {
-            let mut request = match request_result {
-                Ok(request) => request,
-                Err(err) => return Err(err),
-            };
-
+            let mut request = request_result?;
             let span_builder = HttpClientSpanBuilder::from_reqwest_request(&request)
                 .set_context(context.as_ref());
             let span = span_builder.start();

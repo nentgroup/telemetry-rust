@@ -63,6 +63,7 @@ aws-config = { version = "1.5.13", features = ["behavior-version-latest"] }
 aws-sdk-dynamodb = "1"
 assert2 = "0.3"
 rstest = "0.26"
+serial_test = "3.4.0"
 tokio = "1.41"
 opentelemetry_sdk = { version = "0.31", default-features = false, features = ["testing"] }
 

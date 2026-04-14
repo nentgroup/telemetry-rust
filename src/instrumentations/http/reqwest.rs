@@ -19,7 +19,10 @@
 use ::reqwest as reqwest_crate;
 use std::future::Future;
 
-use crate::{Context, http, instrumentations::http::client::HttpClientSpanBuilder};
+use crate::{
+    Context, http,
+    instrumentations::http::client::{HttpClientRequestParts, HttpClientSpanBuilder},
+};
 
 /// A trait for instrumenting async reqwest request builders with OpenTelemetry tracing.
 ///
@@ -47,6 +50,23 @@ where
 impl<'a> ReqwestBuilderInstrument<'a> for reqwest_crate::RequestBuilder {
     fn instrument(self) -> InstrumentedRequestBuilder<'a> {
         InstrumentedRequestBuilder::new(self)
+    }
+}
+
+impl<'a> HttpClientSpanBuilder<'a> {
+    pub(crate) fn from_reqwest_request(request: &'a reqwest_crate::Request) -> Self {
+        let url = request.url();
+
+        Self::from_request_parts(HttpClientRequestParts {
+            method: request.method(),
+            headers: request.headers(),
+            url_full: url.as_str().to_owned(),
+            host: url.host_str(),
+            scheme: Some(url.scheme()),
+            path: url.path(),
+            query: url.query(),
+            port: url.port_or_known_default(),
+        })
     }
 }
 
@@ -130,7 +150,6 @@ fn reqwest_error_type(error: &reqwest_crate::Error) -> &'static str {
 }
 
 #[cfg(test)]
-#[allow(clippy::await_holding_lock)]
 mod tests {
     use super::ReqwestBuilderInstrument;
     use crate::{Context, OpenTelemetryLayer, Value, semconv};
@@ -150,12 +169,11 @@ mod tests {
         propagation::TraceContextPropagator,
         trace::{InMemorySpanExporter, SdkTracerProvider as TracerProvider},
     };
-    use std::sync::{Arc, LazyLock, Mutex};
+    use serial_test::serial;
+    use std::sync::{Arc, Mutex};
     use tokio::{net::TcpListener, task::JoinHandle};
     use tracing_opentelemetry::OpenTelemetrySpanExt as _;
     use tracing_subscriber::{Registry, layer::SubscriberExt};
-
-    static TEST_GUARD: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
     #[derive(Clone, Default)]
     struct TestState {
@@ -186,9 +204,9 @@ mod tests {
         }
     }
 
-    #[tokio::test(flavor = "current_thread")]
+    #[tokio::test]
+    #[serial]
     async fn instruments_successful_requests() {
-        let _lock = test_lock();
         let telemetry = configure_test_tracing();
         let server = spawn_server().await;
 
@@ -226,9 +244,9 @@ mod tests {
         assert!(i64_attr(span, semconv::NETWORK_PEER_PORT).is_some());
     }
 
-    #[tokio::test(flavor = "current_thread")]
+    #[tokio::test]
+    #[serial]
     async fn propagates_traceparent_with_client_span_id() {
-        let _lock = test_lock();
         let telemetry = configure_test_tracing();
         let server = spawn_server().await;
 
@@ -263,9 +281,9 @@ mod tests {
         assert!(span_id == client_span.span_context.span_id().to_string());
     }
 
-    #[tokio::test(flavor = "current_thread")]
+    #[tokio::test]
+    #[serial]
     async fn marks_client_error_responses_as_errors() {
-        let _lock = test_lock();
         let telemetry = configure_test_tracing();
         let server = spawn_server().await;
 
@@ -289,9 +307,9 @@ mod tests {
         assert!(string_attr(span, semconv::ERROR_TYPE) == Some("404"));
     }
 
-    #[tokio::test(flavor = "current_thread")]
+    #[tokio::test]
+    #[serial]
     async fn marks_server_error_responses_as_errors() {
-        let _lock = test_lock();
         let telemetry = configure_test_tracing();
         let server = spawn_server().await;
 
@@ -313,9 +331,9 @@ mod tests {
         ));
     }
 
-    #[tokio::test(flavor = "current_thread")]
+    #[tokio::test]
+    #[serial]
     async fn marks_transport_failures_as_errors() {
-        let _lock = test_lock();
         let telemetry = configure_test_tracing();
 
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -342,9 +360,9 @@ mod tests {
         assert!(i64_attr(span, semconv::HTTP_RESPONSE_STATUS_CODE).is_none());
     }
 
-    #[tokio::test(flavor = "current_thread")]
+    #[tokio::test]
+    #[serial]
     async fn preserves_original_url_when_redirects_are_followed() {
-        let _lock = test_lock();
         let telemetry = configure_test_tracing();
         let server = spawn_server().await;
 
@@ -366,9 +384,9 @@ mod tests {
         assert!(server.state.traceparent_for("/final").is_some());
     }
 
-    #[tokio::test(flavor = "current_thread")]
+    #[tokio::test]
+    #[serial]
     async fn uses_explicit_parent_context_when_provided() {
-        let _lock = test_lock();
         let telemetry = configure_test_tracing();
         let server = spawn_server().await;
         let tracer = telemetry.provider.tracer("reqwest-tests");
@@ -406,9 +424,9 @@ mod tests {
         assert!(reqwest_span.parent_span_id != current_span.span_context.span_id());
     }
 
-    #[tokio::test(flavor = "current_thread")]
+    #[tokio::test]
+    #[serial]
     async fn does_not_emit_span_for_invalid_builder() {
-        let _lock = test_lock();
         let telemetry = configure_test_tracing();
 
         let result = test_client()
@@ -508,10 +526,6 @@ mod tests {
 
     fn test_client() -> ::reqwest::Client {
         ::reqwest::Client::builder().no_proxy().build().unwrap()
-    }
-
-    fn test_lock() -> std::sync::MutexGuard<'static, ()> {
-        TEST_GUARD.lock().unwrap_or_else(|error| error.into_inner())
     }
 
     fn force_flush_and_get_spans(

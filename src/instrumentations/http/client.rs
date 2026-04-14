@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::net::SocketAddr;
 
-use ::reqwest as reqwest_crate;
 use http::{HeaderMap, Method};
 use opentelemetry::{
     global,
@@ -30,34 +29,19 @@ pub(crate) struct HttpClientSpanBuilder<'a> {
     parent: Option<&'a Context>,
 }
 
-struct HttpClientRequestParts<'a> {
-    method: &'a Method,
-    headers: &'a HeaderMap,
-    url_full: String,
-    host: Option<&'a str>,
-    scheme: Option<&'a str>,
-    path: &'a str,
-    query: Option<&'a str>,
-    port: Option<u16>,
+pub(crate) struct HttpClientRequestParts<'a> {
+    pub(crate) method: &'a Method,
+    pub(crate) headers: &'a HeaderMap,
+    pub(crate) url_full: String,
+    pub(crate) host: Option<&'a str>,
+    pub(crate) scheme: Option<&'a str>,
+    pub(crate) path: &'a str,
+    pub(crate) query: Option<&'a str>,
+    pub(crate) port: Option<u16>,
 }
 
 impl<'a> HttpClientSpanBuilder<'a> {
-    pub(crate) fn from_reqwest_request(request: &reqwest_crate::Request) -> Self {
-        let url = request.url();
-
-        Self::from_parts(HttpClientRequestParts {
-            method: request.method(),
-            headers: request.headers(),
-            url_full: url.as_str().to_owned(),
-            host: url.host_str(),
-            scheme: Some(url.scheme()),
-            path: url.path(),
-            query: url.query(),
-            port: url.port_or_known_default(),
-        })
-    }
-
-    fn from_parts(parts: HttpClientRequestParts<'_>) -> Self {
+    pub(crate) fn from_request_parts(parts: HttpClientRequestParts<'a>) -> Self {
         let (semantic_method, original_method) = semantic_method(parts.method);
         let span_name = if semantic_method == OTHER_HTTP_METHOD {
             HTTP_SPAN_NAME

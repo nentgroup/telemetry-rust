@@ -36,34 +36,34 @@ use crate::{Context, http, instrumentations::http::client::HttpClientSpanBuilder
 /// # Ok(())
 /// # }
 /// ```
-pub trait ReqwestBuilderInstrument<'a>
+pub trait ReqwestBuilderInstrument
 where
     Self: Sized,
 {
     /// Instruments this reqwest builder with OpenTelemetry tracing.
-    fn instrument(self) -> InstrumentedRequestBuilder<'a>;
+    fn instrument(self) -> InstrumentedRequestBuilder;
 }
 
-impl<'a> ReqwestBuilderInstrument<'a> for reqwest_crate::RequestBuilder {
-    fn instrument(self) -> InstrumentedRequestBuilder<'a> {
+impl ReqwestBuilderInstrument for reqwest_crate::RequestBuilder {
+    fn instrument(self) -> InstrumentedRequestBuilder {
         InstrumentedRequestBuilder::new(self)
     }
 }
 
-impl<'a> HttpClientSpanBuilder<'a> {
-    pub(crate) fn from_reqwest_request(request: &'a reqwest_crate::Request) -> Self {
+impl HttpClientSpanBuilder {
+    pub(crate) fn from_reqwest_request(request: &reqwest_crate::Request) -> Self {
         Self::from_parts(request.method(), request.headers(), request.url())
     }
 }
 
 /// A wrapper that instruments async reqwest request builders with OpenTelemetry tracing.
 #[must_use = "RequestBuilder does nothing until you call send()"]
-pub struct InstrumentedRequestBuilder<'a> {
+pub struct InstrumentedRequestBuilder {
     inner: reqwest_crate::RequestBuilder,
-    context: Option<&'a Context>,
+    context: Option<Context>,
 }
 
-impl<'a> InstrumentedRequestBuilder<'a> {
+impl InstrumentedRequestBuilder {
     /// Creates a new instrumented reqwest request builder.
     pub fn new(inner: reqwest_crate::RequestBuilder) -> Self {
         Self {
@@ -73,14 +73,14 @@ impl<'a> InstrumentedRequestBuilder<'a> {
     }
 
     /// Sets the OpenTelemetry context for this instrumented request.
-    pub fn context(mut self, context: &'a Context) -> Self {
-        self.context = Some(context);
+    pub fn context(mut self, context: &Context) -> Self {
+        self.context = Some(context.clone());
         self
     }
 
     /// Sets the optional OpenTelemetry context for this instrumented request.
-    pub fn set_context(mut self, context: Option<&'a Context>) -> Self {
-        self.context = context;
+    pub fn set_context(mut self, context: Option<&Context>) -> Self {
+        self.context = context.cloned();
         self
     }
 
@@ -89,13 +89,15 @@ impl<'a> InstrumentedRequestBuilder<'a> {
         self,
     ) -> impl Future<Output = Result<reqwest_crate::Response, reqwest_crate::Error>> {
         let (client, request_result) = self.inner.build_split();
-        let context = self.context.cloned();
+        let context = self.context;
 
         async move {
             let mut request = request_result?;
-            let span_builder = HttpClientSpanBuilder::from_reqwest_request(&request)
-                .set_context(context.as_ref());
-            let span = span_builder.start();
+            let span_builder = HttpClientSpanBuilder::from_reqwest_request(&request);
+            let span = match context.as_ref() {
+                Some(context) => span_builder.start_with_context(context),
+                None => span_builder.start(),
+            };
 
             http::inject_context_on_context(span.context(), request.headers_mut());
 

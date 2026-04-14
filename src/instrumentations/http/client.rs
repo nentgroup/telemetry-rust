@@ -24,13 +24,12 @@ pub(crate) struct HttpClientSpan {
     context: Context,
 }
 
-pub(crate) struct HttpClientSpanBuilder<'a> {
+pub(crate) struct HttpClientSpanBuilder {
     attributes: Vec<KeyValue>,
     span_name: String,
-    parent: Option<&'a Context>,
 }
 
-impl<'a> HttpClientSpanBuilder<'a> {
+impl HttpClientSpanBuilder {
     pub(crate) fn from_parts(
         method: &Method,
         headers: &HeaderMap,
@@ -80,30 +79,23 @@ impl<'a> HttpClientSpanBuilder<'a> {
         Self {
             attributes,
             span_name: span_name.to_owned(),
-            parent: None,
         }
     }
 
-    #[inline]
-    pub(crate) fn set_context(mut self, context: Option<&'a Context>) -> Self {
-        self.parent = context;
-        self
+    pub(crate) fn start(self) -> HttpClientSpan {
+        self.start_with_context(&Span::current().context())
     }
 
-    pub(crate) fn start(self) -> HttpClientSpan {
-        let parent_cx = self
-            .parent
-            .cloned()
-            .unwrap_or_else(|| Span::current().context());
+    pub(crate) fn start_with_context(self, parent_cx: &Context) -> HttpClientSpan {
         let tracer = global::tracer("http_client");
         let span = tracer
             .span_builder(self.span_name)
             .with_kind(SpanKind::Client)
             .with_attributes(self.attributes)
-            .start_with_context(&tracer, &parent_cx);
+            .start_with_context(&tracer, parent_cx);
 
         HttpClientSpan {
-            context: parent_cx.with_span(span),
+            context: parent_cx.clone().with_span(span),
         }
     }
 }

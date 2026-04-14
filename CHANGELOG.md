@@ -1,5 +1,17 @@
 # Changelog
 
+## v6.10.0
+- Add instrumentation support for async Reqwest calls. Usage example:
+```rust
+use telemetry_rust::instrumentations::http::reqwest::ReqwestBuilderInstrument;
+
+let response = reqwest::Client::new()
+    .get("https://example.com/health")
+    .instrument()
+    .send()
+    .await?;
+```
+
 ## v6.9.0
 
 - Add error code to AWS error spans and treat `NotModified`/`ConditionalCheckFailedException` as non-error status https://github.com/nentgroup/telemetry-rust/pull/183

@@ -4,7 +4,8 @@
 //!
 //! This crate provides easy-to-use telemetry integration for Rust applications, with support for
 //! OpenTelemetry tracing, metrics, and logging. It includes middleware for popular frameworks
-//! like Axum and AWS Lambda, along with utilities for context propagation and configuration.
+//! like Axum and AWS Lambda, along with instrumentation helpers for outbound clients and
+//! utilities for context propagation and configuration.
 //!
 //! # Features
 //!
@@ -12,6 +13,7 @@
 //! - Formatted logs with tracing metadata
 //! - Context Propagation for incoming and outgoing HTTP requests
 //! - Axum middleware to instrument http services
+//! - Reqwest instrumentation for outbound HTTP requests
 //! - AWS Lambda instrumentation layer
 //! - AWS SDK instrumentation with automatic attribute extraction
 //! - Integration testing tools
@@ -20,6 +22,7 @@
 //!
 //! ## Core Features
 //! - `axum`: Axum web framework middleware support
+//! - `reqwest`: Reqwest instrumentation for outbound HTTP clients
 //! - `test`: Testing utilities for OpenTelemetry validation
 //! - `zipkin`: Zipkin context propagation support (enabled by default)
 //! - `xray`: AWS X-Ray context propagation support
@@ -85,6 +88,7 @@ pub use tracing_opentelemetry::{OpenTelemetryLayer, OpenTelemetrySpanExt};
 
 pub mod fmt;
 pub mod http;
+pub mod instrumentations;
 pub mod middleware;
 pub mod otlp;
 pub mod propagation;

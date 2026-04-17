@@ -19,7 +19,29 @@
 use ::reqwest as reqwest_crate;
 use std::future::Future;
 
-use crate::{Context, http, instrumentations::http::client::HttpClientSpanBuilder};
+use crate::{
+    Context, http,
+    instrumentations::http::client::{HttpClientSpanBuilder, UrlParts},
+};
+
+impl HttpClientSpanBuilder {
+    pub(crate) fn from_reqwest_request(request: &reqwest_crate::Request) -> Self {
+        let url = request.url();
+        let url_parts = UrlParts {
+            full_url: url.host_str().map(|_| url.as_str().to_owned()),
+            path: match url.path() {
+                "" => "/".to_owned(),
+                p => p.to_owned(),
+            },
+            host: url.host_str().map(|h| h.to_owned()),
+            scheme: Some(url.scheme().to_owned()),
+            port: url.port(),
+            query: url.query().map(|q| q.to_owned()),
+        };
+
+        Self::from_parts(request.method(), request.headers(), url_parts)
+    }
+}
 
 /// A trait for instrumenting async reqwest request builders with OpenTelemetry tracing.
 ///
@@ -47,12 +69,6 @@ where
 impl ReqwestBuilderInstrument for reqwest_crate::RequestBuilder {
     fn instrument(self) -> InstrumentedRequestBuilder {
         InstrumentedRequestBuilder::new(self)
-    }
-}
-
-impl HttpClientSpanBuilder {
-    pub(crate) fn from_reqwest_request(request: &reqwest_crate::Request) -> Self {
-        Self::from_parts(request.method(), request.headers(), request.url())
     }
 }
 

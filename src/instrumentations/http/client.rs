@@ -8,12 +8,20 @@ use opentelemetry::{
 };
 use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::http::http_flavor;
-use url::Url;
 
 use crate::{Context, KeyValue, OpenTelemetrySpanExt, semconv};
 
-const OTHER_HTTP_METHOD: &str = "_OTHER";
-const HTTP_SPAN_NAME: &str = "HTTP";
+pub(crate) const OTHER_HTTP_METHOD: &str = "_OTHER";
+pub(crate) const HTTP_SPAN_NAME: &str = "HTTP";
+
+pub(crate) struct UrlParts {
+    pub(crate) full_url: Option<String>,
+    pub(crate) path: String,
+    pub(crate) host: Option<String>,
+    pub(crate) scheme: Option<String>,
+    pub(crate) port: Option<u16>,
+    pub(crate) query: Option<String>,
+}
 
 /// An active HTTP client span with its associated [`Context`].
 ///
@@ -30,7 +38,11 @@ pub(crate) struct HttpClientSpanBuilder {
 }
 
 impl HttpClientSpanBuilder {
-    pub(crate) fn from_parts(method: &Method, headers: &HeaderMap, url: &Url) -> Self {
+    pub(crate) fn from_parts(
+        method: &Method,
+        headers: &HeaderMap,
+        url: UrlParts,
+    ) -> Self {
         let (semantic_method, original_method) = semantic_method(method);
         let span_name = if semantic_method == OTHER_HTTP_METHOD {
             HTTP_SPAN_NAME
@@ -38,19 +50,25 @@ impl HttpClientSpanBuilder {
             semantic_method
         };
 
-        let mut attributes = vec![
-            KeyValue::new(semconv::HTTP_REQUEST_METHOD, semantic_method.to_owned()),
-            KeyValue::new(semconv::URL_FULL, url.as_str().to_owned()),
-            KeyValue::new(semconv::URL_PATH, url.path().to_owned()),
-        ];
+        let mut attributes = vec![KeyValue::new(
+            semconv::HTTP_REQUEST_METHOD,
+            semantic_method.to_owned(),
+        )];
 
-        if let Some(host) = url.host_str() {
-            attributes.push(KeyValue::new(semconv::SERVER_ADDRESS, host.to_owned()));
+        if let Some(full_url) = url.full_url {
+            attributes.push(KeyValue::new(semconv::URL_FULL, full_url));
         }
 
-        if !url.scheme().is_empty() {
-            let scheme = url.scheme();
-            attributes.push(KeyValue::new(semconv::URL_SCHEME, scheme.to_owned()));
+        if !url.path.is_empty() {
+            attributes.push(KeyValue::new(semconv::URL_PATH, url.path));
+        }
+
+        if let Some(host) = url.host {
+            attributes.push(KeyValue::new(semconv::SERVER_ADDRESS, host));
+        }
+
+        if let Some(scheme) = url.scheme {
+            attributes.push(KeyValue::new(semconv::URL_SCHEME, scheme));
         }
 
         if let Some(method) = original_method {
@@ -60,12 +78,12 @@ impl HttpClientSpanBuilder {
             ));
         }
 
-        if let Some(port) = url.port_or_known_default() {
+        if let Some(port) = url.port {
             attributes.push(KeyValue::new(semconv::SERVER_PORT, i64::from(port)));
         }
 
-        if let Some(query) = url.query() {
-            attributes.push(KeyValue::new(semconv::URL_QUERY, query.to_owned()));
+        if let Some(query) = url.query {
+            attributes.push(KeyValue::new(semconv::URL_QUERY, query));
         }
 
         if let Some(ua) = headers.get("user-agent").and_then(|v| v.to_str().ok()) {
@@ -153,7 +171,7 @@ impl HttpClientSpan {
     }
 }
 
-fn semantic_method(method: &Method) -> (&str, Option<&str>) {
+pub(crate) fn semantic_method(method: &Method) -> (&str, Option<&str>) {
     match method.as_str() {
         "CONNECT" | "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT"
         | "TRACE" => (method.as_str(), None),

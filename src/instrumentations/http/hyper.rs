@@ -23,12 +23,13 @@
 //!     let _ = connection.await;
 //! });
 //!
-//! let mut send_request = send_request.instrument();
+//! // Create an instrumented sender once and reuse it for requests on this connection.
+//! let mut instrumented_sender = send_request.instrument();
 //! let request = Request::builder()
 //!     .uri("/health")
 //!     .header(HOST, "127.0.0.1:3000")
 //!     .body(Empty::<Bytes>::new())?;
-//! let response = send_request.send_request(request).await?;
+//! let response = instrumented_sender.send_request(request).await?;
 //! # let _ = response;
 //! # }
 //! # Ok(())
@@ -82,12 +83,13 @@ impl HttpClientSpanBuilder {
     }
 }
 
-/// A trait for instrumenting hyper connection senders with OpenTelemetry tracing.
+/// A trait for creating instrumented hyper connection senders with OpenTelemetry tracing.
 pub trait HyperSendRequestInstrument
 where
     Self: Sized,
 {
-    /// Wraps this sender with tracing instrumentation.
+    /// Wraps this sender in an [`InstrumentedSendRequest`] that can be reused
+    /// to send traced requests on the same connection.
     fn instrument(self) -> InstrumentedSendRequest<Self>;
 }
 
@@ -105,7 +107,8 @@ impl<B> HyperSendRequestInstrument for conn::http2::SendRequest<B> {
     }
 }
 
-/// A wrapper that instruments hyper `SendRequest` values with OpenTelemetry tracing.
+/// A reusable wrapper around hyper `SendRequest` that records client spans for
+/// each request sent through the connection.
 #[must_use = "SendRequest does nothing until you call send_request()"]
 pub struct InstrumentedSendRequest<S> {
     inner: S,

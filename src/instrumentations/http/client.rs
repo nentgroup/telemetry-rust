@@ -11,8 +11,8 @@ use tracing_opentelemetry_instrumentation_sdk::http::http_flavor;
 
 use crate::{Context, KeyValue, OpenTelemetrySpanExt, semconv};
 
-pub(crate) const OTHER_HTTP_METHOD: &str = "_OTHER";
-pub(crate) const HTTP_SPAN_NAME: &str = "HTTP";
+const OTHER_HTTP_METHOD: &str = "_OTHER";
+const HTTP_SPAN_NAME: &str = "HTTP";
 
 pub(crate) struct UrlParts {
     pub(crate) full_url: Option<String>,

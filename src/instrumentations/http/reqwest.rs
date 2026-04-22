@@ -39,8 +39,8 @@ impl UrlInfo for url::Url {
 
     fn scheme(&self) -> Option<impl Into<Value>> {
         match self.scheme() {
-            scheme if !scheme.is_empty() => Some(scheme.to_owned()),
-            _ => None,
+            "" => None,
+            scheme => Some(scheme.to_owned()),
         }
     }
 

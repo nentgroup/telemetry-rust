@@ -8,12 +8,27 @@ use opentelemetry::{
 };
 use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::http::http_flavor;
-use url::Url;
 
-use crate::{Context, KeyValue, OpenTelemetrySpanExt, semconv};
+use crate::{Context, Key, KeyValue, OpenTelemetrySpanExt, Value, semconv};
 
 const OTHER_HTTP_METHOD: &str = "_OTHER";
 const HTTP_SPAN_NAME: &str = "HTTP";
+
+pub(crate) trait UrlInfo {
+    fn full_url(&self) -> Option<impl Into<Value>>;
+    fn path(&self) -> Option<impl Into<Value>>;
+    fn host(&self) -> Option<impl Into<Value>>;
+    fn scheme(&self) -> Option<impl Into<Value>>;
+    fn port(&self) -> Option<impl Into<Value>>;
+    fn query(&self) -> Option<impl Into<Value>>;
+}
+
+fn as_attribute(
+    key: impl Into<Key>,
+    maybe_value: Option<impl Into<Value>>,
+) -> Option<KeyValue> {
+    maybe_value.map(|value| KeyValue::new(key, value))
+}
 
 /// An active HTTP client span with its associated [`Context`].
 ///
@@ -30,51 +45,42 @@ pub(crate) struct HttpClientSpanBuilder {
 }
 
 impl HttpClientSpanBuilder {
-    pub(crate) fn from_parts(method: &Method, headers: &HeaderMap, url: &Url) -> Self {
+    pub(crate) fn from_parts(
+        method: &Method,
+        headers: &HeaderMap,
+        url: &impl UrlInfo,
+    ) -> Self {
         let (semantic_method, original_method) = semantic_method(method);
         let span_name = if semantic_method == OTHER_HTTP_METHOD {
             HTTP_SPAN_NAME
         } else {
-            semantic_method
-        };
-
-        let mut attributes = vec![
-            KeyValue::new(semconv::HTTP_REQUEST_METHOD, semantic_method.to_owned()),
-            KeyValue::new(semconv::URL_FULL, url.as_str().to_owned()),
-            KeyValue::new(semconv::URL_PATH, url.path().to_owned()),
-        ];
-
-        if let Some(host) = url.host_str() {
-            attributes.push(KeyValue::new(semconv::SERVER_ADDRESS, host.to_owned()));
+            &semantic_method
         }
+        .to_owned();
 
-        if !url.scheme().is_empty() {
-            let scheme = url.scheme();
-            attributes.push(KeyValue::new(semconv::URL_SCHEME, scheme.to_owned()));
-        }
+        let user_agent = headers
+            .get("user-agent")
+            .and_then(|v| v.to_str().ok())
+            .map(ToOwned::to_owned);
 
-        if let Some(method) = original_method {
-            attributes.push(KeyValue::new(
-                semconv::HTTP_REQUEST_METHOD_ORIGINAL,
-                method.to_owned(),
-            ));
-        }
-
-        if let Some(port) = url.port_or_known_default() {
-            attributes.push(KeyValue::new(semconv::SERVER_PORT, i64::from(port)));
-        }
-
-        if let Some(query) = url.query() {
-            attributes.push(KeyValue::new(semconv::URL_QUERY, query.to_owned()));
-        }
-
-        if let Some(ua) = headers.get("user-agent").and_then(|v| v.to_str().ok()) {
-            attributes.push(KeyValue::new(semconv::USER_AGENT_ORIGINAL, ua.to_owned()));
-        }
+        let attributes = [
+            Some(KeyValue::new(semconv::HTTP_REQUEST_METHOD, semantic_method)),
+            as_attribute(semconv::URL_FULL, url.full_url()),
+            as_attribute(semconv::URL_PATH, url.path()),
+            as_attribute(semconv::SERVER_ADDRESS, url.host()),
+            as_attribute(semconv::URL_SCHEME, url.scheme()),
+            as_attribute(semconv::SERVER_PORT, url.port()),
+            as_attribute(semconv::URL_QUERY, url.query()),
+            as_attribute(semconv::HTTP_REQUEST_METHOD_ORIGINAL, original_method),
+            as_attribute(semconv::USER_AGENT_ORIGINAL, user_agent),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<KeyValue>>();
 
         Self {
             attributes,
-            span_name: span_name.to_owned(),
+            span_name,
         }
     }
 
@@ -153,10 +159,10 @@ impl HttpClientSpan {
     }
 }
 
-fn semantic_method(method: &Method) -> (&str, Option<&str>) {
+fn semantic_method(method: &Method) -> (String, Option<String>) {
     match method.as_str() {
         "CONNECT" | "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT"
-        | "TRACE" => (method.as_str(), None),
-        other => (OTHER_HTTP_METHOD, Some(other)),
+        | "TRACE" => (method.to_string(), None),
+        other => (OTHER_HTTP_METHOD.to_owned(), Some(other.to_owned())),
     }
 }

@@ -19,7 +19,39 @@
 use ::reqwest as reqwest_crate;
 use std::future::Future;
 
-use crate::{Context, http, instrumentations::http::client::HttpClientSpanBuilder};
+use crate::{
+    Context, Value, http,
+    instrumentations::http::client::{HttpClientSpanBuilder, UrlInfo},
+};
+
+impl UrlInfo for url::Url {
+    fn full_url(&self) -> Option<impl Into<Value>> {
+        Some(self.as_str().to_owned())
+    }
+
+    fn path(&self) -> Option<impl Into<Value>> {
+        Some(self.path().to_owned())
+    }
+
+    fn host(&self) -> Option<impl Into<Value>> {
+        self.host_str().map(ToOwned::to_owned)
+    }
+
+    fn scheme(&self) -> Option<impl Into<Value>> {
+        match self.scheme() {
+            scheme if !scheme.is_empty() => Some(scheme.to_owned()),
+            _ => None,
+        }
+    }
+
+    fn port(&self) -> Option<impl Into<Value>> {
+        self.port_or_known_default().map(i64::from)
+    }
+
+    fn query(&self) -> Option<impl Into<Value>> {
+        self.query().map(ToOwned::to_owned)
+    }
+}
 
 /// A trait for instrumenting async reqwest request builders with OpenTelemetry tracing.
 ///

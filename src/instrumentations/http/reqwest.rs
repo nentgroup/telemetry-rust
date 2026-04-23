@@ -21,10 +21,10 @@ use std::future::Future;
 
 use crate::{
     Context, Value, http,
-    instrumentations::http::client::{HttpClientSpanBuilder, UrlInfo},
+    instrumentations::http::client::{HttpClientSpanBuilder, UrlParts},
 };
 
-impl UrlInfo for url::Url {
+impl UrlParts for url::Url {
     fn full_url(&self) -> Option<impl Into<Value>> {
         Some(self.as_str().to_owned())
     }

@@ -14,7 +14,7 @@ use crate::{Context, Key, KeyValue, OpenTelemetrySpanExt, Value, semconv};
 const OTHER_HTTP_METHOD: &str = "_OTHER";
 const HTTP_SPAN_NAME: &str = "HTTP";
 
-pub(crate) trait UrlInfo {
+pub(crate) trait UrlParts {
     fn full_url(&self) -> Option<impl Into<Value>>;
     fn path(&self) -> Option<impl Into<Value>>;
     fn host(&self) -> Option<impl Into<Value>>;
@@ -48,7 +48,7 @@ impl HttpClientSpanBuilder {
     pub(crate) fn from_parts(
         method: &Method,
         headers: &HeaderMap,
-        url: &impl UrlInfo,
+        url: &impl UrlParts,
     ) -> Self {
         let (semantic_method, original_method) = semantic_method(method);
         let span_name = if semantic_method == OTHER_HTTP_METHOD {

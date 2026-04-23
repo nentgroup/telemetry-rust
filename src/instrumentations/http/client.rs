@@ -71,7 +71,7 @@ impl HttpClientSpanBuilder {
         ]
         .into_iter()
         .flatten()
-        .collect::<Vec<KeyValue>>();
+        .collect();
 
         Self {
             attributes,

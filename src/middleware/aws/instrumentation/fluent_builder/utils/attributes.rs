@@ -1,4 +1,4 @@
-use crate::{Key, KeyValue, StringValue, Value};
+use crate::{Key, KeyValue, StringValue, Value, util::as_attribute};
 
 /// A trait for converting fluent builder properties into OpenTelemetry key-value attributes.
 pub(crate) trait AsAttribute {
@@ -7,7 +7,7 @@ pub(crate) trait AsAttribute {
 
 impl AsAttribute for Option<String> {
     fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
-        self.as_ref().map(|value| KeyValue::new(key, value.clone()))
+        as_attribute(key, self.clone())
     }
 }
 
@@ -19,7 +19,7 @@ impl AsAttribute for Option<&str> {
 
 impl AsAttribute for Option<bool> {
     fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
-        self.map(|value| KeyValue::new(key, value))
+        as_attribute(key, *self)
     }
 }
 
@@ -31,13 +31,13 @@ impl AsAttribute for Option<i32> {
 
 impl AsAttribute for Option<i64> {
     fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
-        self.map(|value| KeyValue::new(key, value))
+        as_attribute(key, *self)
     }
 }
 
 impl AsAttribute for Option<f64> {
     fn as_attribute(&self, key: impl Into<Key>) -> Option<KeyValue> {
-        self.map(|value| KeyValue::new(key, value))
+        as_attribute(key, *self)
     }
 }
 

@@ -45,41 +45,42 @@ use hyper::{
     Request, Response,
     body::{Body, Incoming},
     client::conn,
-    http::{header::HOST, uri::Authority},
 };
 
 use crate::{
-    Context, http,
+    Context, Value, http,
     instrumentations::http::client::{HttpClientSpanBuilder, UrlParts},
 };
 
+impl UrlParts for hyper::Uri {
+    fn full_url(&self) -> Option<impl Into<Value>> {
+        Some(self.to_string())
+    }
+
+    fn path(&self) -> Option<impl Into<Value>> {
+        Some(self.path().to_owned())
+    }
+
+    fn host(&self) -> Option<impl Into<Value>> {
+        self.host().map(ToOwned::to_owned)
+    }
+
+    fn scheme(&self) -> Option<impl Into<Value>> {
+        self.scheme_str().map(ToOwned::to_owned)
+    }
+
+    fn port(&self) -> Option<impl Into<Value>> {
+        self.port_u16().map(|p| p as i64)
+    }
+
+    fn query(&self) -> Option<impl Into<Value>> {
+        self.query().map(ToOwned::to_owned)
+    }
+}
+
 impl HttpClientSpanBuilder {
     pub(crate) fn from_http_request<B>(request: &hyper::Request<B>) -> Self {
-        let uri = request.uri();
-        let host_authority: Option<Authority> = request
-            .headers()
-            .get(HOST)
-            .and_then(|v| v.to_str().ok())
-            .and_then(|s| s.parse().ok());
-        let authority = uri.authority().or(host_authority.as_ref());
-
-        let url = UrlParts {
-            full_url: if uri.scheme_str().is_some() && uri.authority().is_some() {
-                Some(uri.to_string())
-            } else {
-                None
-            },
-            path: match uri.path() {
-                "" => "/".to_owned(),
-                p => p.to_owned(),
-            },
-            host: authority.map(|a| a.host().to_owned()),
-            scheme: uri.scheme_str().map(|s| s.to_owned()),
-            port: authority.and_then(|a| a.port_u16()),
-            query: uri.query().map(|q| q.to_owned()),
-        };
-
-        Self::from_parts(request.method(), request.headers(), url)
+        Self::from_parts(request.method(), request.headers(), request.uri())
     }
 }
 
@@ -323,10 +324,11 @@ mod tests {
         });
 
         let mut send_request = send_request.instrument();
+        let request_url = format!("{}/ok?ready=true", server.base_url);
         let response = send_request
             .send_request(
                 Request::builder()
-                    .uri("/ok?ready=true")
+                    .uri(&request_url)
                     .header(HOST, server.authority())
                     .header(USER_AGENT, "telemetry-rust-tests")
                     .body(Empty::<Bytes>::new())
@@ -347,6 +349,7 @@ mod tests {
         assert!(span.span_context.span_id().to_string() == span_id);
         assert!(matches!(span.status, opentelemetry::trace::Status::Unset));
         assert!(string_attr(span, semconv::HTTP_REQUEST_METHOD) == Some("GET"));
+        assert!(string_attr(span, semconv::URL_SCHEME) == Some("http"));
         assert!(string_attr(span, semconv::SERVER_ADDRESS) == Some("127.0.0.1"));
         assert!(
             i64_attr(span, semconv::SERVER_PORT) == Some(i64::from(server.addr.port()))
@@ -357,8 +360,7 @@ mod tests {
             string_attr(span, semconv::USER_AGENT_ORIGINAL)
                 == Some("telemetry-rust-tests")
         );
-        assert!(string_attr(span, semconv::URL_SCHEME).is_none());
-        assert!(string_attr(span, semconv::URL_FULL).is_none());
+        assert!(string_attr(span, semconv::URL_FULL) == Some(request_url.as_str()));
         assert!(i64_attr(span, semconv::HTTP_RESPONSE_STATUS_CODE) == Some(200));
         assert!(string_attr(span, semconv::NETWORK_PROTOCOL_VERSION).is_some());
         assert!(string_attr(span, semconv::NETWORK_PEER_ADDRESS).is_none());
@@ -383,10 +385,11 @@ mod tests {
         });
 
         let mut send_request = send_request.instrument();
+        let request_url = format!("{}/ok?ready=true", server.base_url);
         let response = send_request
             .send_request(
                 Request::builder()
-                    .uri("/ok?ready=true")
+                    .uri(&request_url)
                     .header(HOST, server.authority())
                     .header(USER_AGENT, "telemetry-rust-tests")
                     .body(Empty::<Bytes>::new())
@@ -407,12 +410,14 @@ mod tests {
         assert!(span.span_context.span_id().to_string() == span_id);
         assert!(matches!(span.status, opentelemetry::trace::Status::Unset));
         assert!(string_attr(span, semconv::HTTP_REQUEST_METHOD) == Some("GET"));
+        assert!(string_attr(span, semconv::URL_SCHEME) == Some("http"));
         assert!(string_attr(span, semconv::SERVER_ADDRESS) == Some("127.0.0.1"));
         assert!(
             i64_attr(span, semconv::SERVER_PORT) == Some(i64::from(server.addr.port()))
         );
         assert!(string_attr(span, semconv::URL_PATH) == Some("/ok"));
         assert!(string_attr(span, semconv::URL_QUERY) == Some("ready=true"));
+        assert!(string_attr(span, semconv::URL_FULL) == Some(request_url.as_str()));
         assert!(i64_attr(span, semconv::HTTP_RESPONSE_STATUS_CODE) == Some(200));
         assert!(string_attr(span, semconv::NETWORK_PROTOCOL_VERSION).is_some());
     }
@@ -447,7 +452,7 @@ mod tests {
                 send_request
                     .send_request(
                         Request::builder()
-                            .uri("/ok")
+                            .uri(format!("{}/ok", server.base_url))
                             .header(HOST, server.authority())
                             .body(Empty::<Bytes>::new())
                             .unwrap(),
@@ -488,7 +493,7 @@ mod tests {
         let response = send_request
             .send_request(
                 Request::builder()
-                    .uri("/not-found")
+                    .uri(format!("{}/not-found", server.base_url))
                     .header(HOST, server.authority())
                     .body(Empty::<Bytes>::new())
                     .unwrap(),
@@ -511,6 +516,7 @@ mod tests {
 
     struct TestServer {
         addr: std::net::SocketAddr,
+        base_url: String,
         state: TestState,
         _handle: JoinHandle<()>,
     }
@@ -570,6 +576,7 @@ mod tests {
 
         TestServer {
             addr,
+            base_url: format!("http://{addr}"),
             state,
             _handle: handle,
         }

@@ -16,30 +16,39 @@
 //! # }
 //! ```
 
-use ::reqwest as reqwest_crate;
 use std::future::Future;
 
 use crate::{
-    Context, http,
+    Context, Value, http,
     instrumentations::http::client::{HttpClientSpanBuilder, UrlParts},
 };
 
-impl HttpClientSpanBuilder {
-    pub(crate) fn from_reqwest_request(request: &reqwest_crate::Request) -> Self {
-        let url = request.url();
-        let url_parts = UrlParts {
-            full_url: url.host_str().map(|_| url.as_str().to_owned()),
-            path: match url.path() {
-                "" => "/".to_owned(),
-                p => p.to_owned(),
-            },
-            host: url.host_str().map(|h| h.to_owned()),
-            scheme: Some(url.scheme().to_owned()),
-            port: url.port(),
-            query: url.query().map(|q| q.to_owned()),
-        };
+impl UrlParts for reqwest::Url {
+    fn full_url(&self) -> Option<impl Into<Value>> {
+        Some(self.as_str().to_owned())
+    }
 
-        Self::from_parts(request.method(), request.headers(), url_parts)
+    fn path(&self) -> Option<impl Into<Value>> {
+        Some(self.path().to_owned())
+    }
+
+    fn host(&self) -> Option<impl Into<Value>> {
+        self.host_str().map(ToOwned::to_owned)
+    }
+
+    fn scheme(&self) -> Option<impl Into<Value>> {
+        match self.scheme() {
+            "" => None,
+            scheme => Some(scheme.to_owned()),
+        }
+    }
+
+    fn port(&self) -> Option<impl Into<Value>> {
+        self.port_or_known_default().map(i64::from)
+    }
+
+    fn query(&self) -> Option<impl Into<Value>> {
+        self.query().map(ToOwned::to_owned)
     }
 }
 
@@ -66,22 +75,28 @@ where
     fn instrument(self) -> InstrumentedRequestBuilder;
 }
 
-impl ReqwestBuilderInstrument for reqwest_crate::RequestBuilder {
+impl ReqwestBuilderInstrument for reqwest::RequestBuilder {
     fn instrument(self) -> InstrumentedRequestBuilder {
         InstrumentedRequestBuilder::new(self)
+    }
+}
+
+impl HttpClientSpanBuilder {
+    pub(crate) fn from_reqwest_request(request: &reqwest::Request) -> Self {
+        Self::from_parts(request.method(), request.headers(), request.url())
     }
 }
 
 /// A wrapper that instruments async reqwest request builders with OpenTelemetry tracing.
 #[must_use = "RequestBuilder does nothing until you call send()"]
 pub struct InstrumentedRequestBuilder {
-    inner: reqwest_crate::RequestBuilder,
+    inner: reqwest::RequestBuilder,
     context: Option<Context>,
 }
 
 impl InstrumentedRequestBuilder {
     /// Creates a new instrumented reqwest request builder.
-    pub fn new(inner: reqwest_crate::RequestBuilder) -> Self {
+    pub fn new(inner: reqwest::RequestBuilder) -> Self {
         Self {
             inner,
             context: None,
@@ -103,7 +118,7 @@ impl InstrumentedRequestBuilder {
     /// Sends the request and records an outbound HTTP client span around it.
     pub fn send(
         self,
-    ) -> impl Future<Output = Result<reqwest_crate::Response, reqwest_crate::Error>> {
+    ) -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let (client, request_result) = self.inner.build_split();
         let context = self.context;
 
@@ -133,7 +148,7 @@ impl InstrumentedRequestBuilder {
     }
 }
 
-fn reqwest_error_type(error: &reqwest_crate::Error) -> &'static str {
+fn reqwest_error_type(error: &reqwest::Error) -> &'static str {
     if error.is_timeout() {
         "timeout"
     } else if error.is_connect() {

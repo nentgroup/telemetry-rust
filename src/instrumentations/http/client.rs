@@ -68,13 +68,10 @@ impl HttpClientSpanBuilder {
             as_attribute(semconv::URL_QUERY, url.query()),
             as_attribute(semconv::HTTP_REQUEST_METHOD_ORIGINAL, original_method),
             as_attribute(semconv::USER_AGENT_ORIGINAL, user_agent),
-        ]
-        .into_iter()
-        .flatten()
-        .collect();
+        ];
 
         Self {
-            attributes,
+            attributes: attributes.into_iter().flatten().collect(),
             span_name,
         }
     }

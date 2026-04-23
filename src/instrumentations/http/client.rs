@@ -9,7 +9,9 @@ use opentelemetry::{
 use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::http::http_flavor;
 
-use crate::{Context, Key, KeyValue, OpenTelemetrySpanExt, Value, semconv};
+use crate::{
+    Context, KeyValue, OpenTelemetrySpanExt, Value, semconv, util::as_attribute,
+};
 
 const OTHER_HTTP_METHOD: &str = "_OTHER";
 const HTTP_SPAN_NAME: &str = "HTTP";
@@ -21,13 +23,6 @@ pub(crate) trait UrlParts {
     fn scheme(&self) -> Option<impl Into<Value>>;
     fn port(&self) -> Option<impl Into<Value>>;
     fn query(&self) -> Option<impl Into<Value>>;
-}
-
-fn as_attribute(
-    key: impl Into<Key>,
-    maybe_value: Option<impl Into<Value>>,
-) -> Option<KeyValue> {
-    maybe_value.map(|value| KeyValue::new(key, value))
 }
 
 /// An active HTTP client span with its associated [`Context`].
@@ -73,13 +68,10 @@ impl HttpClientSpanBuilder {
             as_attribute(semconv::URL_QUERY, url.query()),
             as_attribute(semconv::HTTP_REQUEST_METHOD_ORIGINAL, original_method),
             as_attribute(semconv::USER_AGENT_ORIGINAL, user_agent),
-        ]
-        .into_iter()
-        .flatten()
-        .collect::<Vec<KeyValue>>();
+        ];
 
         Self {
-            attributes,
+            attributes: attributes.into_iter().flatten().collect(),
             span_name,
         }
     }

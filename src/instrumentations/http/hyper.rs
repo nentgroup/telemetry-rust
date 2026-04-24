@@ -70,7 +70,7 @@ impl UrlParts for hyper::Uri {
     }
 
     fn port(&self) -> Option<impl Into<Value>> {
-        self.port_u16().map(|p| p as i64)
+        self.port_u16().map(i64::from)
     }
 
     fn query(&self) -> Option<impl Into<Value>> {

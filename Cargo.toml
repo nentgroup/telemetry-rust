@@ -37,6 +37,7 @@ bytes = { version = "1.10.1", optional = true }
 pin-project-lite = { version = "0.2", optional = true }
 futures-util = { version = "0.3", default-features = false, features = [], optional = true }
 hyper = { package = "hyper", version = "1.9.0", default-features = false, features = ["client"], optional = true }
+hyper-util = { version = "0.1.20", default-features = false, optional = true }
 http-body-util = { version = "0.1.1", optional = true }
 reqwest = { version = "0.13.2", optional = true }
 aws-types = { version = "1", optional = true }
@@ -69,7 +70,7 @@ tokio = "1.41"
 opentelemetry_sdk = { version = "0.31", default-features = false, features = ["testing"] }
 
 [features]
-full = ["aws-full", "axum", "reqwest", "hyper", "test"]
+full = ["aws-full", "axum", "reqwest", "hyper", "hyper-client-legacy", "test"]
 default = ["zipkin"]
 zipkin = ["dep:opentelemetry-zipkin"]
 xray = ["dep:opentelemetry-aws"]
@@ -80,6 +81,7 @@ reqwest = ["dep:reqwest", "future"]
 hyper = ["hyper-http1", "hyper-http2"]
 hyper-http1 = ["dep:hyper", "hyper/http1", "future"]
 hyper-http2 = ["dep:hyper", "hyper/http2", "future"]
+hyper-client-legacy = ["dep:hyper", "dep:hyper-util", "hyper-util?/client-legacy", "hyper-util?/http1", "hyper-util?/http2", "hyper-util?/tokio", "future"]
 aws-span = ["dep:aws-types", "dep:paste"]
 aws-instrumentation = ["aws-span", "future"]
 aws-stream-instrumentation = ["aws-span", "dep:pin-project-lite", "dep:aws-smithy-async", "dep:aws-smithy-types-convert", "dep:futures-util"]

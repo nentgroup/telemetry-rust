@@ -1,4 +1,9 @@
 //! Instrumentation helpers for outbound clients and SDKs.
 
-#[cfg(feature = "reqwest")]
+#[cfg(any(
+    feature = "reqwest",
+    feature = "hyper-http1",
+    feature = "hyper-http2",
+    feature = "hyper-client-legacy"
+))]
 pub mod http;

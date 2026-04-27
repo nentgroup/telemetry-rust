@@ -13,6 +13,8 @@
 //! - Formatted logs with tracing metadata
 //! - Context Propagation for incoming and outgoing HTTP requests
 //! - Axum middleware to instrument http services
+//! - Hyper connection instrumentation for outbound HTTP requests
+//! - Legacy hyper client instrumentation for outbound HTTP requests
 //! - Reqwest instrumentation for outbound HTTP requests
 //! - AWS Lambda instrumentation layer
 //! - AWS SDK instrumentation with automatic attribute extraction
@@ -22,6 +24,10 @@
 //!
 //! ## Core Features
 //! - `axum`: Axum web framework middleware support
+//! - `hyper`: Hyper connection instrumentation for outbound HTTP clients
+//! - `hyper-http1`: Hyper HTTP/1 connection instrumentation
+//! - `hyper-http2`: Hyper HTTP/2 connection instrumentation
+//! - `hyper-client-legacy`: Hyper-util legacy client instrumentation
 //! - `reqwest`: Reqwest instrumentation for outbound HTTP clients
 //! - `test`: Testing utilities for OpenTelemetry validation
 //! - `zipkin`: Zipkin context propagation support (enabled by default)

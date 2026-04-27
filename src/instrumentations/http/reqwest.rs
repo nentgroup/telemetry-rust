@@ -16,7 +16,6 @@
 //! # }
 //! ```
 
-use ::reqwest as reqwest_crate;
 use std::future::Future;
 
 use crate::{
@@ -24,7 +23,7 @@ use crate::{
     instrumentations::http::client::{HttpClientSpanBuilder, UrlParts},
 };
 
-impl UrlParts for url::Url {
+impl UrlParts for reqwest::Url {
     fn full_url(&self) -> Option<impl Into<Value>> {
         Some(self.as_str().to_owned())
     }
@@ -76,14 +75,14 @@ where
     fn instrument(self) -> InstrumentedRequestBuilder;
 }
 
-impl ReqwestBuilderInstrument for reqwest_crate::RequestBuilder {
+impl ReqwestBuilderInstrument for reqwest::RequestBuilder {
     fn instrument(self) -> InstrumentedRequestBuilder {
         InstrumentedRequestBuilder::new(self)
     }
 }
 
 impl HttpClientSpanBuilder {
-    pub(crate) fn from_reqwest_request(request: &reqwest_crate::Request) -> Self {
+    pub(crate) fn from_reqwest_request(request: &reqwest::Request) -> Self {
         Self::from_parts(request.method(), request.headers(), request.url())
     }
 }
@@ -91,13 +90,13 @@ impl HttpClientSpanBuilder {
 /// A wrapper that instruments async reqwest request builders with OpenTelemetry tracing.
 #[must_use = "RequestBuilder does nothing until you call send()"]
 pub struct InstrumentedRequestBuilder {
-    inner: reqwest_crate::RequestBuilder,
+    inner: reqwest::RequestBuilder,
     context: Option<Context>,
 }
 
 impl InstrumentedRequestBuilder {
     /// Creates a new instrumented reqwest request builder.
-    pub fn new(inner: reqwest_crate::RequestBuilder) -> Self {
+    pub fn new(inner: reqwest::RequestBuilder) -> Self {
         Self {
             inner,
             context: None,
@@ -117,9 +116,7 @@ impl InstrumentedRequestBuilder {
     }
 
     /// Sends the request and records an outbound HTTP client span around it.
-    pub fn send(
-        self,
-    ) -> impl Future<Output = Result<reqwest_crate::Response, reqwest_crate::Error>> {
+    pub fn send(self) -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let (client, request_result) = self.inner.build_split();
         let context = self.context;
 
@@ -149,7 +146,7 @@ impl InstrumentedRequestBuilder {
     }
 }
 
-fn reqwest_error_type(error: &reqwest_crate::Error) -> &'static str {
+fn reqwest_error_type(error: &reqwest::Error) -> &'static str {
     if error.is_timeout() {
         "timeout"
     } else if error.is_connect() {

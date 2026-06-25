@@ -13,8 +13,8 @@ opentelemetry = { version = "0.31", default-features = false, features = [
 ] }
 tracing-opentelemetry = "0.32"
 opentelemetry-http = "0.31"
-opentelemetry-otlp = { version = "0.31", features = ["http-proto", "grpc-tonic"] }
-opentelemetry-zipkin = { version = "0.31", features = [], optional = true }
+opentelemetry-otlp = { version = "0.31", default-features = false, features = ["http-proto", "grpc-tonic", "reqwest-blocking-client", "reqwest-rustls"] }
+opentelemetry-zipkin = { version = "0.31", default-features = false, features = ["reqwest-blocking-client", "reqwest-rustls"], optional = true }
 opentelemetry_sdk = { version = "0.31", default-features = false, features = [
   "rt-tokio",
 ] }

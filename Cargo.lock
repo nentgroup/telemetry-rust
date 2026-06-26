@@ -3048,7 +3048,7 @@ dependencies = [
 
 [[package]]
 name = "telemetry-rust"
-version = "6.10.0"
+version = "6.11.0"
 dependencies = [
  "assert2",
  "aws-config",

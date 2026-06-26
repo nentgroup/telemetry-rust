@@ -1,6 +1,11 @@
 # Changelog
 
+## v6.11.0
+
+- Remove unused `native-tls` dependency and add an optional `rustls` feature to enable TLS support https://github.com/nentgroup/telemetry-rust/pull/196
+
 ## v6.10.0
+
 - Add instrumentation support for async Reqwest calls. Usage example:
 ```rust
 use telemetry_rust::instrumentations::http::reqwest::ReqwestBuilderInstrument;

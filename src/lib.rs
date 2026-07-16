@@ -29,6 +29,7 @@
 //! - `hyper-http2`: Hyper HTTP/2 connection instrumentation
 //! - `hyper-client-legacy`: Hyper-util legacy client instrumentation
 //! - `reqwest`: Reqwest instrumentation for outbound HTTP clients
+//! - `rustls`: Enables rustls TLS backend for HTTP exporters
 //! - `test`: Testing utilities for OpenTelemetry validation
 //! - `zipkin`: Zipkin context propagation support (enabled by default)
 //! - `xray`: AWS X-Ray context propagation support

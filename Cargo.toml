@@ -1,6 +1,6 @@
 [package]
 name = "telemetry-rust"
-version = "6.10.0"
+version = "6.11.0"
 edition = "2024"
 license = "MIT"
 description = "Open Telemetry fox Axum and Tracing"
@@ -14,7 +14,7 @@ opentelemetry = { version = "0.31", default-features = false, features = [
 tracing-opentelemetry = "0.32"
 opentelemetry-http = "0.31"
 opentelemetry-otlp = { version = "0.31", features = ["http-proto", "grpc-tonic"] }
-opentelemetry-zipkin = { version = "0.31", features = [], optional = true }
+opentelemetry-zipkin = { version = "0.31", default-features = false, features = ["reqwest-blocking-client"], optional = true }
 opentelemetry_sdk = { version = "0.31", default-features = false, features = [
   "rt-tokio",
 ] }
@@ -82,6 +82,7 @@ hyper = ["hyper-http1", "hyper-http2"]
 hyper-http1 = ["dep:hyper", "hyper/http1", "future"]
 hyper-http2 = ["dep:hyper", "hyper/http2", "future"]
 hyper-client-legacy = ["hyper", "dep:hyper-util"]
+rustls = ["opentelemetry-otlp/reqwest-rustls", "opentelemetry-zipkin/reqwest-rustls"]
 aws-span = ["dep:aws-types", "dep:paste"]
 aws-instrumentation = ["aws-span", "future"]
 aws-stream-instrumentation = ["aws-span", "dep:pin-project-lite", "dep:aws-smithy-async", "dep:aws-smithy-types-convert", "dep:futures-util"]

@@ -40,10 +40,8 @@
 #[cfg(feature = "hyper-client-legacy")]
 use std::error::Error as StdError;
 use std::future::Future;
-#[cfg(any(feature = "hyper-http1", feature = "hyper-http2"))]
 use std::task::{Context as TaskContext, Poll};
 
-#[cfg(any(feature = "hyper-http1", feature = "hyper-http2"))]
 use hyper::client::conn;
 use hyper::{
     Request, Response,
@@ -158,7 +156,6 @@ where
     }
 }
 
-#[cfg(any(feature = "hyper-http1", feature = "hyper-http2"))]
 macro_rules! impl_instrumented_send_request {
     ($sender:ty) => {
         impl<B> InstrumentedSendRequest<$sender>
@@ -397,7 +394,7 @@ fn hyper_legacy_error_type(error: &legacy::Error) -> &'static str {
 mod tests {
     #[cfg(feature = "hyper-client-legacy")]
     use super::HyperLegacyClientInstrument;
-    #[cfg(any(feature = "hyper-http1", feature = "hyper-http2"))]
+
     use super::HyperSendRequestInstrument;
     use crate::{Context, Value, semconv};
     use assert2::assert;

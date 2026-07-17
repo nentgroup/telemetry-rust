@@ -260,9 +260,7 @@ mod tests {
         header::{HOST, USER_AGENT},
     };
     use hyper_util::rt::TokioIo;
-    use opentelemetry::trace::{
-        Span as _, SpanKind, TraceContextExt, Tracer as _, TracerProvider as _,
-    };
+    use opentelemetry::trace::{Span, SpanKind, TraceContextExt, Tracer, TracerProvider};
     use serial_test::serial;
     use tokio::net::TcpStream;
     use tracing_subscriber::{Registry, layer::SubscriberExt};

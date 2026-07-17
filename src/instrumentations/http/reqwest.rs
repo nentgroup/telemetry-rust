@@ -176,11 +176,11 @@ mod tests {
     use axum::http::StatusCode;
     use opentelemetry::{
         global,
-        trace::{Span as _, SpanKind, TraceContextExt, Tracer as _, TracerProvider as _},
+        trace::{Span, SpanKind, TraceContextExt, Tracer, TracerProvider},
     };
     use serial_test::serial;
     use tokio::net::TcpListener;
-    use tracing_opentelemetry::OpenTelemetrySpanExt as _;
+    use tracing_opentelemetry::OpenTelemetrySpanExt;
     use tracing_subscriber::{Registry, layer::SubscriberExt};
 
     #[tokio::test]

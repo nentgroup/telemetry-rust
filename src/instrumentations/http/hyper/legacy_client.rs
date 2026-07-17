@@ -155,9 +155,7 @@ mod tests {
     use http_body_util::Empty;
     use hyper::{Request, header::USER_AGENT};
     use hyper_util::rt::TokioExecutor;
-    use opentelemetry::trace::{
-        Span as _, SpanKind, TraceContextExt, Tracer as _, TracerProvider as _,
-    };
+    use opentelemetry::trace::{Span, SpanKind, TraceContextExt, Tracer, TracerProvider};
     use serial_test::serial;
     use tokio::net::TcpListener;
     use tracing_subscriber::{Registry, layer::SubscriberExt};

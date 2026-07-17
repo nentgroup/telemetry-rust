@@ -10,7 +10,8 @@ use tracing::Span;
 use tracing_opentelemetry_instrumentation_sdk::http::http_flavor;
 
 use crate::{
-    Context, KeyValue, OpenTelemetrySpanExt, Value, semconv, util::as_attribute,
+    Context, KeyValue, OpenTelemetrySpanExt, Value, future::InstrumentedFutureContext,
+    semconv, util::as_attribute,
 };
 
 const OTHER_HTTP_METHOD: &str = "_OTHER";
@@ -101,12 +102,8 @@ impl HttpClientSpan {
         &self.context
     }
 
-    pub(crate) fn end_response(
-        self,
-        status: http::StatusCode,
-        version: http::Version,
-        remote_addr: Option<SocketAddr>,
-    ) {
+    pub(crate) fn end_response<R: HttpResponse>(self, response: &R) {
+        let status = response.status();
         let span = self.context.span();
         span.set_attribute(KeyValue::new(
             semconv::HTTP_RESPONSE_STATUS_CODE,
@@ -114,10 +111,10 @@ impl HttpClientSpan {
         ));
         span.set_attribute(KeyValue::new(
             semconv::NETWORK_PROTOCOL_VERSION,
-            http_flavor(version).into_owned(),
+            http_flavor(response.version()).into_owned(),
         ));
 
-        if let Some(addr) = remote_addr {
+        if let Some(addr) = response.remote_addr() {
             span.set_attribute(KeyValue::new(
                 semconv::NETWORK_PEER_ADDRESS,
                 addr.ip().to_string(),
@@ -139,12 +136,9 @@ impl HttpClientSpan {
         span.end();
     }
 
-    pub(crate) fn end_error<E>(self, error_type: &str, error: &E)
-    where
-        E: Error + 'static,
-    {
+    pub(crate) fn end_error<E: HttpError>(self, error: &E) {
         let span = self.context.span();
-        span.set_attribute(KeyValue::new(semconv::ERROR_TYPE, error_type.to_owned()));
+        span.set_attribute(KeyValue::new(semconv::ERROR_TYPE, error.error_type()));
         span.record_error(error);
         span.set_status(Status::error(error.to_string()));
         span.end();
@@ -156,5 +150,40 @@ fn semantic_method(method: &Method) -> (String, Option<String>) {
         "CONNECT" | "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT"
         | "TRACE" => (method.to_string(), None),
         other => (OTHER_HTTP_METHOD.to_owned(), Some(other.to_owned())),
+    }
+}
+
+pub(crate) trait HttpResponse {
+    fn status(&self) -> http::StatusCode;
+    fn version(&self) -> http::Version;
+    fn remote_addr(&self) -> Option<SocketAddr> {
+        None
+    }
+}
+
+impl<T> HttpResponse for http::Response<T> {
+    fn status(&self) -> http::StatusCode {
+        self.status()
+    }
+
+    fn version(&self) -> http::Version {
+        self.version()
+    }
+}
+
+pub(crate) trait HttpError: Error + 'static {
+    fn error_type(&self) -> &'static str;
+}
+
+impl<R, E> InstrumentedFutureContext<Result<R, E>> for HttpClientSpan
+where
+    R: HttpResponse,
+    E: HttpError,
+{
+    fn on_result(self, result: &Result<R, E>) {
+        match &result {
+            Ok(response) => self.end_response(response),
+            Err(error) => self.end_error(error),
+        }
     }
 }

@@ -7,7 +7,27 @@ use hyper::{
 };
 use hyper_util::client::legacy;
 
-use crate::{Context, http, instrumentations::http::client::HttpClientSpanBuilder};
+use crate::{
+    Context,
+    future::InstrumentedFuture,
+    http,
+    instrumentations::http::client::{HttpClientSpanBuilder, HttpError},
+};
+
+impl HttpError for legacy::Error {
+    fn error_type(&self) -> &'static str {
+        if self.is_connect() {
+            "connect"
+        } else if let Some(hyper_error) = self
+            .source()
+            .and_then(|source| source.downcast_ref::<hyper::Error>())
+        {
+            hyper_error.error_type()
+        } else {
+            "_OTHER"
+        }
+    }
+}
 
 /// A trait for creating instrumented hyper-util legacy clients with
 /// OpenTelemetry tracing.
@@ -103,18 +123,8 @@ where
 
         http::inject_context_on_context(span.context(), request.headers_mut());
 
-        let inner = &self.inner;
-
-        async move {
-            let result = inner.request(request).await;
-            match &result {
-                Ok(response) => {
-                    span.end_response(response.status(), response.version(), None)
-                }
-                Err(error) => span.end_error(hyper_legacy_error_type(error), error),
-            }
-            result
-        }
+        let future = self.inner.request(request);
+        InstrumentedFuture::new(future, span)
     }
 
     /// Sends a GET request to the supplied URI and records an outbound HTTP
@@ -129,19 +139,6 @@ where
         let mut request = Request::new(B::default());
         *request.uri_mut() = uri;
         self.request(request)
-    }
-}
-
-fn hyper_legacy_error_type(error: &legacy::Error) -> &'static str {
-    if error.is_connect() {
-        "connect"
-    } else if let Some(hyper_error) = error
-        .source()
-        .and_then(|source| source.downcast_ref::<hyper::Error>())
-    {
-        super::hyper_error_type(hyper_error)
-    } else {
-        "_OTHER"
     }
 }
 

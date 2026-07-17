@@ -16,11 +16,16 @@
 //! # }
 //! ```
 
+use futures_util::{FutureExt, future};
 use std::future::Future;
 
 use crate::{
-    Context, Value, http,
-    instrumentations::http::client::{HttpClientSpanBuilder, UrlParts},
+    Context, Value,
+    future::InstrumentedFuture,
+    http,
+    instrumentations::http::client::{
+        HttpClientSpanBuilder, HttpError, HttpResponse, UrlParts,
+    },
 };
 
 impl UrlParts for reqwest::Url {
@@ -49,6 +54,42 @@ impl UrlParts for reqwest::Url {
 
     fn query(&self) -> Option<impl Into<Value>> {
         self.query().map(ToOwned::to_owned)
+    }
+}
+
+impl HttpResponse for reqwest::Response {
+    fn status(&self) -> ::http::StatusCode {
+        self.status()
+    }
+
+    fn version(&self) -> ::http::Version {
+        self.version()
+    }
+
+    fn remote_addr(&self) -> Option<std::net::SocketAddr> {
+        self.remote_addr()
+    }
+}
+
+impl HttpError for reqwest::Error {
+    fn error_type(&self) -> &'static str {
+        if self.is_timeout() {
+            "timeout"
+        } else if self.is_connect() {
+            "connect"
+        } else if self.is_redirect() {
+            "redirect"
+        } else if self.is_request() {
+            "request"
+        } else if self.is_body() {
+            "body"
+        } else if self.is_decode() {
+            "decode"
+        } else if self.is_builder() {
+            "builder"
+        } else {
+            "_OTHER"
+        }
     }
 }
 
@@ -120,49 +161,20 @@ impl InstrumentedRequestBuilder {
         let (client, request_result) = self.inner.build_split();
         let context = self.context;
 
-        async move {
-            let mut request = request_result?;
-            let span_builder = HttpClientSpanBuilder::from_reqwest_request(&request);
-            let span = match context.as_ref() {
-                Some(context) => span_builder.start_with_context(context),
-                None => span_builder.start(),
-            };
+        let mut request = match request_result {
+            Ok(req) => req,
+            Err(err) => return future::err(err).left_future(),
+        };
+        let span_builder = HttpClientSpanBuilder::from_reqwest_request(&request);
+        let span = match context.as_ref() {
+            Some(context) => span_builder.start_with_context(context),
+            None => span_builder.start(),
+        };
 
-            http::inject_context_on_context(span.context(), request.headers_mut());
+        http::inject_context_on_context(span.context(), request.headers_mut());
 
-            let result = client.execute(request).await;
-            match &result {
-                Ok(response) => {
-                    span.end_response(
-                        response.status(),
-                        response.version(),
-                        response.remote_addr(),
-                    );
-                }
-                Err(error) => span.end_error(reqwest_error_type(error), error),
-            }
-            result
-        }
-    }
-}
-
-fn reqwest_error_type(error: &reqwest::Error) -> &'static str {
-    if error.is_timeout() {
-        "timeout"
-    } else if error.is_connect() {
-        "connect"
-    } else if error.is_redirect() {
-        "redirect"
-    } else if error.is_request() {
-        "request"
-    } else if error.is_body() {
-        "body"
-    } else if error.is_decode() {
-        "decode"
-    } else if error.is_builder() {
-        "builder"
-    } else {
-        "_OTHER"
+        let future = client.execute(request);
+        InstrumentedFuture::new(future, span).right_future()
     }
 }
 

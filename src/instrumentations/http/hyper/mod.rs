@@ -47,8 +47,10 @@ use hyper::{
 };
 
 use crate::{
-    Context, Value, http,
-    instrumentations::http::client::{HttpClientSpanBuilder, UrlParts},
+    Context, Value,
+    future::InstrumentedFuture,
+    http,
+    instrumentations::http::client::{HttpClientSpanBuilder, HttpError, UrlParts},
 };
 
 #[cfg(feature = "hyper-client-legacy")]
@@ -80,6 +82,32 @@ impl UrlParts for hyper::Uri {
 
     fn query(&self) -> Option<impl Into<Value>> {
         self.query().map(ToOwned::to_owned)
+    }
+}
+
+impl HttpError for hyper::Error {
+    fn error_type(&self) -> &'static str {
+        if self.is_timeout() {
+            "timeout"
+        } else if self.is_closed() {
+            "closed"
+        } else if self.is_canceled() {
+            "canceled"
+        } else if self.is_parse_status() {
+            "parse_status"
+        } else if self.is_parse() {
+            "parse"
+        } else if self.is_incomplete_message() {
+            "incomplete_message"
+        } else if self.is_body_write_aborted() {
+            "body_write_aborted"
+        } else if self.is_shutdown() {
+            "shutdown"
+        } else if self.is_user() {
+            "user"
+        } else {
+            "_OTHER"
+        }
     }
 }
 
@@ -202,18 +230,8 @@ macro_rules! impl_instrumented_send_request {
 
                 http::inject_context_on_context(span.context(), request.headers_mut());
 
-                let inner = &mut self.inner;
-
-                async move {
-                    let result = inner.send_request(request).await;
-                    match &result {
-                        Ok(response) => {
-                            span.end_response(response.status(), response.version(), None)
-                        }
-                        Err(error) => span.end_error(hyper_error_type(error), error),
-                    }
-                    result
-                }
+                let future = self.inner.send_request(request);
+                InstrumentedFuture::new(future, span)
             }
         }
     };
@@ -223,30 +241,6 @@ macro_rules! impl_instrumented_send_request {
 impl_instrumented_send_request!(conn::http1::SendRequest<B>);
 #[cfg(feature = "hyper-http2")]
 impl_instrumented_send_request!(conn::http2::SendRequest<B>);
-
-fn hyper_error_type(error: &hyper::Error) -> &'static str {
-    if error.is_timeout() {
-        "timeout"
-    } else if error.is_closed() {
-        "closed"
-    } else if error.is_canceled() {
-        "canceled"
-    } else if error.is_parse_status() {
-        "parse_status"
-    } else if error.is_parse() {
-        "parse"
-    } else if error.is_incomplete_message() {
-        "incomplete_message"
-    } else if error.is_body_write_aborted() {
-        "body_write_aborted"
-    } else if error.is_shutdown() {
-        "shutdown"
-    } else if error.is_user() {
-        "user"
-    } else {
-        "_OTHER"
-    }
-}
 
 #[cfg(test)]
 mod tests {

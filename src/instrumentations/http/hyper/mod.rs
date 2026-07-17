@@ -57,9 +57,6 @@ mod legacy_client;
 #[cfg(feature = "hyper-client-legacy")]
 pub use legacy_client::HyperLegacyClientInstrument;
 
-#[cfg(test)]
-mod test_utils;
-
 impl UrlParts for hyper::Uri {
     fn full_url(&self) -> Option<impl Into<Value>> {
         Some(self.to_string())
@@ -253,8 +250,8 @@ fn hyper_error_type(error: &hyper::Error) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use super::{HyperSendRequestInstrument, test_utils::*};
-    use crate::{Context, semconv};
+    use super::HyperSendRequestInstrument;
+    use crate::{Context, instrumentations::http::test_utils::*, semconv};
     use axum::http::StatusCode;
     use bytes::Bytes;
     use http_body_util::Empty;

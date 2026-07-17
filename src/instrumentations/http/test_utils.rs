@@ -6,7 +6,7 @@ use axum::{
     response::{IntoResponse, Redirect},
     routing::get,
 };
-use opentelemetry::global;
+use opentelemetry::{global, trace::SpanKind};
 use opentelemetry_sdk::{
     propagation::TraceContextPropagator,
     trace::{InMemorySpanExporter, SdkTracerProvider as TracerProvider},
@@ -70,6 +70,14 @@ pub async fn spawn_server() -> TestServer {
         StatusCode::NOT_FOUND
     }
 
+    async fn server_error(
+        State(state): State<TestState>,
+        headers: HeaderMap,
+    ) -> impl IntoResponse {
+        state.record("/server-error", &headers);
+        StatusCode::INTERNAL_SERVER_ERROR
+    }
+
     async fn redirect(
         State(state): State<TestState>,
         headers: HeaderMap,
@@ -90,6 +98,7 @@ pub async fn spawn_server() -> TestServer {
     let app = Router::new()
         .route("/ok", get(ok))
         .route("/not-found", get(not_found))
+        .route("/server-error", get(server_error))
         .route("/redirect", get(redirect))
         .route("/final", get(final_route))
         .with_state(state.clone());
@@ -118,11 +127,24 @@ pub fn configure_test_tracing() -> TestTelemetry {
     TestTelemetry { exporter, provider }
 }
 
+pub fn test_client() -> reqwest::Client {
+    reqwest::Client::builder().no_proxy().build().unwrap()
+}
+
 pub fn force_flush_and_get_spans(
     telemetry: &TestTelemetry,
 ) -> Vec<opentelemetry_sdk::trace::SpanData> {
     telemetry.provider.force_flush().unwrap();
     telemetry.exporter.get_finished_spans().unwrap()
+}
+
+pub fn client_spans(
+    spans: &[opentelemetry_sdk::trace::SpanData],
+) -> Vec<&opentelemetry_sdk::trace::SpanData> {
+    spans
+        .iter()
+        .filter(|span| span.span_kind == SpanKind::Client)
+        .collect()
 }
 
 pub fn find_span<'a>(

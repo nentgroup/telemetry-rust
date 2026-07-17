@@ -147,9 +147,8 @@ fn hyper_legacy_error_type(error: &legacy::Error) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use super::{super::test_utils::*, HyperLegacyClientInstrument};
-
-    use crate::{Context, semconv};
+    use super::HyperLegacyClientInstrument;
+    use crate::{Context, instrumentations::http::test_utils::*, semconv};
     use assert2::assert;
     use axum::http::StatusCode;
     use bytes::Bytes;

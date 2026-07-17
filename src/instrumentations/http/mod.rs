@@ -11,3 +11,6 @@ pub mod reqwest;
     feature = "hyper-client-legacy"
 ))]
 pub mod hyper;
+
+#[cfg(test)]
+mod test_utils;

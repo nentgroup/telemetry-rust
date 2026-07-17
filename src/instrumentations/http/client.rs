@@ -1,5 +1,4 @@
-use std::error::Error;
-use std::net::SocketAddr;
+use std::{error::Error, net::SocketAddr};
 
 use http::{HeaderMap, Method};
 use opentelemetry::{
@@ -37,7 +36,7 @@ pub(crate) struct HttpClientSpan {
 
 pub(crate) struct HttpClientSpanBuilder {
     attributes: Vec<KeyValue>,
-    span_name: String,
+    span_name: &'static str,
 }
 
 impl HttpClientSpanBuilder {
@@ -46,13 +45,11 @@ impl HttpClientSpanBuilder {
         headers: &HeaderMap,
         url: &impl UrlParts,
     ) -> Self {
-        let (semantic_method, original_method) = semantic_method(method);
-        let span_name = if semantic_method == OTHER_HTTP_METHOD {
-            HTTP_SPAN_NAME
-        } else {
-            &semantic_method
-        }
-        .to_owned();
+        let semantic_method = semantic_method(method);
+        let (span_name, original_method) = match semantic_method {
+            OTHER_HTTP_METHOD => (HTTP_SPAN_NAME, Some(method.to_string())),
+            verb => (verb, None),
+        };
 
         let user_agent = headers
             .get("user-agent")
@@ -145,11 +142,18 @@ impl HttpClientSpan {
     }
 }
 
-fn semantic_method(method: &Method) -> (String, Option<String>) {
+fn semantic_method(method: &Method) -> &'static str {
     match method.as_str() {
-        "CONNECT" | "DELETE" | "GET" | "HEAD" | "OPTIONS" | "PATCH" | "POST" | "PUT"
-        | "TRACE" => (method.to_string(), None),
-        other => (OTHER_HTTP_METHOD.to_owned(), Some(other.to_owned())),
+        "CONNECT" => "CONNECT",
+        "DELETE" => "DELETE",
+        "GET" => "GET",
+        "HEAD" => "HEAD",
+        "OPTIONS" => "OPTIONS",
+        "PATCH" => "PATCH",
+        "POST" => "POST",
+        "PUT" => "PUT",
+        "TRACE" => "TRACE",
+        _ => OTHER_HTTP_METHOD,
     }
 }
 

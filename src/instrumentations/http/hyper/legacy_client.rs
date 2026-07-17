@@ -147,8 +147,7 @@ where
         &self,
         mut request: Request<B>,
     ) -> impl Future<Output = Result<Response<Incoming>, legacy::Error>> + '_ {
-        let span_builder = HttpClientSpanBuilder::from_http_request(&request);
-        let span = span_builder.start(self.context.as_ref());
+        let span = HttpClientSpanBuilder::from(&request).start(self.context.as_ref());
 
         http::inject_context_on_context(span.context(), request.headers_mut());
 

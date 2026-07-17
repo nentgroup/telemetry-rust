@@ -122,8 +122,8 @@ impl ReqwestBuilderInstrument for reqwest::RequestBuilder {
     }
 }
 
-impl HttpClientSpanBuilder {
-    pub(crate) fn from_reqwest_request(request: &reqwest::Request) -> Self {
+impl From<&reqwest::Request> for HttpClientSpanBuilder {
+    fn from(request: &reqwest::Request) -> Self {
         Self::from_parts(request.method(), request.headers(), request.url())
     }
 }
@@ -165,8 +165,7 @@ impl InstrumentedRequestBuilder {
             Ok(req) => req,
             Err(err) => return future::err(err).left_future(),
         };
-        let span_builder = HttpClientSpanBuilder::from_reqwest_request(&request);
-        let span = span_builder.start(context.as_ref());
+        let span = HttpClientSpanBuilder::from(&request).start(context.as_ref());
 
         http::inject_context_on_context(span.context(), request.headers_mut());
 

@@ -101,8 +101,8 @@ impl HttpError for hyper::Error {
     }
 }
 
-impl HttpClientSpanBuilder {
-    pub(crate) fn from_http_request<B>(request: &hyper::Request<B>) -> Self {
+impl<B> From<&hyper::Request<B>> for HttpClientSpanBuilder {
+    fn from(request: &hyper::Request<B>) -> Self {
         Self::from_parts(request.method(), request.headers(), request.uri())
     }
 }
@@ -226,8 +226,8 @@ macro_rules! impl_instrumented_send_request {
                     &mut self,
                     mut request: Request<B>,
                 ) -> impl Future<Output = Result<Response<Incoming>>> + '_ {
-                    let span_builder = HttpClientSpanBuilder::from_http_request(&request);
-                    let span = span_builder.start(self.context.as_ref());
+                    let span = HttpClientSpanBuilder::from(&request)
+                        .start(self.context.as_ref());
 
                     http::inject_context_on_context(
                         span.context(),

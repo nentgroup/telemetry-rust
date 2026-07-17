@@ -37,19 +37,8 @@
 //! # }
 //! ```
 
-use std::future::Future;
-use std::task::{Context as TaskContext, Poll};
-
-use hyper::{
-    Request, Response,
-    body::{Body, Incoming},
-    client::conn,
-};
-
 use crate::{
     Context, Value,
-    future::InstrumentedFuture,
-    http,
     instrumentations::http::client::{HttpClientSpanBuilder, HttpError, UrlParts},
 };
 
@@ -129,14 +118,14 @@ where
 }
 
 #[cfg(feature = "hyper-http1")]
-impl<B> HyperSendRequestInstrument for conn::http1::SendRequest<B> {
+impl<B> HyperSendRequestInstrument for hyper::client::conn::http1::SendRequest<B> {
     fn instrument(self) -> InstrumentedSendRequest<Self> {
         InstrumentedSendRequest::new(self)
     }
 }
 
 #[cfg(feature = "hyper-http2")]
-impl<B> HyperSendRequestInstrument for conn::http2::SendRequest<B> {
+impl<B> HyperSendRequestInstrument for hyper::client::conn::http2::SendRequest<B> {
     fn instrument(self) -> InstrumentedSendRequest<Self> {
         InstrumentedSendRequest::new(self)
     }
@@ -189,61 +178,79 @@ where
     }
 }
 
+#[cfg(any(feature = "hyper-http1", feature = "hyper-http2"))]
 macro_rules! impl_instrumented_send_request {
-    ($sender:ty) => {
-        impl<B> InstrumentedSendRequest<$sender>
-        where
-            B: Body + 'static,
-        {
-            /// Polls until the underlying sender is ready to send a request.
-            pub fn poll_ready(
-                &mut self,
-                cx: &mut TaskContext<'_>,
-            ) -> Poll<hyper::Result<()>> {
-                self.inner.poll_ready(cx)
-            }
+    ($http:ident) => {
+        mod $http {
+            use std::future::Future;
+            use std::task::{Context as TaskContext, Poll};
 
-            /// Waits until the underlying sender is ready to send a request.
-            pub async fn ready(&mut self) -> hyper::Result<()> {
-                self.inner.ready().await
-            }
+            use hyper::{
+                Request, Response, Result,
+                body::{Body, Incoming},
+                client::conn::$http::SendRequest,
+            };
 
-            /// Returns whether the underlying sender appears ready.
-            pub fn is_ready(&self) -> bool {
-                self.inner.is_ready()
-            }
+            use super::InstrumentedSendRequest;
+            use crate::{
+                future::InstrumentedFuture, http,
+                instrumentations::http::client::HttpClientSpanBuilder,
+            };
 
-            /// Returns whether the underlying connection has closed.
-            pub fn is_closed(&self) -> bool {
-                self.inner.is_closed()
-            }
+            impl<B: Body + 'static> InstrumentedSendRequest<SendRequest<B>> {
+                /// Polls until the underlying sender is ready to send a request.
+                pub fn poll_ready(
+                    &mut self,
+                    cx: &mut TaskContext<'_>,
+                ) -> Poll<Result<()>> {
+                    self.inner.poll_ready(cx)
+                }
 
-            /// Sends a request and records an outbound HTTP client span around it.
-            pub fn send_request(
-                &mut self,
-                mut request: Request<B>,
-            ) -> impl Future<Output = hyper::Result<Response<Incoming>>> + '_ {
-                let span_builder = HttpClientSpanBuilder::from_http_request(&request);
-                let span = match self.context.as_ref() {
-                    Some(context) => span_builder.start_with_context(context),
-                    None => span_builder.start(),
-                };
+                /// Waits until the underlying sender is ready to send a request.
+                pub async fn ready(&mut self) -> Result<()> {
+                    self.inner.ready().await
+                }
 
-                http::inject_context_on_context(span.context(), request.headers_mut());
+                /// Returns whether the underlying sender appears ready.
+                pub fn is_ready(&self) -> bool {
+                    self.inner.is_ready()
+                }
 
-                let future = self.inner.send_request(request);
-                InstrumentedFuture::new(future, span)
+                /// Returns whether the underlying connection has closed.
+                pub fn is_closed(&self) -> bool {
+                    self.inner.is_closed()
+                }
+
+                /// Sends a request and records an outbound HTTP client span around it.
+                pub fn send_request(
+                    &mut self,
+                    mut request: Request<B>,
+                ) -> impl Future<Output = Result<Response<Incoming>>> + '_ {
+                    let span_builder = HttpClientSpanBuilder::from_http_request(&request);
+                    let span = match self.context.as_ref() {
+                        Some(context) => span_builder.start_with_context(context),
+                        None => span_builder.start(),
+                    };
+
+                    http::inject_context_on_context(
+                        span.context(),
+                        request.headers_mut(),
+                    );
+
+                    let future = self.inner.send_request(request);
+                    InstrumentedFuture::new(future, span)
+                }
             }
         }
     };
 }
 
 #[cfg(feature = "hyper-http1")]
-impl_instrumented_send_request!(conn::http1::SendRequest<B>);
+impl_instrumented_send_request!(http1);
 #[cfg(feature = "hyper-http2")]
-impl_instrumented_send_request!(conn::http2::SendRequest<B>);
+impl_instrumented_send_request!(http2);
 
-#[cfg(test)]
+#[cfg(all(test, any(feature = "hyper-http1", feature = "hyper-http2")))]
 mod tests {
     use super::HyperSendRequestInstrument;
     use crate::{Context, instrumentations::http::test_utils::*, semconv};

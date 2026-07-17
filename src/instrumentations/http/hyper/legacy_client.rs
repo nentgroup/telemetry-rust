@@ -1,3 +1,35 @@
+//! Async hyper-util legacy client instrumentation helpers.
+//!
+//! This module instruments `hyper_util::client::legacy::Client` requests
+//! with OpenTelemetry client spans and trace-context propagation.
+//!
+//! # Example
+//!
+//! ```no_run
+//! use bytes::Bytes;
+//! use http_body_util::Empty;
+//! use hyper::{Request, header::USER_AGENT};
+//! use hyper_util::rt::TokioExecutor;
+//! use telemetry_rust::instrumentations::http::hyper::HyperLegacyClientInstrument;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let client = hyper_util::client::legacy::Client::builder(TokioExecutor::new())
+//!     .build_http::<Empty<Bytes>>()
+//!     .instrument();
+//!
+//! let response = client
+//!     .request(
+//!         Request::builder()
+//!             .uri("http://127.0.0.1:3000/health")
+//!             .header(USER_AGENT, "telemetry-rust")
+//!             .body(Empty::<Bytes>::new())?,
+//!     )
+//!     .await?;
+//! # let _ = response;
+//! # Ok(())
+//! # }
+//! ```
+
 use std::error::Error as StdError;
 use std::future::Future;
 

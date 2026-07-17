@@ -53,8 +53,9 @@ use crate::{
     instrumentations::http::client::{HttpClientSpanBuilder, HttpError, UrlParts},
 };
 
+/// Async instrumentation helpers for `hyper_util::client::legacy::Client`.
 #[cfg(feature = "hyper-client-legacy")]
-mod legacy_client;
+pub mod legacy_client;
 
 #[cfg(feature = "hyper-client-legacy")]
 pub use legacy_client::HyperLegacyClientInstrument;

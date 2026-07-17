@@ -144,3 +144,177 @@ fn hyper_legacy_error_type(error: &legacy::Error) -> &'static str {
         "_OTHER"
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{super::test_utils::*, HyperLegacyClientInstrument};
+
+    use crate::{Context, semconv};
+    use assert2::assert;
+    use axum::http::StatusCode;
+    use bytes::Bytes;
+    use http_body_util::Empty;
+    use hyper::{Request, header::USER_AGENT};
+    use hyper_util::rt::TokioExecutor;
+    use opentelemetry::trace::{
+        Span as _, SpanKind, TraceContextExt, Tracer as _, TracerProvider as _,
+    };
+    use serial_test::serial;
+    use tokio::net::TcpListener;
+    use tracing_subscriber::{Registry, layer::SubscriberExt};
+
+    #[tokio::test]
+    #[serial]
+    async fn instruments_successful_legacy_client_requests() {
+        let telemetry = configure_test_tracing();
+        let server = spawn_server().await;
+        let client = hyper_util::client::legacy::Client::builder(TokioExecutor::new())
+            .build_http::<Empty<Bytes>>()
+            .instrument();
+        let request_url = format!("{}/ok?ready=true", server.base_url);
+        let response = client
+            .request(
+                Request::builder()
+                    .uri(&request_url)
+                    .header(USER_AGENT, "telemetry-rust-tests")
+                    .body(Empty::<Bytes>::new())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert!(response.status() == StatusCode::OK);
+
+        let spans = force_flush_and_get_spans(&telemetry);
+        let span = find_span(&spans, "GET");
+        let traceparent = server.state.traceparent_for("/ok").unwrap();
+        let (trace_id, span_id) = traceparent_ids(&traceparent);
+
+        assert!(span.span_kind == SpanKind::Client);
+        assert!(span.span_context.trace_id().to_string() == trace_id);
+        assert!(span.span_context.span_id().to_string() == span_id);
+        assert!(matches!(span.status, opentelemetry::trace::Status::Unset));
+        assert!(string_attr(span, semconv::HTTP_REQUEST_METHOD) == Some("GET"));
+        assert!(string_attr(span, semconv::URL_SCHEME) == Some("http"));
+        assert!(string_attr(span, semconv::SERVER_ADDRESS) == Some("127.0.0.1"));
+        assert!(
+            i64_attr(span, semconv::SERVER_PORT) == Some(i64::from(server.addr.port()))
+        );
+        assert!(string_attr(span, semconv::URL_PATH) == Some("/ok"));
+        assert!(string_attr(span, semconv::URL_QUERY) == Some("ready=true"));
+        assert!(
+            string_attr(span, semconv::USER_AGENT_ORIGINAL)
+                == Some("telemetry-rust-tests")
+        );
+        assert!(string_attr(span, semconv::URL_FULL) == Some(request_url.as_str()));
+        assert!(i64_attr(span, semconv::HTTP_RESPONSE_STATUS_CODE) == Some(200));
+        assert!(string_attr(span, semconv::NETWORK_PROTOCOL_VERSION).is_some());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn legacy_client_uses_explicit_parent_context_when_provided() {
+        let telemetry = configure_test_tracing();
+        let server = spawn_server().await;
+        let client = hyper_util::client::legacy::Client::builder(TokioExecutor::new())
+            .build_http::<Empty<Bytes>>();
+        let tracer = telemetry.provider.tracer("hyper-legacy-tests");
+        let explicit_parent = tracer.start("explicit-parent");
+        let explicit_parent_span_id = explicit_parent.span_context().span_id();
+        let explicit_parent_cx = Context::current_with_span(explicit_parent);
+        let tracing_tracer = telemetry.provider.tracer("tracing-tests");
+        let subscriber = Registry::default()
+            .with(tracing_opentelemetry::layer().with_tracer(tracing_tracer));
+        let guard = tracing::subscriber::set_default(subscriber);
+        let current_parent = tracing::info_span!("current-parent");
+
+        tracing::Instrument::instrument(
+            async {
+                let client = client.instrument().context(&explicit_parent_cx);
+                client
+                    .request(
+                        Request::builder()
+                            .uri(format!("{}/ok", server.base_url))
+                            .body(Empty::<Bytes>::new())
+                            .unwrap(),
+                    )
+                    .await
+                    .unwrap();
+            },
+            current_parent,
+        )
+        .await;
+
+        drop(guard);
+        explicit_parent_cx.span().end();
+
+        let spans = force_flush_and_get_spans(&telemetry);
+        let hyper_span = find_span(&spans, "GET");
+        let current_span = find_span(&spans, "current-parent");
+
+        assert!(hyper_span.parent_span_id == explicit_parent_span_id);
+        assert!(hyper_span.parent_span_id != current_span.span_context.span_id());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn legacy_client_marks_error_responses_as_errors() {
+        let telemetry = configure_test_tracing();
+        let server = spawn_server().await;
+        let client = hyper_util::client::legacy::Client::builder(TokioExecutor::new())
+            .build_http::<Empty<Bytes>>()
+            .instrument();
+        let response = client
+            .request(
+                Request::builder()
+                    .uri(format!("{}/not-found", server.base_url))
+                    .body(Empty::<Bytes>::new())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert!(response.status() == StatusCode::NOT_FOUND);
+
+        let spans = force_flush_and_get_spans(&telemetry);
+        let span = find_span(&spans, "GET");
+
+        assert!(matches!(
+            span.status,
+            opentelemetry::trace::Status::Error { .. }
+        ));
+        assert!(i64_attr(span, semconv::HTTP_RESPONSE_STATUS_CODE) == Some(404));
+        assert!(string_attr(span, semconv::ERROR_TYPE) == Some("404"));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn legacy_client_marks_transport_errors_as_errors() {
+        let telemetry = configure_test_tracing();
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        drop(listener);
+        let client = hyper_util::client::legacy::Client::builder(TokioExecutor::new())
+            .build_http::<Empty<Bytes>>()
+            .instrument();
+        let result = client
+            .request(
+                Request::builder()
+                    .uri(format!("http://{addr}/unreachable"))
+                    .body(Empty::<Bytes>::new())
+                    .unwrap(),
+            )
+            .await;
+
+        assert!(result.is_err());
+
+        let spans = force_flush_and_get_spans(&telemetry);
+        let span = find_span(&spans, "GET");
+
+        assert!(matches!(
+            span.status,
+            opentelemetry::trace::Status::Error { .. }
+        ));
+        assert!(string_attr(span, semconv::ERROR_TYPE) == Some("connect"));
+    }
+}

@@ -195,6 +195,10 @@ mod tests {
     use tracing_opentelemetry::OpenTelemetrySpanExt;
     use tracing_subscriber::{Registry, layer::SubscriberExt};
 
+    fn test_client() -> reqwest::Client {
+        reqwest::Client::builder().no_proxy().build().unwrap()
+    }
+
     #[tokio::test]
     #[serial]
     async fn instruments_successful_requests() {

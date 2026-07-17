@@ -63,7 +63,9 @@ axum = "0.8.0"
 aws-config = { version = "1.5.13", features = ["behavior-version-latest"] }
 aws-sdk-dynamodb = "1"
 assert2 = "0.3"
+bytes = "1.10.1"
 hyper-util = { version = "0.1.20", features = ["tokio"] }
+http-body-util = "0.1.1"
 rstest = "0.26"
 serial_test = "3.4.0"
 tokio = "1.41"
@@ -77,7 +79,7 @@ xray = ["dep:opentelemetry-aws"]
 future = ["dep:pin-project-lite"]
 test = ["dep:bytes", "dep:opentelemetry_api", "dep:rand", "dep:http-body-util", "dep:hyper", "hyper/http1", "hyper/http2"]
 axum = ["dep:tower", "dep:futures-util", "dep:pin-project-lite"]
-reqwest = ["dep:reqwest", "future"]
+reqwest = ["dep:reqwest", "dep:futures-util", "future"]
 hyper = ["hyper-http1", "hyper-http2"]
 hyper-http1 = ["dep:hyper", "hyper/http1", "future"]
 hyper-http2 = ["dep:hyper", "hyper/http2", "future"]

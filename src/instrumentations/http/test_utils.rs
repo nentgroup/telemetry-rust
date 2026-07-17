@@ -127,10 +127,6 @@ pub fn configure_test_tracing() -> TestTelemetry {
     TestTelemetry { exporter, provider }
 }
 
-pub fn test_client() -> reqwest::Client {
-    reqwest::Client::builder().no_proxy().build().unwrap()
-}
-
 pub fn force_flush_and_get_spans(
     telemetry: &TestTelemetry,
 ) -> Vec<opentelemetry_sdk::trace::SpanData> {

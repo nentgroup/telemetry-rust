@@ -159,13 +159,12 @@ impl InstrumentedRequestBuilder {
     /// Sends the request and records an outbound HTTP client span around it.
     pub fn send(self) -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let (client, request_result) = self.inner.build_split();
-        let context = self.context;
 
         let mut request = match request_result {
             Ok(req) => req,
             Err(err) => return future::err(err).left_future(),
         };
-        let span = HttpClientSpanBuilder::from(&request).start(context.as_ref());
+        let span = HttpClientSpanBuilder::from(&request).start(&self.context);
 
         http::inject_context_on_context(span.context(), request.headers_mut());
 

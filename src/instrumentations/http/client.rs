@@ -74,7 +74,7 @@ impl HttpClientSpanBuilder {
         }
     }
 
-    pub(crate) fn start(self, parent_cx: Option<&Context>) -> HttpClientSpan {
+    pub(crate) fn start(self, parent_cx: &Option<Context>) -> HttpClientSpan {
         match parent_cx {
             Some(cx) => self.start_with_context(cx),
             None => self.start_with_context(&Span::current().context()),

@@ -166,10 +166,7 @@ impl InstrumentedRequestBuilder {
             Err(err) => return future::err(err).left_future(),
         };
         let span_builder = HttpClientSpanBuilder::from_reqwest_request(&request);
-        let span = match context.as_ref() {
-            Some(context) => span_builder.start_with_context(context),
-            None => span_builder.start(),
-        };
+        let span = span_builder.start(context.as_ref());
 
         http::inject_context_on_context(span.context(), request.headers_mut());
 

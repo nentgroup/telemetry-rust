@@ -1,6 +1,6 @@
 use std::{error::Error, net::SocketAddr};
 
-use http::{HeaderMap, Method};
+use http::{HeaderMap, Method, uri::Authority};
 use opentelemetry::{
     global,
     trace::{SpanKind, Status, TraceContextExt, Tracer},
@@ -55,15 +55,44 @@ impl HttpClientSpanBuilder {
             .get("user-agent")
             .and_then(|v| v.to_str().ok())
             .map(ToOwned::to_owned);
+        let authority = headers
+            .get("host")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.trim().parse::<Authority>().ok());
+        let authority = authority.as_ref();
+
+        let path = url.path().map(Into::into);
+        let query = url.query().map(Into::into);
+        let full_url = url.full_url().map(Into::into).or_else(|| {
+            authority.map(|authority| {
+                let authority = authority.as_str();
+                let path = path.as_ref().map(Value::as_str).unwrap_or_default();
+
+                match query.as_ref().map(Value::as_str) {
+                    Some(query) => format!("//{authority}{path}?{query}"),
+                    None => format!("//{authority}{path}"),
+                }
+                .into()
+            })
+        });
+        let server_address = url
+            .host()
+            .map(Into::into)
+            .or_else(|| authority.map(|authority| authority.host().to_owned().into()));
+        let server_port = url.port().map(Into::into).or_else(|| {
+            authority.and_then(|authority| {
+                authority.port().map(|port| i64::from(port.as_u16()).into())
+            })
+        });
 
         let attributes = [
             Some(KeyValue::new(semconv::HTTP_REQUEST_METHOD, semantic_method)),
-            as_attribute(semconv::URL_FULL, url.full_url()),
-            as_attribute(semconv::URL_PATH, url.path()),
-            as_attribute(semconv::SERVER_ADDRESS, url.host()),
+            as_attribute(semconv::URL_FULL, full_url),
+            as_attribute(semconv::URL_PATH, path),
+            as_attribute(semconv::SERVER_ADDRESS, server_address),
             as_attribute(semconv::URL_SCHEME, url.scheme()),
-            as_attribute(semconv::SERVER_PORT, url.port()),
-            as_attribute(semconv::URL_QUERY, url.query()),
+            as_attribute(semconv::SERVER_PORT, server_port),
+            as_attribute(semconv::URL_QUERY, query),
             as_attribute(semconv::HTTP_REQUEST_METHOD_ORIGINAL, original_method),
             as_attribute(semconv::USER_AGENT_ORIGINAL, user_agent),
         ];

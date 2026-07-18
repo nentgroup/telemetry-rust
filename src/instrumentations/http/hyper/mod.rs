@@ -368,6 +368,120 @@ mod tests {
 
         #[tokio::test]
         #[serial]
+        async fn falls_back_to_host_header_without_port_for_origin_form_uri() {
+            let telemetry = configure_test_tracing();
+            let server = spawn_server().await;
+            let io = TokioIo::new(TcpStream::connect(server.addr).await.unwrap());
+            let (send_request, connection) =
+                hyper::client::conn::http1::handshake(io).await.unwrap();
+
+            tokio::spawn(async move {
+                connection.await.unwrap();
+            });
+
+            let mut send_request = send_request.instrument();
+            let response = send_request
+                .send_request(
+                    Request::builder()
+                        .uri("/ok?ready=true")
+                        .header(HOST, "localhost")
+                        .header(USER_AGENT, "telemetry-rust-tests")
+                        .body(Empty::<Bytes>::new())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+
+            assert!(response.status() == StatusCode::OK);
+
+            let spans = force_flush_and_get_spans(&telemetry);
+            let span = find_span(&spans, "GET");
+
+            assert!(
+                string_attr(span, semconv::URL_FULL) == Some("//localhost/ok?ready=true")
+            );
+            assert!(string_attr(span, semconv::SERVER_ADDRESS) == Some("localhost"));
+            assert!(i64_attr(span, semconv::SERVER_PORT).is_none());
+        }
+
+        #[tokio::test]
+        #[serial]
+        async fn ignores_invalid_host_header_for_origin_form_uri() {
+            let telemetry = configure_test_tracing();
+            let server = spawn_server().await;
+            let io = TokioIo::new(TcpStream::connect(server.addr).await.unwrap());
+            let (send_request, connection) =
+                hyper::client::conn::http1::handshake(io).await.unwrap();
+
+            tokio::spawn(async move {
+                connection.await.unwrap();
+            });
+
+            let mut send_request = send_request.instrument();
+            let response = send_request
+                .send_request(
+                    Request::builder()
+                        .uri("/ok?ready=true")
+                        .header(HOST, "bad host value")
+                        .header(USER_AGENT, "telemetry-rust-tests")
+                        .body(Empty::<Bytes>::new())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+
+            assert!(response.status() == StatusCode::OK);
+
+            let spans = force_flush_and_get_spans(&telemetry);
+            let span = find_span(&spans, "GET");
+
+            assert!(string_attr(span, semconv::URL_FULL).is_none());
+            assert!(string_attr(span, semconv::SERVER_ADDRESS).is_none());
+            assert!(i64_attr(span, semconv::SERVER_PORT).is_none());
+        }
+
+        #[tokio::test]
+        #[serial]
+        async fn uri_values_take_precedence_over_host_header_fallback() {
+            let telemetry = configure_test_tracing();
+            let server = spawn_server().await;
+            let io = TokioIo::new(TcpStream::connect(server.addr).await.unwrap());
+            let (send_request, connection) =
+                hyper::client::conn::http1::handshake(io).await.unwrap();
+
+            tokio::spawn(async move {
+                connection.await.unwrap();
+            });
+
+            let mut send_request = send_request.instrument();
+            let request_url = format!("{}/ok?ready=true", server.base_url);
+            let response = send_request
+                .send_request(
+                    Request::builder()
+                        .uri(&request_url)
+                        .header(HOST, "example.com:1234")
+                        .header(USER_AGENT, "telemetry-rust-tests")
+                        .body(Empty::<Bytes>::new())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+
+            assert!(response.status() == StatusCode::OK);
+
+            let spans = force_flush_and_get_spans(&telemetry);
+            let span = find_span(&spans, "GET");
+
+            assert!(string_attr(span, semconv::URL_FULL) == Some(request_url.as_str()));
+            assert!(string_attr(span, semconv::SERVER_ADDRESS) == Some("127.0.0.1"));
+            assert!(
+                i64_attr(span, semconv::SERVER_PORT)
+                    == Some(i64::from(server.addr.port()))
+            );
+        }
+
+        #[tokio::test]
+        #[serial]
         async fn uses_explicit_parent_context_when_provided() {
             let telemetry = configure_test_tracing();
             let server = spawn_server().await;

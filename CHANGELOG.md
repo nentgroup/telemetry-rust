@@ -1,5 +1,8 @@
 # Changelog
 
+## v6.12.0
+- Add instrumentation support for hyper including `hyper_util::client::legacy::Client`, `hyper::client::conn::http1::SendRequest` and `hyper::client::conn::http2::SendRequest`.
+
 ## v6.11.0
 
 - Remove unused `native-tls` dependency and add an optional `rustls` feature to enable TLS support https://github.com/nentgroup/telemetry-rust/pull/196

@@ -23,6 +23,24 @@ struct InferredExportConfig {
     timeout: Option<Duration>,
 }
 
+trait WithExportConfigExt: WithExportConfig {
+    fn with_export_config(self, cfg: InferredExportConfig) -> Self;
+}
+
+impl<B: WithExportConfig> WithExportConfigExt for B {
+    fn with_export_config(self, cfg: InferredExportConfig) -> Self {
+        let this = self.with_protocol(cfg.protocol);
+        let this = match cfg.endpoint {
+            Some(endpoint) => this.with_endpoint(endpoint),
+            None => this,
+        };
+        match cfg.timeout {
+            Some(timeout) => this.with_timeout(timeout),
+            None => this,
+        }
+    }
+}
+
 /// Error types that can occur during OpenTelemetry tracer initialization.
 ///
 /// This enum represents the various failure modes when setting up an OTLP
@@ -131,35 +149,15 @@ where
     )?;
     tracing::debug!(target: "otel::setup", ?export_config);
     let exporter: SpanExporter = match export_config.protocol {
-        Protocol::HttpBinary => {
-            let builder = SpanExporter::builder()
-                .with_http()
-                .with_headers(read_headers_from_env())
-                .with_protocol(export_config.protocol);
-            let builder = match export_config.endpoint {
-                Some(endpoint) => builder.with_endpoint(endpoint),
-                None => builder,
-            };
-            let builder = match export_config.timeout {
-                Some(timeout) => builder.with_timeout(timeout),
-                None => builder,
-            };
-            builder.build()?
-        }
-        Protocol::Grpc => {
-            let builder = SpanExporter::builder()
-                .with_tonic()
-                .with_protocol(export_config.protocol);
-            let builder = match export_config.endpoint {
-                Some(endpoint) => builder.with_endpoint(endpoint),
-                None => builder,
-            };
-            let builder = match export_config.timeout {
-                Some(timeout) => builder.with_timeout(timeout),
-                None => builder,
-            };
-            builder.build()?
-        }
+        Protocol::HttpBinary => SpanExporter::builder()
+            .with_http()
+            .with_headers(read_headers_from_env())
+            .with_export_config(export_config)
+            .build()?,
+        Protocol::Grpc => SpanExporter::builder()
+            .with_tonic()
+            .with_export_config(export_config)
+            .build()?,
     };
 
     let tracer_provider_builder = TracerProvider::builder()

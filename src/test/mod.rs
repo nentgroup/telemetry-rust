@@ -116,6 +116,10 @@ impl<T> std::ops::DerefMut for TracedResponse<T> {
 pub enum TracingHeaderKind {
     /// W3C Trace Context format using the `traceparent` header
     Traceparent,
+    /// B3 single header format using the `b3` header
+    B3Single,
+    /// B3 multiple header format using separate `X-B3-*` headers
+    B3Multi,
 }
 
 /// A container for OpenTelemetry trace parent information used in testing.
@@ -208,6 +212,21 @@ impl Traceparent {
             TracingHeaderKind::Traceparent => {
                 let value = format!("00-{}-{}-01", self.trace_id, self.span_id);
                 map.append("traceparent", HeaderValue::from_str(&value).unwrap());
+            }
+            TracingHeaderKind::B3Single => {
+                let value = format!("{}-{}-1", self.trace_id, self.span_id);
+                map.append("b3", HeaderValue::from_str(&value).unwrap());
+            }
+            TracingHeaderKind::B3Multi => {
+                map.append(
+                    "X-B3-TraceId",
+                    HeaderValue::from_str(&self.trace_id.to_string()).unwrap(),
+                );
+                map.append(
+                    "X-B3-SpanId",
+                    HeaderValue::from_str(&self.span_id.to_string()).unwrap(),
+                );
+                map.append("X-B3-Sampled", HeaderValue::from_str("1").unwrap());
             }
         }
 

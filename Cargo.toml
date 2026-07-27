@@ -14,6 +14,7 @@ opentelemetry = { version = "0.32", default-features = false, features = [
 tracing-opentelemetry = "0.33"
 opentelemetry-http = "0.32"
 opentelemetry-otlp = { version = "0.32", features = ["http-proto", "grpc-tonic"] }
+opentelemetry-zipkin = { version = "0.32", default-features = false, features = ["reqwest-blocking-client"], optional = true }
 opentelemetry_sdk = { version = "0.32", default-features = false, features = [
   "rt-tokio",
 ] }
@@ -71,6 +72,8 @@ opentelemetry_sdk = { version = "0.32", default-features = false, features = ["t
 
 [features]
 full = ["aws-full", "axum", "reqwest", "hyper", "hyper-client-legacy", "test"]
+default = ["zipkin"]
+zipkin = ["dep:opentelemetry-zipkin"]
 xray = ["dep:opentelemetry-aws"]
 future = ["dep:pin-project-lite"]
 test = ["dep:bytes", "dep:rand", "dep:http-body-util", "dep:hyper", "hyper/http1", "hyper/http2"]
@@ -80,7 +83,7 @@ hyper = ["hyper-http1", "hyper-http2"]
 hyper-http1 = ["dep:hyper", "hyper/http1", "future"]
 hyper-http2 = ["dep:hyper", "hyper/http2", "future"]
 hyper-client-legacy = ["dep:hyper", "dep:hyper-util", "future"]
-rustls = ["opentelemetry-otlp/reqwest-rustls"]
+rustls = ["opentelemetry-otlp/reqwest-rustls", "opentelemetry-zipkin/reqwest-rustls"]
 aws-span = ["dep:aws-types", "dep:paste"]
 aws-instrumentation = ["aws-span", "future"]
 aws-stream-instrumentation = ["aws-span", "dep:pin-project-lite", "dep:aws-smithy-async", "dep:aws-smithy-types-convert", "dep:futures-util"]

@@ -226,7 +226,7 @@ impl<'a> AwsSpanBuilder<'a> {
         let tracer = global::tracer("aws_sdk");
         let span_name = format!("{service}.{method}");
         let mut attributes = vec![
-            KeyValue::new(semconv::RPC_METHOD, span_name.clone()),
+            KeyValue::new(semconv::RPC_METHOD, method),
             KeyValue::new(semconv::RPC_SYSTEM_NAME, "aws-api"),
         ];
         attributes.extend(custom_attributes);

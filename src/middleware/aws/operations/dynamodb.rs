@@ -6,10 +6,10 @@ use crate::{KeyValue, StringValue, Value, semconv};
 use super::*;
 
 #[allow(deprecated)]
-pub const LEGACY_DB_NAME: &str = semconv::DB_NAME;
+const LEGACY_DB_NAME: &str = semconv::DB_NAME;
 
 #[allow(deprecated)]
-pub const LEGACY_DB_SYSTEM: &str = semconv::DB_SYSTEM;
+const LEGACY_DB_SYSTEM: &str = semconv::DB_SYSTEM;
 
 /// Builder for DynamoDB-specific OpenTelemetry spans.
 ///
@@ -41,6 +41,7 @@ impl AwsSpanBuilder<'_> {
             table_names.into_iter().map(|item| item.into()).collect();
         let mut attributes = vec![
             KeyValue::new(LEGACY_DB_SYSTEM, "dynamodb"),
+            KeyValue::new(semconv::DB_SYSTEM_NAME, "dynamodb"),
             KeyValue::new(semconv::DB_OPERATION_NAME, method.clone()),
         ];
         match table_names.len() {

@@ -227,7 +227,10 @@ impl<'a> AwsSpanBuilder<'a> {
         let span_name = format!("{service}.{method}");
         let mut attributes = vec![
             KeyValue::new(semconv::RPC_METHOD, method),
+            KeyValue::new(semconv::RPC_SYSTEM_NAME, "aws-api"),
+            #[allow(deprecated)] // legacy attribute
             KeyValue::new(semconv::RPC_SYSTEM, "aws-api"),
+            #[allow(deprecated)] // legacy attribute
             KeyValue::new(semconv::RPC_SERVICE, service),
         ];
         attributes.extend(custom_attributes);

@@ -10,10 +10,11 @@ use opentelemetry::{
 #[cfg(feature = "xray")]
 use opentelemetry_aws::trace::XrayPropagator;
 use opentelemetry_sdk::{
+    error::OTelSdkError,
     propagation::{BaggagePropagator, TraceContextPropagator},
-    trace::TraceError,
 };
 #[cfg(feature = "zipkin")]
+#[allow(deprecated)]
 use opentelemetry_zipkin::{B3Encoding, Propagator as B3Propagator};
 use std::collections::BTreeSet;
 
@@ -105,7 +106,7 @@ impl TextMapSplitPropagator {
     ///
     /// # Returns
     ///
-    /// A configured [`TextMapSplitPropagator`] on success, or a [`TraceError`] if
+    /// A configured [`TextMapSplitPropagator`] on success, or an [`OTelSdkError`] if
     /// the environment variable contains unsupported propagator names.
     ///
     /// # Examples
@@ -118,9 +119,9 @@ impl TextMapSplitPropagator {
     /// use telemetry_rust::propagation::TextMapSplitPropagator;
     ///
     /// let propagator = TextMapSplitPropagator::from_env()?;
-    /// # Ok::<(), opentelemetry_sdk::trace::TraceError>(())
+    /// # Ok::<(), opentelemetry_sdk::error::OTelSdkError>(())
     /// ```
-    pub fn from_env() -> Result<Self, TraceError> {
+    pub fn from_env() -> Result<Self, OTelSdkError> {
         let value_from_env = match util::env_var("OTEL_PROPAGATORS") {
             Some(value) => value,
             None => {
@@ -167,6 +168,7 @@ impl Default for TextMapSplitPropagator {
     fn default() -> Self {
         let trace_context_propagator = Box::new(TraceContextPropagator::new());
         #[cfg(feature = "zipkin")]
+        #[allow(deprecated)]
         let b3_propagator = Box::new(B3Propagator::with_encoding(
             B3Encoding::SingleAndMultiHeader,
         ));
@@ -180,34 +182,39 @@ impl Default for TextMapSplitPropagator {
     }
 }
 
-fn propagator_from_string(v: &str) -> Result<Propagator, TraceError> {
+fn propagator_from_string(v: &str) -> Result<Propagator, OTelSdkError> {
     match v.trim() {
         "tracecontext" => Ok(Box::new(TraceContextPropagator::new())),
         "baggage" => Ok(Box::new(BaggagePropagator::new())),
         "none" => Ok(Box::new(NonePropagator)),
         #[cfg(feature = "zipkin")]
+        #[allow(deprecated)]
         "b3" => Ok(Box::new(B3Propagator::with_encoding(
             B3Encoding::SingleHeader,
         ))),
         #[cfg(not(feature = "zipkin"))]
-        "b3" => Err(TraceError::from(
-            "unsupported propagator from env OTEL_PROPAGATORS: 'b3', try to enable compile feature 'zipkin'",
+        "b3" => Err(OTelSdkError::InternalFailure(
+            "unsupported propagator from env OTEL_PROPAGATORS: 'b3', try to enable compile feature 'zipkin'"
+                .to_owned(),
         )),
         #[cfg(feature = "zipkin")]
+        #[allow(deprecated)]
         "b3multi" => Ok(Box::new(B3Propagator::with_encoding(
             B3Encoding::MultipleHeader,
         ))),
         #[cfg(not(feature = "zipkin"))]
-        "b3multi" => Err(TraceError::from(
-            "unsupported propagator from env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'",
+        "b3multi" => Err(OTelSdkError::InternalFailure(
+            "unsupported propagator from env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'"
+                .to_owned(),
         )),
         #[cfg(feature = "xray")]
         "xray" => Ok(Box::new(XrayPropagator::new())),
         #[cfg(not(feature = "xray"))]
-        "xray" => Err(TraceError::from(
-            "unsupported propagator from env OTEL_PROPAGATORS: 'xray', try to enable compile feature 'xray'",
+        "xray" => Err(OTelSdkError::InternalFailure(
+            "unsupported propagator from env OTEL_PROPAGATORS: 'xray', try to enable compile feature 'xray'"
+                .to_owned(),
         )),
-        unknown => Err(TraceError::from(format!(
+        unknown => Err(OTelSdkError::InternalFailure(format!(
             "unsupported propagator from env OTEL_PROPAGATORS: {unknown:?}"
         ))),
     }

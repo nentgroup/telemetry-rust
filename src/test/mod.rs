@@ -20,8 +20,7 @@ use hyper::{
     header::HeaderValue,
 };
 
-pub use opentelemetry_api::trace::{SpanId, TraceId};
-use rand::Rng;
+pub use opentelemetry::trace::{SpanId, TraceId};
 
 /// HTTP response wrapper that includes OpenTelemetry trace information.
 ///
@@ -174,9 +173,8 @@ impl Traceparent {
     /// println!("Trace ID: {}", traceparent.trace_id);
     /// ```
     pub fn generate() -> Self {
-        let mut rng = rand::rng();
-        let trace_id = TraceId::from_u128(rng.random());
-        let span_id = SpanId::from_u64(rng.random());
+        let trace_id = TraceId::from_bytes(rand::random());
+        let span_id = SpanId::from_bytes(rand::random());
         Self { trace_id, span_id }
     }
 

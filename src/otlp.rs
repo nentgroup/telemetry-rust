@@ -5,8 +5,7 @@
 // https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk/blob/d3609ac2cc699d3a24fbf89754053cc8e938e3bf/LICENSE
 
 use opentelemetry_otlp::{
-    ExportConfig, ExporterBuildError, Protocol, SpanExporter, WithExportConfig,
-    WithHttpConfig,
+    ExporterBuildError, Protocol, SpanExporter, WithExportConfig, WithHttpConfig,
 };
 use opentelemetry_sdk::{
     Resource,
@@ -16,6 +15,31 @@ use std::{collections::HashMap, num::ParseIntError, str::FromStr, time::Duration
 
 pub use crate::filter::read_tracing_level_from_env as read_otel_log_level_from_env;
 use crate::util;
+
+#[derive(Debug)]
+struct InferredExportConfig {
+    endpoint: Option<String>,
+    protocol: Protocol,
+    timeout: Option<Duration>,
+}
+
+trait WithExportConfigExt: WithExportConfig {
+    fn with_export_config(self, cfg: InferredExportConfig) -> Self;
+}
+
+impl<B: WithExportConfig> WithExportConfigExt for B {
+    fn with_export_config(self, cfg: InferredExportConfig) -> Self {
+        let this = self.with_protocol(cfg.protocol);
+        let this = match cfg.endpoint {
+            Some(endpoint) => this.with_endpoint(endpoint),
+            None => this,
+        };
+        match cfg.timeout {
+            Some(timeout) => this.with_timeout(timeout),
+            None => this,
+        }
+    }
+}
 
 /// Error types that can occur during OpenTelemetry tracer initialization.
 ///
@@ -123,7 +147,7 @@ where
         maybe_endpoint.as_deref(),
         maybe_timeout.as_deref(),
     )?;
-    tracing::debug!(target: "otel::setup", export_config = format!("{export_config:?}"));
+    tracing::debug!(target: "otel::setup", ?export_config);
     let exporter: SpanExporter = match export_config.protocol {
         Protocol::HttpBinary => SpanExporter::builder()
             .with_http()
@@ -134,7 +158,6 @@ where
             .with_tonic()
             .with_export_config(export_config)
             .build()?,
-        Protocol::HttpJson => unreachable!("HttpJson protocol is not supported"),
     };
 
     let tracer_provider_builder = TracerProvider::builder()
@@ -213,7 +236,7 @@ fn infer_export_config(
     maybe_protocol: Option<&str>,
     maybe_endpoint: Option<&str>,
     maybe_timeout: Option<&str>,
-) -> Result<ExportConfig, InitTracerError> {
+) -> Result<InferredExportConfig, InitTracerError> {
     let protocol = match maybe_protocol {
         Some("grpc") => Protocol::Grpc,
         Some("http") | Some("http/protobuf") => Protocol::HttpBinary,
@@ -235,7 +258,7 @@ fn infer_export_config(
         .transpose()?
         .map(Duration::from_millis);
 
-    Ok(ExportConfig {
+    Ok(InferredExportConfig {
         endpoint: maybe_endpoint.map(ToOwned::to_owned),
         protocol,
         timeout,
@@ -295,7 +318,7 @@ mod tests {
         #[case] expected_endpoint: Option<&str>,
         #[case] expected_timeout: Option<Duration>,
     ) {
-        let ExportConfig {
+        let InferredExportConfig {
             protocol,
             endpoint,
             timeout,

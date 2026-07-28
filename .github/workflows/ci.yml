@@ -21,12 +21,12 @@ jobs:
     name: Lint & Test
     steps:
       - name: Checkout source Git repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: Swatinem/rust-cache@v2
       - run: rustup toolchain install stable --profile minimal --target ${{ matrix.target }}
       - run: rustup component add rustfmt clippy
       - name: Install Protoc
-        uses: arduino/setup-protoc@v1
+        uses: arduino/setup-protoc@v3.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: cargo fetch

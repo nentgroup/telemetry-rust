@@ -1,16 +1,22 @@
 # Changelog
 
+## v6.14.0
+
+- Drop legacy otel attributes in favor of the new semantic conventions https://github.com/nentgroup/telemetry-rust/pull/201
+- Update the Rust toolchain to `1.97.1`
+- Bump dependencies
+
 ## v6.13.0
 
-- Update the OpenTelemetry SDK to `0.32`
-- Removed `opentelemetry_api` in favor of the `opentelemetry` crate
-- Removed deprecated `opentelemetry-jaeger-propagator` crate
-- Migrate OTLP exporter configuration and propagation errors to use `OTelSdkError`
-- Emit the new `rpc.system.name` attribute but retain the old names for compatibility
+- Update the OpenTelemetry SDK to `0.32` https://github.com/nentgroup/telemetry-rust/pull/200
+  - Removed `opentelemetry_api` in favor of the `opentelemetry` crate
+  - Migrate OTLP exporter configuration and propagation errors to use `OTelSdkError`
+  - Emit the new `rpc.system.name` attribute but retain the old names for compatibility
 - Update the Rust toolchain to `1.94.1`
 
 ## v6.12.0
-- Add instrumentation support for hyper including `hyper_util::client::legacy::Client`, `hyper::client::conn::http1::SendRequest` and `hyper::client::conn::http2::SendRequest`.
+
+- Add instrumentation support for hyper including `hyper_util::client::legacy::Client`, `hyper::client::conn::http1::SendRequest` and `hyper::client::conn::http2::SendRequest` https://github.com/nentgroup/telemetry-rust/pull/188
 
 ## v6.11.0
 

@@ -14,6 +14,13 @@ pub(crate) fn env_var(key: &str) -> Option<String> {
     }
 }
 
+#[cfg(any(
+    feature = "reqwest",
+    feature = "hyper-http1",
+    feature = "hyper-http2",
+    feature = "hyper-client-legacy",
+    feature = "aws-fluent-builder-instrumentation",
+))]
 #[inline]
 pub(crate) fn as_attribute(
     key: impl Into<Key>,

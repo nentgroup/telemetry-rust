@@ -267,7 +267,7 @@ fn infer_export_config(
 
 #[cfg(test)]
 mod tests {
-    use assert2::{assert, let_assert};
+    use assert2::assert;
     use rstest::rstest;
 
     use super::*;
@@ -344,7 +344,7 @@ mod tests {
     ) {
         let result = infer_export_config(traces_protocol, None, traces_timeout);
 
-        let_assert!(Err(err) = result);
+        assert!(let Err(err) = result);
 
         assert!(format!("{}", err) == expected_error);
     }

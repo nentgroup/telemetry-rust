@@ -25,7 +25,7 @@ impl AwsSpanBuilder<'_> {
     /// * `topic_arn` - Optional topic ARN for operations that target specific topics
     pub fn sns(
         operation_kind: MessagingOperationKind,
-        method: impl Into<StringValue>,
+        method: impl AsRef<str>,
         topic_arn: Option<impl Into<StringValue>>,
     ) -> Self {
         let mut attributes = vec![

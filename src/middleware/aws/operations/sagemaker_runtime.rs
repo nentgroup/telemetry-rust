@@ -23,7 +23,7 @@ impl AwsSpanBuilder<'_> {
     /// * `method` - The SageMaker Runtime operation method name
     /// * `endpoint_name` - The name of the SageMaker endpoint being invoked
     pub fn sagemaker_runtime(
-        method: impl Into<StringValue>,
+        method: impl AsRef<str>,
         endpoint_name: impl Into<StringValue>,
     ) -> Self {
         let endpoint_name: StringValue = endpoint_name.into();

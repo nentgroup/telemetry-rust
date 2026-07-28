@@ -23,7 +23,7 @@ impl AwsSpanBuilder<'_> {
     /// * `method` - The AppConfig Data operation method name
     /// * `application_id` - Optional application identifier for the operation
     pub fn appconfigdata(
-        method: impl Into<StringValue>,
+        method: impl AsRef<str>,
         application_id: Option<impl Into<StringValue>>,
     ) -> Self {
         let mut attributes = Vec::new();

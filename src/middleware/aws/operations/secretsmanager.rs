@@ -23,7 +23,7 @@ impl AwsSpanBuilder<'_> {
     /// * `method` - The Secrets Manager operation method name
     /// * `secret_id` - Optional secret name or ARN for the operation
     pub fn secretsmanager(
-        method: impl Into<StringValue>,
+        method: impl AsRef<str>,
         secret_id: Option<impl Into<StringValue>>,
     ) -> Self {
         let mut attributes = Vec::new();

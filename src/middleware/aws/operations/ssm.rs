@@ -23,7 +23,7 @@ impl AwsSpanBuilder<'_> {
     /// * `method` - The SSM operation method name
     /// * `parameter_name` - Optional parameter name for the operation
     pub fn ssm(
-        method: impl Into<StringValue>,
+        method: impl AsRef<str>,
         parameter_name: Option<impl Into<StringValue>>,
     ) -> Self {
         let mut attributes = Vec::new();

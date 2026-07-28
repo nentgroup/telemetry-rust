@@ -26,7 +26,7 @@ impl AwsSpanBuilder<'_> {
     /// * `bucket` - Optional bucket name for operations that target specific buckets
     /// * `key` - Optional object key for operations that target specific objects
     pub fn s3(
-        method: impl Into<StringValue>,
+        method: impl AsRef<str>,
         bucket: Option<impl Into<StringValue>>,
         key: Option<impl Into<StringValue>>,
     ) -> Self {

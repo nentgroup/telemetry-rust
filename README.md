@@ -167,7 +167,7 @@ let aws_span = DynamodbSpanBuilder::get_item("table_name").context(&context).sta
 // or set custom span attributes
 let aws_span = DynamodbSpanBuilder::get_item("table_name")
     .attribute(KeyValue::new(semconv::AWS_DYNAMODB_INDEX_NAME, "my_index"))
-    .attributes(vec![
+    .attributes([
         KeyValue::new(semconv::AWS_DYNAMODB_LIMIT, 6),
         KeyValue::new(semconv::AWS_DYNAMODB_SELECT, "ALL_ATTRIBUTES"),
     ])

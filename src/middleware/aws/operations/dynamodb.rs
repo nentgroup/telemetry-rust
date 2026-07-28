@@ -5,12 +5,6 @@ use crate::{KeyValue, StringValue, Value, semconv};
 
 use super::*;
 
-#[allow(deprecated)]
-const LEGACY_DB_NAME: &str = semconv::DB_NAME;
-
-#[allow(deprecated)]
-const LEGACY_DB_SYSTEM: &str = semconv::DB_SYSTEM;
-
 /// Builder for DynamoDB-specific OpenTelemetry spans.
 ///
 /// This enum serves as a namespace for DynamoDB operation span builders.
@@ -40,7 +34,6 @@ impl AwsSpanBuilder<'_> {
         let table_names: Vec<StringValue> =
             table_names.into_iter().map(|item| item.into()).collect();
         let mut attributes = vec![
-            KeyValue::new(LEGACY_DB_SYSTEM, "dynamodb"),
             KeyValue::new(semconv::DB_SYSTEM_NAME, "dynamodb"),
             KeyValue::new(semconv::DB_OPERATION_NAME, method.clone()),
         ];
@@ -48,7 +41,6 @@ impl AwsSpanBuilder<'_> {
             0 => {}
             1 => {
                 attributes.extend([
-                    KeyValue::new(LEGACY_DB_NAME, table_names[0].clone()),
                     KeyValue::new(semconv::DB_NAMESPACE, table_names[0].clone()),
                     KeyValue::new(
                         semconv::AWS_DYNAMODB_TABLE_NAMES,
@@ -116,10 +108,7 @@ macro_rules! dynamodb_table_arn_operation {
                     stringify_camel!($op),
                     std::iter::empty::<StringValue>(),
                 )
-                .attributes(vec![
-                    KeyValue::new(LEGACY_DB_NAME, table_arn.clone()),
-                    KeyValue::new(semconv::DB_NAMESPACE, table_arn),
-                ])
+                .attribute(KeyValue::new(semconv::DB_NAMESPACE, table_arn))
             }
         }
     };

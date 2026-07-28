@@ -27,7 +27,7 @@ impl AwsSpanBuilder<'_> {
     /// * `queue` - Optional SQS queue URL or name for operations that target specific queues
     pub fn sqs(
         operation_kind: MessagingOperationKind,
-        method: impl Into<StringValue>,
+        method: impl AsRef<str>,
         queue: Option<impl Into<StringValue>>,
     ) -> Self {
         let mut attributes = vec![

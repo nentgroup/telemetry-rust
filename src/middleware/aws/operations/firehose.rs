@@ -25,7 +25,7 @@ impl AwsSpanBuilder<'_> {
     /// * `stream_name` - Optional stream name for operations that target specific streams
     pub fn firehose(
         operation_kind: MessagingOperationKind,
-        method: impl Into<StringValue>,
+        method: impl AsRef<str>,
         stream_name: Option<impl Into<StringValue>>,
     ) -> Self {
         let mut attributes = vec![

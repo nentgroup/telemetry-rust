@@ -24,7 +24,7 @@ use opentelemetry::{
 use std::error::Error;
 use tracing::Span;
 
-use crate::{Context, KeyValue, OpenTelemetrySpanExt, StringValue, semconv};
+use crate::{Context, KeyValue, OpenTelemetrySpanExt, semconv};
 
 mod instrumentation;
 mod operations;
@@ -217,25 +217,19 @@ pub struct AwsSpanBuilder<'a> {
 impl<'a> AwsSpanBuilder<'a> {
     fn new(
         span_kind: SpanKind,
-        service: impl Into<StringValue>,
-        method: impl Into<StringValue>,
+        service: impl AsRef<str>,
+        method: impl AsRef<str>,
         custom_attributes: impl IntoIterator<Item = KeyValue>,
     ) -> Self {
-        let service: StringValue = service.into();
-        let method: StringValue = method.into();
         let tracer = global::tracer("aws_sdk");
-        let span_name = format!("{service}.{method}");
+        let method = format!("{}.{}", service.as_ref(), method.as_ref());
         let mut attributes = vec![
-            KeyValue::new(semconv::RPC_METHOD, method),
+            KeyValue::new(semconv::RPC_METHOD, method.clone()),
             KeyValue::new(semconv::RPC_SYSTEM_NAME, "aws-api"),
-            #[allow(deprecated)] // legacy attribute
-            KeyValue::new(semconv::RPC_SYSTEM, "aws-api"),
-            #[allow(deprecated)] // legacy attribute
-            KeyValue::new(semconv::RPC_SERVICE, service),
         ];
         attributes.extend(custom_attributes);
         let inner = tracer
-            .span_builder(span_name)
+            .span_builder(method)
             .with_attributes(attributes)
             .with_kind(span_kind);
 
@@ -256,8 +250,8 @@ impl<'a> AwsSpanBuilder<'a> {
     /// * `method` - The operation name (e.g., "GetObject", "PutItem")
     /// * `attributes` - Additional custom attributes for the span
     pub fn client(
-        service: impl Into<StringValue>,
-        method: impl Into<StringValue>,
+        service: impl AsRef<str>,
+        method: impl AsRef<str>,
         attributes: impl IntoIterator<Item = KeyValue>,
     ) -> Self {
         Self::new(SpanKind::Client, service, method, attributes)
@@ -273,8 +267,8 @@ impl<'a> AwsSpanBuilder<'a> {
     /// * `method` - The operation name (e.g., "SendMessage", "Publish")
     /// * `attributes` - Additional custom attributes for the span
     pub fn producer(
-        service: impl Into<StringValue>,
-        method: impl Into<StringValue>,
+        service: impl AsRef<str>,
+        method: impl AsRef<str>,
         attributes: impl IntoIterator<Item = KeyValue>,
     ) -> Self {
         Self::new(SpanKind::Producer, service, method, attributes)
@@ -290,8 +284,8 @@ impl<'a> AwsSpanBuilder<'a> {
     /// * `method` - The operation name (e.g., "ReceiveMessage", "GetRecords")
     /// * `attributes` - Additional custom attributes for the span
     pub fn consumer(
-        service: impl Into<StringValue>,
-        method: impl Into<StringValue>,
+        service: impl AsRef<str>,
+        method: impl AsRef<str>,
         attributes: impl IntoIterator<Item = KeyValue>,
     ) -> Self {
         Self::new(SpanKind::Consumer, service, method, attributes)

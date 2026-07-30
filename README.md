@@ -118,6 +118,17 @@ let res = firehose_client
     .await;
 
 // S3 instrumentation
+//
+// Use `.collect()` instead of `.send()` to include object body collection when instrumenting S3 GetObject calls:
+let body = s3_client
+    .get_object()
+    .bucket("my_bucket")
+    .key("my_key")
+    .instrument()
+    .collect()
+    .await?;
+
+// Normal `.send()` is still available:
 let res = s3_client
     .get_object()
     .bucket("my_bucket")
@@ -125,6 +136,7 @@ let res = s3_client
     .send()
     .instrument(S3SpanBuilder::get_object("my_bucket", "my_key"))
     .await;
+let body = res.body.collect().await?; // not instrumented
 ```
 
 ### `AwsStreamInstrument` trait

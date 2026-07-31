@@ -64,6 +64,10 @@ let response = reqwest::Client::new()
 Requires the `hyper-client-legacy` feature flag. Wraps a `hyper_util::client::legacy::Client` once and reuses it across requests.
 
 ```rust
+use bytes::Bytes;
+use http_body_util::Empty;
+use hyper::Request;
+use hyper_util::rt::TokioExecutor;
 use telemetry_rust::instrumentations::http::hyper::HyperLegacyClientInstrument;
 
 let client = hyper_util::client::legacy::Client::builder(TokioExecutor::new())
@@ -84,8 +88,15 @@ let response = client
 Requires the `hyper-http1` or `hyper-http2` feature flag. Wraps a per-connection `SendRequest`.
 
 ```rust
+use bytes::Bytes;
+use http_body_util::Empty;
+use hyper::{Request, header::HOST};
+use hyper_util::rt::TokioIo;
 use telemetry_rust::instrumentations::http::hyper::HyperSendRequestInstrument;
+use tokio::net::TcpStream;
 
+let stream = TcpStream::connect("example.com:80").await?;
+let io = TokioIo::new(stream);
 let (send_request, connection) = hyper::client::conn::http1::handshake(io).await?;
 tokio::spawn(async move { let _ = connection.await; });
 
@@ -99,6 +110,8 @@ let response = sender
     )
     .await?;
 ```
+
+HTTP/2 follows the same pattern with `hyper::client::conn::http2::handshake`.
 
 ## AWS SDK instrumentation
 
@@ -174,7 +187,7 @@ Requires the `aws-stream-instrumentation` feature flag.
 Paginator streams can't use `AwsBuilderInstrument` directly. Use `.build_aws_span()` on the fluent builder (available with any per-service feature flag) to extract request attributes automatically, then pass the span builder to `.instrument()`. Response attributes are not extracted — there is no single response object for a paginated stream.
 
 ```rust
-let query = dynamodb_client
+let query = dynamo_client
     .query()
     .table_name(&table_name)
     .index_name(&index_name)
@@ -212,7 +225,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         .run()
         .await?;
 
-    // Tracer provider will be automatically shutdown when the runtime is dropped
+    // Tracer provider will be automatically shut down when the runtime is dropped
 
     Ok(())
 }

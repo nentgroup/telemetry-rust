@@ -198,14 +198,14 @@ impl InstrumentedFluentBuilder<'_, GetObjectFluentBuilder> {
     /// [`ByteStream`]: aws_smithy_types::byte_stream::ByteStream
     pub async fn stream(
         self,
-    ) -> Result<InstrumentedByteStream, Box<SdkError<GetObjectError>>> {
+    ) -> Result<InstrumentedByteStream, SdkError<GetObjectError>> {
         let mut span = self.span.start();
         span.set_attribute(KeyValue::new("aws.s3.body.mode", "stream"));
 
         let result = self.inner.send().await;
         let Ok(output) = result else {
             span.on_result(&result);
-            return Err(Box::new(result.unwrap_err()));
+            return Err(result.unwrap_err());
         };
 
         if let Some(value) = output.request_id() {

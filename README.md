@@ -115,7 +115,7 @@ HTTP/2 follows the same pattern with `hyper::client::conn::http2::handshake`.
 
 ## AWS SDK instrumentation
 
-The following AWS services have full first-class support:
+The following AWS services have full first-class support. Each feature flag adds the corresponding AWS SDK crate as a dependency:
 
 - DynamoDB (`aws-dynamodb`)
 - SNS (`aws-sns`)
@@ -127,7 +127,7 @@ The following AWS services have full first-class support:
 - SSM Parameter Store (`aws-ssm`)
 - AppConfig Data (`aws-appconfigdata`)
 
-Enable `aws-full` to turn on all of the above at once.
+`aws-full` enables all AWS-related features at once. Prefer enabling only the flags you need to avoid bloating the dependencies tree.
 
 Each per-service feature flag enables the `AwsBuilderInstrument` trait for that service. Call `.instrument()` on any fluent builder before `.send()` — attributes are automatically extracted from both the request and response following OpenTelemetry semantic conventions.
 

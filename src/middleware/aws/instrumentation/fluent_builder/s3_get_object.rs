@@ -162,8 +162,8 @@ impl InstrumentedFluentBuilder<'_, GetObjectFluentBuilder> {
     /// ending only when the stream is exhausted or an error occurs.
     ///
     /// If you need the full body in memory, prefer [`collect`][Self::collect].
-    /// If you need the raw [`GetObjectOutput`] or [`ByteStream`] (e.g. to pass to another
-    /// API), use `.send()` directly, but be aware the span will not cover body transfer.
+    /// If you need the raw [`GetObjectOutput`] or [`ByteStream`],
+    /// use `.send()` directly, but be aware the span will not cover body transfer.
     ///
     /// # Errors
     ///

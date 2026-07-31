@@ -119,13 +119,25 @@ let res = firehose_client
 
 // S3 instrumentation
 //
-// Use `.collect()` instead of `.send()` to include object body collection when instrumenting S3 GetObject calls:
+// Use `.collect()` to buffer the full body, or `.stream()` to process it chunk by chunk.
+// Both instrument the complete operation, including response body transfer.
+//
+// `.collect()` — loads the full body into memory:
 let body = s3_client
     .get_object()
     .bucket("my_bucket")
     .key("my_key")
     .instrument()
     .collect()
+    .await?;
+
+// `.stream()` — yields chunks as they arrive:
+let mut stream = s3_client
+    .get_object()
+    .bucket("my_bucket")
+    .key("my_key")
+    .instrument()
+    .stream()
     .await?;
 
 // Normal `.send()` is still available:

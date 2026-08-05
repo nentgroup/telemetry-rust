@@ -1,5 +1,9 @@
 # Changelog
 
+## v6.15.0
+
+- Extended S3 `GetObject` instrumentation with `.collect()` and `.stream()` to cover the full response body transfer within a single span https://github.com/nentgroup/telemetry-rust/pull/207
+
 ## v6.14.0
 
 - Drop legacy otel attributes in favor of the new semantic conventions https://github.com/nentgroup/telemetry-rust/pull/201

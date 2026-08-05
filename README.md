@@ -1,11 +1,16 @@
 # telemetry-rust
 
+OpenTelemetry instrumentation library for Rust. Provides middleware for Axum and AWS Lambda, instrumentation helpers for outbound HTTP and AWS SDK clients, and utilities for context propagation.
+
+## Axum middleware
+
+Requires the `axum` feature flag.
+
 ```rust
 use tracing::Level::INFO;
-// middleware::axum is available if feature flag axum is on
 use telemetry_rust::{
     TracerProvider, init_tracing,
-    middleware::axum::{OtelAxumLayer, OtelInResponseLayer},
+    middleware::axum::OtelAxumLayer,
     shutdown_tracer_provider,
 };
 
@@ -38,9 +43,11 @@ async fn graceful_shutdown(provider: TracerProvider) {
 }
 ```
 
-## Reqwest instrumentation
+## HTTP client instrumentation
 
-Async reqwest request builders can be instrumented and is available with the `reqwest` feature flag.
+### Reqwest
+
+Requires the `reqwest` feature flag.
 
 ```rust
 use telemetry_rust::instrumentations::http::reqwest::ReqwestBuilderInstrument;
@@ -52,12 +59,77 @@ let response = reqwest::Client::new()
     .await?;
 ```
 
+### Hyper legacy client
+
+Requires the `hyper-client-legacy` feature flag. Wraps a `hyper_util::client::legacy::Client` once and reuses it across requests.
+
+```rust
+use bytes::Bytes;
+use http_body_util::Empty;
+use hyper::Request;
+use hyper_util::rt::TokioExecutor;
+use telemetry_rust::instrumentations::http::hyper::HyperLegacyClientInstrument;
+
+let client = hyper_util::client::legacy::Client::builder(TokioExecutor::new())
+    .build_http::<Empty<Bytes>>()
+    .instrument();
+
+let response = client
+    .request(
+        Request::builder()
+            .uri("http://example.com/health")
+            .body(Empty::<Bytes>::new())?,
+    )
+    .await?;
+```
+
+### Hyper low-level send
+
+Requires the `hyper-http1` or `hyper-http2` feature flag. Wraps a per-connection `SendRequest`.
+
+```rust
+use bytes::Bytes;
+use http_body_util::Empty;
+use hyper::{Request, header::HOST};
+use hyper_util::rt::TokioIo;
+use telemetry_rust::instrumentations::http::hyper::HyperSendRequestInstrument;
+use tokio::net::TcpStream;
+
+let stream = TcpStream::connect("example.com:80").await?;
+let io = TokioIo::new(stream);
+let (send_request, connection) = hyper::client::conn::http1::handshake(io).await?;
+tokio::spawn(async move { let _ = connection.await; });
+
+let mut sender = send_request.instrument();
+let response = sender
+    .send_request(
+        Request::builder()
+            .uri("/health")
+            .header(HOST, "example.com")
+            .body(Empty::<Bytes>::new())?,
+    )
+    .await?;
+```
+
+HTTP/2 follows the same pattern with `hyper::client::conn::http2::handshake`.
+
 ## AWS SDK instrumentation
 
-### `AwsBuilderInstrument` trait
+The following AWS services have full first-class support. Each feature flag adds the corresponding AWS SDK crate as a dependency:
 
-Fully automated instrumentation of AWS SDK fluent builders with attributes extraction from both the request and response.
-Available with `aws-instrumentation` feature flag.
+- DynamoDB (`aws-dynamodb`)
+- SNS (`aws-sns`)
+- SQS (`aws-sqs`)
+- S3 (`aws-s3`)
+- Firehose (`aws-firehose`)
+- SageMaker Runtime (`aws-sagemaker-runtime`)
+- Secrets Manager (`aws-secretsmanager`)
+- SSM Parameter Store (`aws-ssm`)
+- AppConfig Data (`aws-appconfigdata`)
+
+`aws-full` enables all AWS-related features at once. Prefer enabling only the flags you need to avoid bloating the dependencies tree.
+
+Each per-service feature flag enables the `AwsBuilderInstrument` trait for that service. Call `.instrument()` on any fluent builder before `.send()` — attributes are automatically extracted from both the request and response following OpenTelemetry semantic conventions.
 
 ```rust
 let res = dynamo_client
@@ -72,15 +144,11 @@ let res = dynamo_client
 // - Output attributes: consumed capacity, item found status, etc.
 ```
 
-The trait automatically extracts relevant attributes from both the request (fluent builder) and response (operation output) following OpenTelemetry semantic conventions for AWS services.
-
 ### S3 `GetObject`
 
-`GetObject` requires special handling because the response body is a `ByteStream` that is transferred separately from the SDK call.
-Using `.instrument().send()` only instruments the API call itself without the actual
-object fetching.
+`GetObject` requires special handling because the response body is a `ByteStream` transferred separately from the SDK call. `.instrument().send()` only covers the API call itself, not the body transfer.
 
-Use `.collect()` or `.stream()` instead to instrument the full operation:
+Use `.collect()` or `.stream()` to instrument the full operation:
 
 ```rust
 // `.collect()` — loads the full body into memory:
@@ -101,7 +169,7 @@ let mut stream = s3_client
     .stream()
     .await?;
 
-// Normal `.send()` is still available when you need the full `GetObjectOutput`:
+// `.send()` is still available when you need the full `GetObjectOutput`:
 let res = s3_client
     .get_object()
     .bucket("my_bucket")
@@ -112,143 +180,35 @@ let res = s3_client
 let body = res.body.collect().await?; // not instrumented
 ```
 
-### `AwsInstrument` trait
+### Paginator streams: `AwsStreamInstrument` trait
 
-Manual instrumentation of AWS SDK futures.
-Available with `aws-instrumentation` feature flag.
+Requires the `aws-stream-instrumentation` feature flag.
 
-```rust
-// DynamoDB instrumentation
-let res = dynamo_client
-    .get_item()
-    .table_name("table_name")
-    .index_name("my_index")
-    .set_key(primary_key)
-    .send()
-    .instrument(DynamodbSpanBuilder::get_item("table_name"))
-    .await;
-
-// SQS instrumentation
-let res = sqs_client
-    .send_message()
-    .queue_url("https://sqs.region.amazonaws.com/account/queue_name")
-    .message_body("Hello World")
-    .send()
-    .instrument(SqsSpanBuilder::send_message("https://sqs.region.amazonaws.com/account/queue_name"))
-    .await;
-
-// SNS instrumentation
-let res = sns_client
-    .publish()
-    .topic_arn("arn:aws:sns:region:account:topic_name")
-    .message("Hello World")
-    .send()
-    .instrument(SnsSpanBuilder::publish("arn:aws:sns:region:account:topic_name"))
-    .await;
-
-// Firehose instrumentation
-let res = firehose_client
-    .put_record()
-    .delivery_stream_name("stream_name")
-    .record(record)
-    .send()
-    .instrument(FirehoseSpanBuilder::put_record("stream_name"))
-    .await;
-
-// S3 instrumentation
-let res = s3_client
-    .get_object()
-    .bucket("my_bucket")
-    .key("my_key")
-    .send()
-    .instrument(S3SpanBuilder::get_object("my_bucket", "my_key"))
-    .await;
-```
-
-### `AwsStreamInstrument` trait
-
-Manual instrumentation of AWS SDK pagination streams.
-Available with `aws-instrumentation` feature flag.
+Paginator streams can't use `AwsBuilderInstrument` directly. Use `.build_aws_span()` on the fluent builder (available with any per-service feature flag) to extract request attributes automatically, then pass the span builder to `.instrument()`. Response attributes are not extracted — there is no single response object for a paginated stream.
 
 ```rust
-let items = dynamodb_client
+let query = dynamo_client
     .query()
     .table_name(&table_name)
     .index_name(&index_name)
     .key_condition_expression("PK = :pk")
-    .expression_attribute_values(":pk", AttributeValue::S("Hello".to_string()))
+    .expression_attribute_values(":pk", AttributeValue::S("Hello".to_string()));
+
+// Extracts the same request attributes as `.instrument().send()` would
+let span = query.build_aws_span();
+
+let items = query
     .into_paginator()
     .items()
     .send()
-    .instrument(
-        DynamodbSpanBuilder::query(table_name)
-            .attribute(KeyValue::new(semconv::AWS_DYNAMODB_INDEX_NAME, index_name)),
-    )
+    .instrument(span)
     .try_collect::<Vec<_>>()
     .await?;
 ```
 
-### Low level API
-
-Creating new span:
-
-```rust
-// create new span in the current span's context using either a dedicated constructor
-let aws_span = DynamodbSpanBuilder::get_item("table_name").start();
-// or a generic one
-let aws_span = AwsSpanBuilder::dynamodb("GetItem", vec!["table_name"]).start();
-
-// optionally, provide an explicit parent context
-let context = Span::current().context();
-let aws_span = DynamodbSpanBuilder::get_item("table_name").context(&context).start();
-
-// or set custom span attributes
-let aws_span = DynamodbSpanBuilder::get_item("table_name")
-    .attribute(KeyValue::new(semconv::AWS_DYNAMODB_INDEX_NAME, "my_index"))
-    .attributes([
-        KeyValue::new(semconv::AWS_DYNAMODB_LIMIT, 6),
-        KeyValue::new(semconv::AWS_DYNAMODB_SELECT, "ALL_ATTRIBUTES"),
-    ])
-    .start();
-```
-
-Ending the span once AWS operation is complete:
-
-```rust
-let res = dynamo_client
-    .get_item()
-    .table_name("table_name")
-    .index_name("my_index")
-    .set_key(primary_key)
-    .send()
-    .await;
-aws_span.end(&res);
-```
-
-Only the following AWS targets are fully supported at the moment:
-
- * DynamoDB
- * SNS
- * SQS
- * S3
- * Firehose
- * SageMaker Runtime
- * Secrets Manager
- * SSM Parameter Store
- * AppConfig Data
-
-But a generic `AwsSpanBuilder` could be used to instrument any other AWS SDK:
-
-```rust
-let lambda_span = AwsSpanBuilder::client(
-    "Lambda",
-    "Invoke",
-    vec![KeyValue::new("aws.lambda.function_name", "my_function")],
-)
-.start();
-```
-
 ## AWS Lambda instrumentation
+
+Requires the `aws-lambda` feature flag.
 
 ```rust
 #[tokio::main]
@@ -265,7 +225,7 @@ async fn main() -> Result<(), lambda_runtime::Error> {
         .run()
         .await?;
 
-    // Tracer provider will be automatically shutdown when the runtime is dropped
+    // Tracer provider will be automatically shut down when the runtime is dropped
 
     Ok(())
 }
@@ -280,6 +240,113 @@ The following context propagation formats are supported:
 - `b3`: B3 single header (requires `zipkin` feature)
 - `b3multi`: B3 multiple headers (requires `zipkin` feature)
 - `xray`: AWS X-Ray (requires `xray` feature)
+
+## Advanced AWS instrumentation
+
+### `AwsInstrument` trait
+
+Requires the `aws-instrumentation` feature flag.
+
+Use this when you need explicit control over span attributes — for example, to attach attributes not automatically extracted, or to instrument a service that lacks a per-service feature flag.
+
+Call `.instrument(SpanBuilder)` on the future returned by `.send()`:
+
+```rust
+// DynamoDB
+let res = dynamo_client
+    .get_item()
+    .table_name("table_name")
+    .index_name("my_index")
+    .set_key(primary_key)
+    .send()
+    .instrument(DynamodbSpanBuilder::get_item("table_name"))
+    .await;
+
+// SQS
+let res = sqs_client
+    .send_message()
+    .queue_url("https://sqs.region.amazonaws.com/account/queue_name")
+    .message_body("Hello World")
+    .send()
+    .instrument(SqsSpanBuilder::send_message("https://sqs.region.amazonaws.com/account/queue_name"))
+    .await;
+
+// SNS
+let res = sns_client
+    .publish()
+    .topic_arn("arn:aws:sns:region:account:topic_name")
+    .message("Hello World")
+    .send()
+    .instrument(SnsSpanBuilder::publish("arn:aws:sns:region:account:topic_name"))
+    .await;
+
+// Firehose
+let res = firehose_client
+    .put_record()
+    .delivery_stream_name("stream_name")
+    .record(record)
+    .send()
+    .instrument(FirehoseSpanBuilder::put_record("stream_name"))
+    .await;
+
+// S3
+let res = s3_client
+    .get_object()
+    .bucket("my_bucket")
+    .key("my_key")
+    .send()
+    .instrument(S3SpanBuilder::get_object("my_bucket", "my_key"))
+    .await;
+```
+
+### Low-level span API
+
+Requires the `aws-span` feature flag. Use this for AWS services not listed above, or when you need full manual control over the span lifecycle (e.g. the span must cross an async boundary).
+
+```rust
+// Dedicated constructor for a supported service
+let aws_span = DynamodbSpanBuilder::get_item("table_name").start();
+
+// Generic constructor for any AWS service
+let aws_span = AwsSpanBuilder::dynamodb("GetItem", vec!["table_name"]).start();
+
+// Explicit parent context
+let context = Span::current().context();
+let aws_span = DynamodbSpanBuilder::get_item("table_name").context(&context).start();
+
+// Custom attributes
+let aws_span = DynamodbSpanBuilder::get_item("table_name")
+    .attribute(KeyValue::new(semconv::AWS_DYNAMODB_INDEX_NAME, "my_index"))
+    .attributes([
+        KeyValue::new(semconv::AWS_DYNAMODB_LIMIT, 6),
+        KeyValue::new(semconv::AWS_DYNAMODB_SELECT, "ALL_ATTRIBUTES"),
+    ])
+    .start();
+```
+
+End the span once the operation completes:
+
+```rust
+let res = dynamo_client
+    .get_item()
+    .table_name("table_name")
+    .index_name("my_index")
+    .set_key(primary_key)
+    .send()
+    .await;
+aws_span.end(&res);
+```
+
+For unsupported services, use the generic `AwsSpanBuilder`:
+
+```rust
+let lambda_span = AwsSpanBuilder::client(
+    "Lambda",
+    "Invoke",
+    vec![KeyValue::new("aws.lambda.function_name", "my_function")],
+)
+.start();
+```
 
 ## Publishing new version
 

@@ -11,6 +11,8 @@ mod dynamodb;
 mod firehose;
 #[cfg(feature = "aws-s3")]
 mod s3;
+#[cfg(feature = "aws-s3")]
+pub mod s3_get_object;
 #[cfg(feature = "aws-sagemaker-runtime")]
 mod sagemaker_runtime;
 #[cfg(feature = "aws-secretsmanager")]

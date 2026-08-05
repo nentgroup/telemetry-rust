@@ -74,6 +74,44 @@ let res = dynamo_client
 
 The trait automatically extracts relevant attributes from both the request (fluent builder) and response (operation output) following OpenTelemetry semantic conventions for AWS services.
 
+### S3 `GetObject`
+
+`GetObject` requires special handling because the response body is a `ByteStream` that is transferred separately from the SDK call.
+Using `.instrument().send()` only instruments the API call itself without the actual
+object fetching.
+
+Use `.collect()` or `.stream()` instead to instrument the full operation:
+
+```rust
+// `.collect()` — loads the full body into memory:
+let body = s3_client
+    .get_object()
+    .bucket("my_bucket")
+    .key("my_key")
+    .instrument()
+    .collect()
+    .await?;
+
+// `.stream()` — yields chunks as they arrive:
+let mut stream = s3_client
+    .get_object()
+    .bucket("my_bucket")
+    .key("my_key")
+    .instrument()
+    .stream()
+    .await?;
+
+// Normal `.send()` is still available when you need the full `GetObjectOutput`:
+let res = s3_client
+    .get_object()
+    .bucket("my_bucket")
+    .key("my_key")
+    .instrument()
+    .send()
+    .await;
+let body = res.body.collect().await?; // not instrumented
+```
+
 ### `AwsInstrument` trait
 
 Manual instrumentation of AWS SDK futures.

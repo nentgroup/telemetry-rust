@@ -187,6 +187,47 @@ impl AwsSpan {
     pub fn set_attributes(&mut self, attributes: impl IntoIterator<Item = KeyValue>) {
         self.span.set_attributes(attributes);
     }
+
+    /// Sets the status of the span.
+    ///
+    /// For more information see [`BoxedSpan::set_status`]
+    ///
+    /// # Arguments
+    ///
+    /// * `status` - The [`Status`] to set on the span
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use opentelemetry::trace::Status;
+    /// use telemetry_rust::middleware::aws::AwsSpanBuilder;
+    ///
+    /// let mut span = AwsSpanBuilder::client("DynamoDB", "GetItem", []).start();
+    /// span.set_status(Status::Ok);
+    /// ```
+    pub fn set_status(&mut self, status: Status) {
+        self.span.set_status(status);
+    }
+
+    /// Records an error event on the span.
+    ///
+    /// For more information see [`BoxedSpan::record_error`]
+    ///
+    /// # Arguments
+    ///
+    /// * `err` - The error to record on the span
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use telemetry_rust::middleware::aws::AwsSpanBuilder;
+    ///
+    /// let mut span = AwsSpanBuilder::client("DynamoDB", "GetItem", []).start();
+    /// span.record_error(&std::io::Error::other("something went wrong"));
+    /// ```
+    pub fn record_error(&mut self, err: &dyn Error) {
+        self.span.record_error(err);
+    }
 }
 
 impl From<BoxedSpan> for AwsSpan {

@@ -2181,6 +2181,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "opentelemetry-propagator-b3"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9356e156870e7836e72495aaada27424787184069ae45b8c7af05a749542fff"
+dependencies = [
+ "once_cell",
+ "opentelemetry",
+]
+
+[[package]]
 name = "opentelemetry-proto"
 version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2198,24 +2208,6 @@ name = "opentelemetry-semantic-conventions"
 version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d288b1e1bc3590052fbb8f0f635ef248dd9022cf1fbaeb6582b7ad6081a17b87"
-
-[[package]]
-name = "opentelemetry-zipkin"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfab695238e131b4d2f88e5a8bd460b6a0b773fff9c3c0801ae67e5be7c03999"
-dependencies = [
- "http 1.4.2",
- "once_cell",
- "opentelemetry",
- "opentelemetry-http",
- "opentelemetry_sdk",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror",
- "typed-builder",
-]
 
 [[package]]
 name = "opentelemetry_sdk"
@@ -3273,8 +3265,8 @@ dependencies = [
  "opentelemetry-aws",
  "opentelemetry-http",
  "opentelemetry-otlp",
+ "opentelemetry-propagator-b3",
  "opentelemetry-semantic-conventions",
- "opentelemetry-zipkin",
  "opentelemetry_sdk",
  "paste",
  "pin-project-lite",
@@ -3694,26 +3686,6 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
-
-[[package]]
-name = "typed-builder"
-version = "0.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd9d30e3a08026c78f246b173243cf07b3696d274debd26680773b6773c2afc7"
-dependencies = [
- "typed-builder-macro",
-]
-
-[[package]]
-name = "typed-builder-macro"
-version = "0.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c36781cc0e46a83726d9879608e4cf6c2505237e263a8eb8c24502989cfdb28"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
 
 [[package]]
 name = "typenum"

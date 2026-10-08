@@ -1,5 +1,9 @@
 # Changelog
 
+## v7.0.0
+- bump opentelemetry cratest to latest
+- replaces `opentelemetry-zipkin` with `opentelemetry-propagator-b3` and rename the default-enabled `zipkin` feature to `b3`. Consumers explicitly enabling `zipkin` must switch to `b3`, hence considered a breaking change.
+
 ## v6.15.0
 
 - Extended S3 `GetObject` instrumentation with `.collect()` and `.stream()` to cover the full response body transfer within a single span https://github.com/nentgroup/telemetry-rust/pull/207

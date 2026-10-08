@@ -9,13 +9,12 @@ use opentelemetry::{
 };
 #[cfg(feature = "xray")]
 use opentelemetry_aws::trace::XrayPropagator;
+#[cfg(feature = "zipkin")]
+use opentelemetry_propagator_b3::{B3Encoding, Propagator as B3Propagator};
 use opentelemetry_sdk::{
     error::OTelSdkError,
     propagation::{BaggagePropagator, TraceContextPropagator},
 };
-#[cfg(feature = "zipkin")]
-#[allow(deprecated)]
-use opentelemetry_zipkin::{B3Encoding, Propagator as B3Propagator};
 use std::collections::BTreeSet;
 
 use crate::util;
@@ -168,7 +167,6 @@ impl Default for TextMapSplitPropagator {
     fn default() -> Self {
         let trace_context_propagator = Box::new(TraceContextPropagator::new());
         #[cfg(feature = "zipkin")]
-        #[allow(deprecated)]
         let b3_propagator = Box::new(B3Propagator::with_encoding(
             B3Encoding::SingleAndMultiHeader,
         ));
@@ -188,7 +186,6 @@ fn propagator_from_string(v: &str) -> Result<Propagator, OTelSdkError> {
         "baggage" => Ok(Box::new(BaggagePropagator::new())),
         "none" => Ok(Box::new(NonePropagator)),
         #[cfg(feature = "zipkin")]
-        #[allow(deprecated)]
         "b3" => Ok(Box::new(B3Propagator::with_encoding(
             B3Encoding::SingleHeader,
         ))),
@@ -198,7 +195,6 @@ fn propagator_from_string(v: &str) -> Result<Propagator, OTelSdkError> {
                 .to_owned(),
         )),
         #[cfg(feature = "zipkin")]
-        #[allow(deprecated)]
         "b3multi" => Ok(Box::new(B3Propagator::with_encoding(
             B3Encoding::MultipleHeader,
         ))),
@@ -227,5 +223,43 @@ mod tests {
     #[test]
     fn init_tracing_failed_on_invalid_propagator() {
         assert!(let Err(_) = super::propagator_from_string("xxxxxx"));
+    }
+
+    #[cfg(feature = "zipkin")]
+    #[test]
+    fn b3_encodings_preserve_span_context() {
+        use opentelemetry::{
+            Context,
+            propagation::TextMapPropagator,
+            trace::{
+                SpanContext, SpanId, TraceContextExt, TraceFlags, TraceId, TraceState,
+            },
+        };
+        use std::collections::HashMap;
+
+        let span_context = SpanContext::new(
+            TraceId::from(42),
+            SpanId::from(7),
+            TraceFlags::SAMPLED,
+            true,
+            TraceState::default(),
+        );
+        let context = Context::new().with_remote_span_context(span_context.clone());
+
+        for (name, header) in [("b3", "b3"), ("b3multi", "x-b3-traceid")] {
+            let propagator = super::propagator_from_string(name).unwrap();
+            let mut headers = HashMap::new();
+            propagator.inject_context(&context, &mut headers);
+            assert!(headers.contains_key(header));
+            assert!(headers.contains_key("b3") == (name == "b3"));
+            assert!(propagator.extract(&headers).span().span_context() == &span_context);
+            assert!(
+                super::TextMapSplitPropagator::default()
+                    .extract(&headers)
+                    .span()
+                    .span_context()
+                    == &span_context
+            );
+        }
     }
 }

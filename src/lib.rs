@@ -31,7 +31,7 @@
 //! - `reqwest`: Reqwest instrumentation for outbound HTTP clients
 //! - `rustls`: Enables rustls TLS backend for HTTP exporters
 //! - `test`: Testing utilities for OpenTelemetry validation
-//! - `zipkin`: Zipkin context propagation support (enabled by default)
+//! - `zipkin`: B3 context propagation via `opentelemetry-propagator-b3` (enabled by default)
 //! - `xray`: AWS X-Ray context propagation support
 //! - `future`: Future instrumentation utilities (mostly used internally)
 //!

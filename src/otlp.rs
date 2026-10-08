@@ -158,6 +158,11 @@ where
             .with_tonic()
             .with_export_config(export_config)
             .build()?,
+        protocol => {
+            return Err(InitTracerError::UnsupportedEnvProtocol(format!(
+                "{protocol:?}"
+            )));
+        }
     };
 
     let tracer_provider_builder = TracerProvider::builder()

@@ -237,8 +237,8 @@ The following context propagation formats are supported:
 
 - `tracecontext`: W3C Trace Context (default)
 - `baggage`: W3C Baggage
-- `b3`: B3 single header (requires `zipkin` feature)
-- `b3multi`: B3 multiple headers (requires `zipkin` feature)
+- `b3`: B3 single header (requires `b3` feature, enabled by default)
+- `b3multi`: B3 multiple headers (requires `b3` feature, enabled by default)
 - `xray`: AWS X-Ray (requires `xray` feature)
 
 ## Advanced AWS instrumentation

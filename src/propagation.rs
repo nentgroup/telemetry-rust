@@ -9,7 +9,7 @@ use opentelemetry::{
 };
 #[cfg(feature = "xray")]
 use opentelemetry_aws::trace::XrayPropagator;
-#[cfg(feature = "zipkin")]
+#[cfg(feature = "b3")]
 use opentelemetry_propagator_b3::{B3Encoding, Propagator as B3Propagator};
 use opentelemetry_sdk::{
     error::OTelSdkError,
@@ -98,8 +98,8 @@ impl TextMapSplitPropagator {
     /// The `OTEL_PROPAGATORS` variable should contain a comma-separated list of propagator names:
     /// - `tracecontext`: W3C Trace Context propagator
     /// - `baggage`: W3C Baggage propagator
-    /// - `b3`: B3 single header propagator (requires "zipkin" feature)
-    /// - `b3multi`: B3 multiple header propagator (requires "zipkin" feature)
+    /// - `b3`: B3 single header propagator (requires "b3" feature)
+    /// - `b3multi`: B3 multiple header propagator (requires "b3" feature)
     /// - `xray`: AWS X-Ray propagator (requires "xray" feature)
     /// - `none`: No-op propagator
     ///
@@ -166,13 +166,13 @@ impl TextMapPropagator for TextMapSplitPropagator {
 impl Default for TextMapSplitPropagator {
     fn default() -> Self {
         let trace_context_propagator = Box::new(TraceContextPropagator::new());
-        #[cfg(feature = "zipkin")]
+        #[cfg(feature = "b3")]
         let b3_propagator = Box::new(B3Propagator::with_encoding(
             B3Encoding::SingleAndMultiHeader,
         ));
         let composite_propagator = Box::new(TextMapCompositePropagator::new(vec![
             trace_context_propagator.clone(),
-            #[cfg(feature = "zipkin")]
+            #[cfg(feature = "b3")]
             b3_propagator,
         ]));
 
@@ -185,22 +185,22 @@ fn propagator_from_string(v: &str) -> Result<Propagator, OTelSdkError> {
         "tracecontext" => Ok(Box::new(TraceContextPropagator::new())),
         "baggage" => Ok(Box::new(BaggagePropagator::new())),
         "none" => Ok(Box::new(NonePropagator)),
-        #[cfg(feature = "zipkin")]
+        #[cfg(feature = "b3")]
         "b3" => Ok(Box::new(B3Propagator::with_encoding(
             B3Encoding::SingleHeader,
         ))),
-        #[cfg(not(feature = "zipkin"))]
+        #[cfg(not(feature = "b3"))]
         "b3" => Err(OTelSdkError::InternalFailure(
-            "unsupported propagator from env OTEL_PROPAGATORS: 'b3', try to enable compile feature 'zipkin'"
+            "unsupported propagator from env OTEL_PROPAGATORS: 'b3', try to enable compile feature 'b3'"
                 .to_owned(),
         )),
-        #[cfg(feature = "zipkin")]
+        #[cfg(feature = "b3")]
         "b3multi" => Ok(Box::new(B3Propagator::with_encoding(
             B3Encoding::MultipleHeader,
         ))),
-        #[cfg(not(feature = "zipkin"))]
+        #[cfg(not(feature = "b3"))]
         "b3multi" => Err(OTelSdkError::InternalFailure(
-            "unsupported propagator from env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'zipkin'"
+            "unsupported propagator from env OTEL_PROPAGATORS: 'b3multi', try to enable compile feature 'b3'"
                 .to_owned(),
         )),
         #[cfg(feature = "xray")]
@@ -225,7 +225,16 @@ mod tests {
         assert!(let Err(_) = super::propagator_from_string("xxxxxx"));
     }
 
-    #[cfg(feature = "zipkin")]
+    #[cfg(not(feature = "b3"))]
+    #[test]
+    fn b3_requires_feature() {
+        for name in ["b3", "b3multi"] {
+            let error = super::propagator_from_string(name).unwrap_err();
+            assert!(error.to_string().contains("enable compile feature 'b3'"));
+        }
+    }
+
+    #[cfg(feature = "b3")]
     #[test]
     fn b3_encodings_preserve_span_context() {
         use opentelemetry::{

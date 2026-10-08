@@ -72,8 +72,8 @@ opentelemetry_sdk = { version = "0.33", default-features = false, features = ["t
 
 [features]
 full = ["aws-full", "axum", "reqwest", "hyper", "hyper-client-legacy", "test"]
-default = ["zipkin"]
-zipkin = ["dep:opentelemetry-propagator-b3"]
+default = ["b3"]
+b3 = ["dep:opentelemetry-propagator-b3"]
 xray = ["dep:opentelemetry-aws"]
 future = ["dep:pin-project-lite"]
 test = ["dep:bytes", "dep:rand", "dep:http-body-util", "dep:hyper", "hyper/http1", "hyper/http2"]

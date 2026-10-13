@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "timezone": "Europe/Stockholm",
+  "schedule": [
+    "* 9-15 * * 1-5"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)rust-toolchain$/",
+        "/(^|/)rust-toolchain\\.toml?$/"
+      ],
+      "matchStrings": [
+        "^(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\\s*$",
+        "channel\\s*=\\s*\"(?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\""
+      ],
+      "depNameTemplate": "rust",
+      "packageNameTemplate": "rust-lang/rust",
+      "datasourceTemplate": "github-releases"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions",
+      "automerge": true,
+      "automergeType": "branch"
+    },
+    {
+      "extends": [
+        "monorepo:opentelemetry-rust"
+      ],
+      "groupName": "opentelemetry",
+      "matchSourceUrls": [
+        "https://github.com/tokio-rs/tracing-opentelemetry",
+        "https://github.com/open-telemetry/opentelemetry-rust-contrib",
+        "https://github.com/davidB/tracing-opentelemetry-instrumentation-sdk"
+      ]
+    }
+  ]
+}

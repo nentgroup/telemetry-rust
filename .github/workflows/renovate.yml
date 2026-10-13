@@ -1,0 +1,58 @@
+name: Renovate
+
+on:
+  schedule:
+    # Cadence migrated from the Mend schedule: schedule:monthly, now weekly
+    # Renovate only creates branches inside office hours (viaplay-renovate.json);
+    # 08:00-13:59 UTC stays inside office hours in both CET and CEST
+    - cron: '50 10 * * 3'
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: 'Renovate dry run mode'
+        type: choice
+        options:
+          - 'null'
+          - extract
+          - lookup
+          - full
+        default: 'null'
+      logLevel:
+        description: 'Renovate log level'
+        type: choice
+        options:
+          - debug
+          - info
+        default: debug
+      repoCache:
+        description: 'Reset or disable the repository cache'
+        type: choice
+        options:
+          - enabled
+          - disabled
+          - reset
+        default: enabled
+  issues:
+    types: [edited]
+  pull_request:
+    types: [edited, closed]
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  renovate:
+    name: Renovate
+    uses: nentgroup/viaplay-renovate/.github/workflows/renovate.yml@a94a9fda535f6cd6752c2d21c3fb3188d38aeb59 # main
+    with:
+      dryRun: ${{ inputs.dryRun || 'null' }}
+      logLevel: ${{ inputs.logLevel || 'debug' }}
+      repoCache: ${{ inputs.repoCache || 'enabled' }}
+    secrets:
+      RENOVATE_CLIENT_ID: ${{ secrets.RENOVATE_CLIENT_ID }}
+      RENOVATE_APP_PRIVATE_KEY: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}

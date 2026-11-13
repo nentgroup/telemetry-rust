@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- Depend on `aws-sdk-*` crates with `default-features = false`, keeping only the modern HTTPS client (`default-https-client`, `rt-tokio`; plus `sigv4a` and `http-1x` for S3). This stops enabling the legacy `rustls` feature, which pulled `rustls` 0.21, `rustls-webpki` 0.101 and hyper 0.14 into every consumer.
+- Bump `rustls` to 0.23.46 and `rustls-webpki` to 0.103.17 in `Cargo.lock`.
+
 ## v7.0.0
 - bump opentelemetry cratest to latest
 - replaces `opentelemetry-zipkin` with `opentelemetry-propagator-b3` and rename the default-enabled `zipkin` feature to `b3`. Consumers explicitly enabling `zipkin` must switch to `b3`, hence considered a breaking change.
